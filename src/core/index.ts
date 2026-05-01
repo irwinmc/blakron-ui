@@ -4,3 +4,8 @@ export { Validator, validator } from './Validator.js';
 export { Direction } from './Direction.js';
 export { ScrollPolicy } from './ScrollPolicy.js';
 export type { IViewport } from './IViewport.js';
+export type { IAssetAdapter } from './IAssetAdapter.js';
+export type { IThemeAdapter } from './IThemeAdapter.js';
+export type { IDisplayText } from './IDisplayText.js';
+export type { IItemRenderer } from './IItemRenderer.js';
+export { Theme, setTheme, getTheme } from './Theme.js';
