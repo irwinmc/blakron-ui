@@ -6,7 +6,7 @@ export class ItemTapEvent extends Event {
 	/**
 	 * The item that was tapped.
 	 */
-	item: unknown = null;
+	item: unknown;
 	/**
 	 * The index of the tapped item in the data provider.
 	 */

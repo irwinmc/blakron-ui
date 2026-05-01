@@ -26,13 +26,13 @@ export class Theme extends EventDispatcher {
 	private _skinMap: Record<string, string> = {};
 	private _styles: Record<string, unknown> = {};
 	private _delayList: Component[] = [];
-	private _adapter: IThemeAdapter | null;
+	private _adapter: IThemeAdapter | undefined;
 
 	constructor(configURL: string, adapter?: IThemeAdapter) {
 		super();
 		this._configURL = configURL;
 		this._initialized = !configURL;
-		this._adapter = adapter ?? null;
+		this._adapter = adapter;
 		if (configURL) this._load(configURL);
 	}
 
@@ -150,7 +150,7 @@ const defaultThemeAdapter: IThemeAdapter = {
 
 // ── Global theme registry ─────────────────────────────────────────────────────
 
-let _currentTheme: Theme | null = null;
+let _currentTheme: Theme | undefined;
 
 /**
  * Register the active theme. Called automatically by Theme constructor when a stage is provided.
@@ -162,6 +162,6 @@ export function setTheme(theme: Theme): void {
 /**
  * Get the currently active theme, if any.
  */
-export function getTheme(): Theme | null {
+export function getTheme(): Theme | undefined {
 	return _currentTheme;
 }

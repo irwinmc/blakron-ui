@@ -28,7 +28,7 @@ export class ListBase extends DataGroup {
 	// ── selectedItem ────────────────────────────────────────────────────
 
 	get selectedItem(): unknown {
-		if (this._selectedIndex < 0 || !this.dataProvider) return null;
+		if (this._selectedIndex < 0 || !this.dataProvider) return undefined;
 		return this.dataProvider.getItemAt(this._selectedIndex);
 	}
 	set selectedItem(value: unknown) {

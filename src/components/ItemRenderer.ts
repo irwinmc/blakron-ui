@@ -22,7 +22,7 @@ export class ItemRenderer extends Component implements IItemRenderer {
 
 	// ── data ────────────────────────────────────────────────────────────
 
-	private _data: unknown = null;
+	private _data: unknown;
 
 	/** The data object to render or edit. */
 	get data(): unknown {

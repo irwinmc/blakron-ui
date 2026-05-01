@@ -14,19 +14,19 @@ import { Event, type IEventDispatcher } from '@blakron/core';
  */
 export class ScrollBarBase extends Component {
 	/** [SkinPart] The thumb display object. */
-	thumb: IUIComponent | null = null;
+	thumb?: IUIComponent;
 
-	private _viewport: IViewport | null = null;
+	private _viewport: IViewport | undefined;
 
 	/** Whether the scrollbar auto-hides when not needed. */
 	autoVisibility = true;
 
 	// ── viewport ────────────────────────────────────────────────────────
 
-	get viewport(): IViewport | null {
+	get viewport(): IViewport | undefined {
 		return this._viewport;
 	}
-	set viewport(value: IViewport | null) {
+	set viewport(value: IViewport | undefined) {
 		if (value === this._viewport) return;
 		const vp = this._viewport;
 		if (vp) {

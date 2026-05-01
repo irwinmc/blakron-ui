@@ -15,13 +15,13 @@ export class ProgressBar extends Component {
 	private _maximum = 100;
 	private _value = 0;
 	private _direction: string = Direction.LTR;
-	private _labelFunction: ((value: number, maximum: number) => string) | null = null;
+	private _labelFunction: ((value: number, maximum: number) => string) | undefined;
 
 	/** Skin part: the fill/stretch area (positioned by updateDisplayList). */
-	thumb: Component | null = null;
+	thumb?: Component;
 
 	/** Skin part: label showing progress text. */
-	labelDisplay: import('./Label.js').Label | null = null;
+	labelDisplay?: import('./Label.js').Label;
 
 	constructor() {
 		super();
@@ -77,11 +77,11 @@ export class ProgressBar extends Component {
 
 	// ── Label function ──────────────────────────────────────────────────
 
-	get labelFunction(): ((value: number, maximum: number) => string) | null {
+	get labelFunction(): ((value: number, maximum: number) => string) | undefined {
 		return this._labelFunction;
 	}
 
-	set labelFunction(fn: ((value: number, maximum: number) => string) | null) {
+	set labelFunction(fn: ((value: number, maximum: number) => string) | undefined) {
 		if (this._labelFunction === fn) return;
 		this._labelFunction = fn;
 		this.invalidateDisplayList();
@@ -93,7 +93,7 @@ export class ProgressBar extends Component {
 	 * The default format is `"value / maximum"`.
 	 */
 	protected valueToLabel(value: number, maximum: number): string {
-		if (this._labelFunction != null) {
+		if (this._labelFunction) {
 			return this._labelFunction(value, maximum);
 		}
 		return value + ' / ' + maximum;

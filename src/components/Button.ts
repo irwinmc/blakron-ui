@@ -14,7 +14,7 @@ import type { Image } from './Image.js';
  */
 export class Button extends Component implements IDisplayText {
 	private _label: string = '';
-	private _icon: string | Texture | null = null;
+	private _icon: string | Texture | undefined;
 	private _selected = false;
 	private _toggle = false;
 	private _autoRepeat = false;
@@ -22,10 +22,10 @@ export class Button extends Component implements IDisplayText {
 	private _stickyHighlighting = false;
 
 	/** Skin part: label display element (set by skin or manually). */
-	labelDisplay: IDisplayText | null = null;
+	labelDisplay?: IDisplayText;
 
 	/** Skin part: icon display element (set by skin or manually). */
-	iconDisplay: Image | null = null;
+	iconDisplay?: Image;
 
 	constructor() {
 		super();
@@ -54,11 +54,11 @@ export class Button extends Component implements IDisplayText {
 
 	// ── Icon ────────────────────────────────────────────────────────────
 
-	get icon(): string | Texture | null {
+	get icon(): string | Texture | undefined {
 		return this._icon;
 	}
 
-	set icon(value: string | Texture | null) {
+	set icon(value: string | Texture | undefined) {
 		this._icon = value;
 		if (this.iconDisplay) {
 			this.iconDisplay.source = value;

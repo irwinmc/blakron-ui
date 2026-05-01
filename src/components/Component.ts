@@ -19,9 +19,9 @@ import type { Skin } from './Skin.js';
 export class Component extends Sprite implements IUIComponent, ILayoutTarget, IUIOwner {
 	readonly ui: UIState;
 
-	private _hostComponentKey: string | null = null;
-	private _skinName: string | (new () => Skin) | Skin | null = null;
-	private _skin: Skin | null = null;
+	private _hostComponentKey: string | undefined;
+	private _skinName: string | (new () => Skin) | Skin | undefined;
+	private _skin: Skin | undefined;
 	private _enabled = true;
 	private _explicitTouchEnabled = true;
 	private _explicitTouchChildren = true;
@@ -52,6 +52,7 @@ export class Component extends Sprite implements IUIComponent, ILayoutTarget, IU
 	get hostComponentKey(): string {
 		return this._hostComponentKey ?? (this.constructor as { name?: string }).name ?? '';
 	}
+
 	set hostComponentKey(value: string) {
 		this._hostComponentKey = value;
 	}
@@ -64,10 +65,10 @@ export class Component extends Sprite implements IUIComponent, ILayoutTarget, IU
 	 * - A Skin instance
 	 * - A class name string (resolved via global scope)
 	 */
-	get skinName(): string | (new () => Skin) | Skin | null {
+	get skinName(): string | (new () => Skin) | Skin | undefined {
 		return this._skinName;
 	}
-	set skinName(value: string | (new () => Skin) | Skin | null) {
+	set skinName(value: string | (new () => Skin) | Skin | undefined) {
 		this.skinNameExplicitlySet = true;
 		if (this._skinName === value) return;
 		this._skinName = value;
@@ -81,7 +82,7 @@ export class Component extends Sprite implements IUIComponent, ILayoutTarget, IU
 
 	private _parseSkinName(): void {
 		const skinName = this._skinName;
-		let skin: Skin | null = null;
+		let skin: Skin | undefined;
 		if (skinName) {
 			if (typeof skinName === 'function') {
 				skin = new (skinName as new () => Skin)();
@@ -97,24 +98,24 @@ export class Component extends Sprite implements IUIComponent, ILayoutTarget, IU
 
 	// ── skin ──────────────────────────────────────────────────────────────
 
-	get skin(): Skin | null {
+	get skin(): Skin | undefined {
 		return this._skin;
 	}
 
-	protected setSkin(skin: Skin | null): void {
+	protected setSkin(skin: Skin | undefined): void {
 		this._setSkin(skin);
 	}
 
-	private _setSkin(skin: Skin | null): void {
+	private _setSkin(skin: Skin | undefined): void {
 		const oldSkin = this._skin;
 		if (oldSkin) {
 			for (const partName of oldSkin.skinParts) {
-				if ((this as Record<string, unknown>)[partName]) this.setSkinPart(partName, null);
+				if ((this as Record<string, unknown>)[partName]) this.setSkinPart(partName, undefined);
 			}
 			for (const child of oldSkin._elementsContent) {
 				if (child.parent === this) this.removeChild(child);
 			}
-			oldSkin.hostComponent = null;
+			oldSkin.hostComponent = undefined;
 		}
 		this._skin = skin;
 		if (skin) {
@@ -245,7 +246,7 @@ export class Component extends Sprite implements IUIComponent, ILayoutTarget, IU
 	measure(): void {
 		_basicLayout.target = this;
 		_basicLayout.measure();
-		_basicLayout.target = null;
+		_basicLayout.target = undefined;
 
 		const skin = this._skin;
 		if (!skin) return;
@@ -271,7 +272,7 @@ export class Component extends Sprite implements IUIComponent, ILayoutTarget, IU
 	updateDisplayList(w: number, h: number): void {
 		_basicLayout.target = this;
 		_basicLayout.updateDisplayList(w, h);
-		_basicLayout.target = null;
+		_basicLayout.target = undefined;
 	}
 
 	// ── ILayoutTarget ─────────────────────────────────────────────────────

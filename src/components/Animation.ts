@@ -7,14 +7,14 @@ import { ticker, getTimer } from '@blakron/core';
 export class Animation {
 	private _updateFunction: (animation: Animation) => void;
 	private _thisObject: unknown;
-	private _easerFunction: ((fraction: number) => number) | null = f => -(Math.cos(Math.PI * f) - 1) * 0.5;
+	private _easerFunction: ((fraction: number) => number) | undefined = f => -(Math.cos(Math.PI * f) - 1) * 0.5;
 	private _isPlaying = false;
 	private _duration = 500;
 	private _currentValue = 0;
 	private _from = 0;
 	private _to = 0;
 	private _startTime = 0;
-	private _endFunction: ((animation: Animation) => void) | null = null;
+	private _endFunction: ((animation: Animation) => void) | undefined;
 
 	constructor(updateFunction: (animation: Animation) => void, thisObject: unknown) {
 		this._updateFunction = updateFunction;
@@ -50,17 +50,17 @@ export class Animation {
 		this._to = value;
 	}
 
-	get endFunction(): ((animation: Animation) => void) | null {
+	get endFunction(): ((animation: Animation) => void) | undefined {
 		return this._endFunction;
 	}
-	set endFunction(value: ((animation: Animation) => void) | null) {
+	set endFunction(value: ((animation: Animation) => void) | undefined) {
 		this._endFunction = value;
 	}
 
-	get easerFunction(): ((fraction: number) => number) | null {
+	get easerFunction(): ((fraction: number) => number) | undefined {
 		return this._easerFunction;
 	}
-	set easerFunction(value: ((fraction: number) => number) | null) {
+	set easerFunction(value: ((fraction: number) => number) | undefined) {
 		this._easerFunction = value;
 	}
 

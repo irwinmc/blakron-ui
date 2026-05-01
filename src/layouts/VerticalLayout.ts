@@ -421,11 +421,10 @@ export class VerticalLayout extends LinearLayoutBase {
 // ── Helpers ─────────────────────────────────────────────────────────────
 
 /** Safely get a child as IUIComponent if it implements the interface. */
-function asLayoutElement(target: ILayoutTarget, index: number): IUIComponent | null {
+function asLayoutElement(target: ILayoutTarget, index: number): IUIComponent | undefined {
 	const child = target.getChildAt(index);
-	if (!child) return null;
-	// Check if it's a full UIComponent (has layout methods)
+	if (!child) return undefined;
 	const el = child as unknown as IUIComponent;
 	if (typeof el.getPreferredBounds === 'function') return el;
-	return null;
+	return undefined;
 }

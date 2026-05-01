@@ -6,7 +6,7 @@ import type { ILayoutTarget } from './ILayoutTarget.js';
  * Subclasses must implement `measure()` and `updateDisplayList()`.
  */
 export abstract class LayoutBase extends EventDispatcher {
-	target: ILayoutTarget | null = null;
+	target: ILayoutTarget | undefined;
 
 	// ── Virtual layout ────────────────────────────────────────────────────
 

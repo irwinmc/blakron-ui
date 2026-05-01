@@ -7,7 +7,7 @@ import { VerticalLayout } from '../layouts/VerticalLayout.js';
 import { JustifyAlign } from '../layouts/JustifyAlign.js';
 import type { Skin } from './Skin.js';
 
-type SkinName = string | (new () => Skin) | Skin | null;
+type SkinName = string | (new () => Skin) | Skin | undefined;
 
 /**
  * DataGroup converts data items into visual elements (item renderers).
@@ -23,15 +23,15 @@ type SkinName = string | (new () => Skin) | Skin | null;
 export class DataGroup extends Group {
 	// ── Internal state ──────────────────────────────────────────────────
 
-	private _dataProvider: ICollection | null = null;
+	private _dataProvider: ICollection | undefined;
 	private _dataProviderChanged = false;
 
-	private _itemRenderer: (new () => ItemRenderer) | null = null;
+	private _itemRenderer: (new () => ItemRenderer) | undefined;
 	private _itemRendererChanged = false;
 
-	private _itemRendererFunction: ((item: unknown) => (new () => ItemRenderer) | null) | null = null;
+	private _itemRendererFunction: ((item: unknown) => (new () => ItemRenderer) | undefined) | undefined;
 
-	private _itemRendererSkinName: SkinName = null;
+	private _itemRendererSkinName: SkinName;
 	private _itemRendererSkinNameChanged = false;
 
 	private _useVirtualLayout = true;
@@ -40,19 +40,19 @@ export class DataGroup extends Group {
 	private readonly _rendererToClass = new Map<ItemRenderer, new () => ItemRenderer>();
 	private readonly _freeRenderers = new Map<new () => ItemRenderer, ItemRenderer[]>();
 	private _renderersBeingUpdated = false;
-	protected _indexToRenderer: (ItemRenderer | null)[] = [];
+	protected _indexToRenderer: (ItemRenderer | undefined)[] = [];
 	private _createNewRendererFlag = false;
-	private _typicalLayoutRect: Rectangle | null = null;
+	private _typicalLayoutRect: Rectangle | undefined;
 	private _typicalItem: unknown = undefined;
 	private _typicalItemChanged = false;
 	private _cleanFreeRenderer = false;
 
 	// ── dataProvider ────────────────────────────────────────────────────
 
-	get dataProvider(): ICollection | null {
+	get dataProvider(): ICollection | undefined {
 		return this._dataProvider;
 	}
-	set dataProvider(value: ICollection | null) {
+	set dataProvider(value: ICollection | undefined) {
 		if (this._dataProvider === value) return;
 		this.removeDataProviderListener();
 		this._dataProvider = value;
@@ -71,10 +71,10 @@ export class DataGroup extends Group {
 
 	// ── itemRenderer ────────────────────────────────────────────────────
 
-	get itemRenderer(): (new () => ItemRenderer) | null {
+	get itemRenderer(): (new () => ItemRenderer) | undefined {
 		return this._itemRenderer;
 	}
-	set itemRenderer(value: (new () => ItemRenderer) | null) {
+	set itemRenderer(value: (new () => ItemRenderer) | undefined) {
 		if (this._itemRenderer === value) return;
 		this._itemRenderer = value;
 		this._itemRendererChanged = true;
@@ -86,10 +86,10 @@ export class DataGroup extends Group {
 
 	// ── itemRendererFunction ────────────────────────────────────────────
 
-	get itemRendererFunction(): ((item: unknown) => (new () => ItemRenderer) | null) | null {
+	get itemRendererFunction(): ((item: unknown) => (new () => ItemRenderer) | undefined) | undefined {
 		return this._itemRendererFunction;
 	}
-	set itemRendererFunction(value: ((item: unknown) => (new () => ItemRenderer) | null) | null) {
+	set itemRendererFunction(value: ((item: unknown) => (new () => ItemRenderer) | undefined) | undefined) {
 		if (this._itemRendererFunction === value) return;
 		this._itemRendererFunction = value;
 		this._itemRendererChanged = true;
@@ -185,7 +185,7 @@ export class DataGroup extends Group {
 			this.removeAllRenderers();
 			const layout = this.layout;
 			if (layout) layout.clearVirtualLayoutCache();
-			this.setTypicalLayoutRect(null);
+			this.setTypicalLayoutRect(undefined);
 			this._useVirtualLayoutChanged = false;
 			this._itemRendererChanged = false;
 
@@ -240,7 +240,7 @@ export class DataGroup extends Group {
 				const b = new Rectangle();
 				r0.getPreferredBounds(b);
 				if (b.width !== this._typicalLayoutRect.width || b.height !== this._typicalLayoutRect.height) {
-					this._typicalLayoutRect = null;
+					this._typicalLayoutRect = undefined;
 				}
 			}
 		}
@@ -301,7 +301,7 @@ export class DataGroup extends Group {
 	protected itemAdded(item: unknown, index: number): void {
 		this.layout?.elementAdded(index);
 		if (this.layout?.useVirtualLayout) {
-			this._indexToRenderer.splice(index, 0, null);
+			this._indexToRenderer.splice(index, 0, undefined);
 			return;
 		}
 		const renderer = this.createVirtualRenderer(item);
@@ -391,7 +391,7 @@ export class DataGroup extends Group {
 	// ── Private helpers ─────────────────────────────────────────────────
 
 	private itemToRendererClass(item: unknown): new () => ItemRenderer {
-		let cls: (new () => ItemRenderer) | null = null;
+		let cls: (new () => ItemRenderer) | undefined;
 		if (this._itemRendererFunction) cls = this._itemRendererFunction(item);
 		if (!cls) cls = this._itemRenderer;
 		if (!cls) cls = ItemRenderer;
@@ -453,7 +453,7 @@ export class DataGroup extends Group {
 
 	private measureRendererSize(): void {
 		if (this._typicalItem === undefined) {
-			this.setTypicalLayoutRect(null);
+			this.setTypicalLayoutRect(undefined);
 			return;
 		}
 		const renderer = this.createVirtualRenderer(this._typicalItem);
@@ -472,7 +472,7 @@ export class DataGroup extends Group {
 		this._createNewRendererFlag = false;
 	}
 
-	private setTypicalLayoutRect(rect: Rectangle | null): void {
+	private setTypicalLayoutRect(rect: Rectangle | undefined): void {
 		this._typicalLayoutRect = rect;
 		if (this.layout) {
 			if (rect) this.layout.setTypicalSize(rect.width, rect.height);

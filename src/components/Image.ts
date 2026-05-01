@@ -11,9 +11,9 @@ import { getAssetAdapter } from '../core/AssetAdapterRegistry.js';
  * States: none (non-interactive visual element).
  */
 export class Image extends Component {
-	private _source: string | Texture | null = null;
+	private _source: string | Texture | undefined;
 	private _sourceChanged = false;
-	private _bitmap: Bitmap | null = null;
+	private _bitmap: Bitmap | undefined;
 
 	constructor(source?: string | Texture) {
 		super();
@@ -22,11 +22,11 @@ export class Image extends Component {
 
 	// ── Source ──────────────────────────────────────────────────────────
 
-	get source(): string | Texture | null {
+	get source(): string | Texture | undefined {
 		return this._source;
 	}
 
-	set source(value: string | Texture | null) {
+	set source(value: string | Texture | undefined) {
 		if (this._source === value) return;
 		this._source = value;
 		if (value && typeof value === 'string') {
@@ -84,7 +84,7 @@ export class Image extends Component {
 
 	// ── Internal bitmap access ──────────────────────────────────────────
 
-	get bitmap(): Bitmap | null {
+	get bitmap(): Bitmap | undefined {
 		return this._bitmap;
 	}
 

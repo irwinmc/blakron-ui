@@ -207,7 +207,7 @@ class DepthQueue {
 	/**
 	 * Pop deepest (for size validation — children before parents).
 	 */
-	pop(): QueueClient | null {
+	pop(): QueueClient | undefined {
 		let max = this._max;
 		const min = this._min;
 		while (min <= max) {
@@ -223,13 +223,13 @@ class DepthQueue {
 			if (max === this._max) this._max--;
 			max--;
 		}
-		return null;
+		return undefined;
 	}
 
 	/**
 	 * Shift shallowest (for properties / display list — parents before children).
 	 */
-	shift(): QueueClient | null {
+	shift(): QueueClient | undefined {
 		let min = this._min;
 		const max = this._max;
 		while (min <= max) {
@@ -245,10 +245,10 @@ class DepthQueue {
 			if (min === this._min) this._min++;
 			min++;
 		}
-		return null;
+		return undefined;
 	}
 
-	removeLargestChild(target: QueueClient): QueueClient | null {
+	removeLargestChild(target: QueueClient): QueueClient | undefined {
 		let max = this._max;
 		const min = target.nestLevel;
 		while (min <= max) {
@@ -269,10 +269,10 @@ class DepthQueue {
 			}
 			max--;
 		}
-		return null;
+		return undefined;
 	}
 
-	removeSmallestChild(target: QueueClient): QueueClient | null {
+	removeSmallestChild(target: QueueClient): QueueClient | undefined {
 		let min = target.nestLevel;
 		const max = this._max;
 		while (min <= max) {
@@ -293,7 +293,7 @@ class DepthQueue {
 			}
 			min++;
 		}
-		return null;
+		return undefined;
 	}
 
 	isEmpty(): boolean {
@@ -338,12 +338,12 @@ class DepthBin {
 	/**
 	 * Find a direct or indirect child of `ancestor` in this bin.
 	 */
-	findDescendant(ancestor: QueueClient): QueueClient | null {
-		if (!(ancestor instanceof DisplayObjectContainer)) return null;
+	findDescendant(ancestor: QueueClient): QueueClient | undefined {
+		if (!(ancestor instanceof DisplayObjectContainer)) return undefined;
 		for (const item of this.items) {
 			if (ancestor.contains(item)) return item;
 		}
-		return null;
+		return undefined;
 	}
 }
 

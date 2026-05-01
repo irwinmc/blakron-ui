@@ -14,7 +14,7 @@ import { isUIComponent } from '../core/UIState.js';
  */
 export class ViewStack extends Group {
 	private _selectedIndex = -1;
-	private _selectedChild: DisplayObject | null = null;
+	private _selectedChild: DisplayObject | undefined;
 
 	constructor() {
 		super();
@@ -35,13 +35,13 @@ export class ViewStack extends Group {
 
 	// ── Selected Child ──────────────────────────────────────────────────
 
-	get selectedChild(): DisplayObject | null {
+	get selectedChild(): DisplayObject | undefined {
 		const index = this.selectedIndex;
-		if (index >= 0 && index < this.numChildren) return this.getChildAt(index) ?? null;
-		return null;
+		if (index >= 0 && index < this.numChildren) return this.getChildAt(index);
+		return undefined;
 	}
 
-	set selectedChild(value: DisplayObject | null) {
+	set selectedChild(value: DisplayObject | undefined) {
 		if (!value) {
 			this.selectedIndex = -1;
 			return;
@@ -60,7 +60,7 @@ export class ViewStack extends Group {
 			if (this._selectedChild) {
 				this.showOrHide(this._selectedChild, false);
 			}
-			this._selectedChild = this.getChildAt(newIndex) ?? null;
+			this._selectedChild = this.getChildAt(newIndex);
 			if (this._selectedChild) {
 				this.showOrHide(this._selectedChild, true);
 			}
@@ -68,7 +68,7 @@ export class ViewStack extends Group {
 			if (this._selectedChild) {
 				this.showOrHide(this._selectedChild, false);
 			}
-			this._selectedChild = null;
+			this._selectedChild = undefined;
 			this._selectedIndex = -1;
 		}
 		this.invalidateSize();
@@ -132,7 +132,7 @@ export class ViewStack extends Group {
 			if (this.numChildren > 0) {
 				this.commitSelection(0);
 			} else {
-				this._selectedChild = null;
+				this._selectedChild = undefined;
 				this._selectedIndex = -1;
 			}
 		} else if (index < this._selectedIndex) {
@@ -141,7 +141,7 @@ export class ViewStack extends Group {
 			// Removed child is after the selected one, no index change needed
 			// but we should clean up reference
 			if (this._selectedChild === child) {
-				this._selectedChild = null;
+				this._selectedChild = undefined;
 			}
 		}
 		this.invalidateSize();

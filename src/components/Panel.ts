@@ -28,12 +28,12 @@ export class Panel extends Component {
 
 	// ── Skin parts ──────────────────────────────────────────────────────
 
-	private _titleDisplay: IDisplayText | null = null;
+	private _titleDisplay: IDisplayText | undefined;
 
-	get titleDisplay(): IDisplayText | null {
+	get titleDisplay(): IDisplayText | undefined {
 		return this._titleDisplay;
 	}
-	set titleDisplay(value: IDisplayText | null) {
+	set titleDisplay(value: IDisplayText | undefined) {
 		if (this._titleDisplay === value) return;
 		this._titleDisplay = value;
 		if (value && this._title) {

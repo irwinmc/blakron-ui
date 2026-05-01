@@ -21,8 +21,8 @@ export class SliderBase extends Range {
 	private _direction: string = Direction.LTR;
 	private _directionChanged = false;
 
-	private _thumb: TouchEvent['currentTarget'] | null = null;
-	private _track: TouchEvent['currentTarget'] | null = null;
+	private _thumb: TouchEvent['currentTarget'] | undefined;
+	private _track: TouchEvent['currentTarget'] | undefined;
 
 	private _pendingValue = 0;
 	private _isDragging = false;
@@ -46,10 +46,10 @@ export class SliderBase extends Range {
 	// ── Skin parts ──────────────────────────────────────────────────────
 
 	/** The draggable thumb. */
-	get thumb(): TouchEvent['currentTarget'] | null {
+	get thumb(): TouchEvent['currentTarget'] | undefined {
 		return this._thumb;
 	}
-	set thumb(value: TouchEvent['currentTarget'] | null) {
+	set thumb(value: TouchEvent['currentTarget'] | undefined) {
 		if (this._thumb === value) return;
 		this.removeThumbListeners();
 		this._thumb = value;
@@ -57,10 +57,10 @@ export class SliderBase extends Range {
 	}
 
 	/** The track area. Clicking it jumps the value. */
-	get track(): TouchEvent['currentTarget'] | null {
+	get track(): TouchEvent['currentTarget'] | undefined {
 		return this._track;
 	}
-	set track(value: TouchEvent['currentTarget'] | null) {
+	set track(value: TouchEvent['currentTarget'] | undefined) {
 		if (this._track === value) return;
 		this.removeTrackListeners();
 		this._track = value;

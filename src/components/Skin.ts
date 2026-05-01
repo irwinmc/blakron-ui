@@ -48,13 +48,13 @@ export class Skin extends EventDispatcher {
 
 	// ── Host component ────────────────────────────────────────────────────
 
-	private _hostComponent: Component | null = null;
+	private _hostComponent: Component | undefined;
 
-	get hostComponent(): Component | null {
+	get hostComponent(): Component | undefined {
 		return this._hostComponent;
 	}
 
-	set hostComponent(value: Component | null) {
+	set hostComponent(value: Component | undefined) {
 		if (this._hostComponent === value) return;
 
 		if (this._hostComponent) {

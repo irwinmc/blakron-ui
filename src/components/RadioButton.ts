@@ -7,8 +7,8 @@ import { Event } from '@blakron/core';
  */
 export class RadioButtonGroup {
 	private _radioButtons: RadioButton[] = [];
-	private _selectedValue: string | number | null = null;
-	private _selectedRadioButton: RadioButton | null = null;
+	private _selectedValue: string | number | undefined;
+	private _selectedRadioButton: RadioButton | undefined;
 	private _name: string;
 
 	constructor(name: string = '') {
@@ -23,24 +23,24 @@ export class RadioButtonGroup {
 		return this._radioButtons.length;
 	}
 
-	get selectedValue(): string | number | null {
+	get selectedValue(): string | number | undefined {
 		return this._selectedValue;
 	}
 
-	set selectedValue(value: string | number | null) {
+	set selectedValue(value: string | number | undefined) {
 		if (this._selectedValue === value) return;
 		this._selectedValue = value;
 		this.updateSelected();
 	}
 
-	get selection(): RadioButton | null {
+	get selection(): RadioButton | undefined {
 		return this._selectedRadioButton;
 	}
 
-	set selection(value: RadioButton | null) {
+	set selection(value: RadioButton | undefined) {
 		if (this._selectedRadioButton === value) return;
 		this._selectedRadioButton = value;
-		this._selectedValue = value ? value.value : null;
+		this._selectedValue = value?.value;
 		for (const rb of this._radioButtons) {
 			rb.selected = rb === value;
 		}
@@ -51,7 +51,7 @@ export class RadioButtonGroup {
 		if (this._radioButtons.indexOf(radioButton) !== -1) return;
 		this._radioButtons.push(radioButton);
 		// If this radio's value matches the current selection, select it
-		if (this._selectedValue != null && radioButton.value === this._selectedValue) {
+		if (this._selectedValue !== undefined && radioButton.value === this._selectedValue) {
 			radioButton.selected = true;
 			this._selectedRadioButton = radioButton;
 		}
@@ -63,8 +63,8 @@ export class RadioButtonGroup {
 		if (idx === -1) return;
 		this._radioButtons.splice(idx, 1);
 		if (this._selectedRadioButton === radioButton) {
-			this._selectedRadioButton = null;
-			this._selectedValue = null;
+			this._selectedRadioButton = undefined;
+			this._selectedValue = undefined;
 		}
 	}
 
@@ -80,7 +80,7 @@ export class RadioButtonGroup {
 	}
 
 	private updateSelected(): void {
-		this._selectedRadioButton = null;
+		this._selectedRadioButton = undefined;
 		for (const rb of this._radioButtons) {
 			if (rb.value === this._selectedValue) {
 				this._selectedRadioButton = rb;
@@ -113,18 +113,18 @@ function getGroup(name: string): RadioButtonGroup {
  */
 export class RadioButton extends ToggleButton {
 	private _groupName: string = '';
-	private _group: RadioButtonGroup | null = null;
+	private _group: RadioButtonGroup | undefined;
 	private _value: string | number = '';
 
 	constructor() {
 		super();
 	}
 
-	get group(): RadioButtonGroup | null {
+	get group(): RadioButtonGroup | undefined {
 		return this._group;
 	}
 
-	set group(value: RadioButtonGroup | null) {
+	set group(value: RadioButtonGroup | undefined) {
 		if (this._group === value) return;
 		if (this._group) {
 			this._group.removeInstance(this);
@@ -142,7 +142,7 @@ export class RadioButton extends ToggleButton {
 	set groupName(value: string) {
 		if (this._groupName === value) return;
 		this._groupName = value;
-		this.group = value ? getGroup(value) : null;
+		this.group = value ? getGroup(value) : undefined;
 	}
 
 	get value(): string | number {

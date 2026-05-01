@@ -586,7 +586,7 @@ export class TileLayout extends LayoutBase {
 		const rowHeight = this._rowHeight;
 
 		for (let i = this.startIndex; i <= endIdx; i++) {
-			let el: IUIComponent | null;
+			let el: IUIComponent | undefined;
 			if (this._useVirtualLayout) {
 				el = asLayoutElement(target, i);
 			} else {
@@ -647,10 +647,10 @@ export class TileLayout extends LayoutBase {
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
-function asLayoutElement(target: ILayoutTarget, index: number): IUIComponent | null {
+function asLayoutElement(target: ILayoutTarget, index: number): IUIComponent | undefined {
 	const child = target.getChildAt(index);
-	if (!child) return null;
+	if (!child) return undefined;
 	const el = child as unknown as IUIComponent;
 	if (typeof el.getPreferredBounds === 'function') return el;
-	return null;
+	return undefined;
 }

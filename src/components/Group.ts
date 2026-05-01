@@ -20,7 +20,7 @@ import { BasicLayout } from '../layouts/BasicLayout.js';
 export class Group extends Sprite implements IUIComponent, IViewport, ILayoutTarget, IUIOwner {
 	readonly ui: UIState;
 
-	private _layout: LayoutBase | null = null;
+	private _layout: LayoutBase | undefined;
 	private _contentWidth = 0;
 	private _contentHeight = 0;
 	private _scrollEnabled = false;
@@ -53,12 +53,12 @@ export class Group extends Sprite implements IUIComponent, IViewport, ILayoutTar
 
 	// ── Layout ────────────────────────────────────────────────────────────
 
-	get layout(): LayoutBase | null {
+	get layout(): LayoutBase | undefined {
 		return this._layout;
 	}
-	set layout(value: LayoutBase | null) {
+	set layout(value: LayoutBase | undefined) {
 		if (this._layout === value) return;
-		if (this._layout) this._layout.target = null;
+		if (this._layout) this._layout.target = undefined;
 		this._layout = value;
 		if (value) value.target = this;
 		this.invalidateSize();

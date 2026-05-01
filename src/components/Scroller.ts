@@ -19,13 +19,13 @@ export class Scroller extends Component {
 	// ── Skin parts ──────────────────────────────────────────────────────
 
 	/** [SkinPart] Horizontal scroll bar. */
-	horizontalScrollBar: HScrollBar | null = null;
+	horizontalScrollBar?: HScrollBar;
 	/** [SkinPart] Vertical scroll bar. */
-	verticalScrollBar: VScrollBar | null = null;
+	verticalScrollBar?: VScrollBar;
 
 	// ── Private state ───────────────────────────────────────────────────
 
-	private _viewport: IViewport | null = null;
+	private _viewport: IViewport | undefined;
 	private _horizontalScrollPolicy = ScrollPolicy.AUTO;
 	private _verticalScrollPolicy = ScrollPolicy.AUTO;
 
@@ -59,10 +59,10 @@ export class Scroller extends Component {
 
 	// ── viewport ────────────────────────────────────────────────────────
 
-	get viewport(): IViewport | null {
+	get viewport(): IViewport | undefined {
 		return this._viewport;
 	}
-	set viewport(value: IViewport | null) {
+	set viewport(value: IViewport | undefined) {
 		if (value === this._viewport) return;
 		const old = this._viewport;
 		if (old) {
@@ -122,11 +122,11 @@ export class Scroller extends Component {
 	protected override partRemoved(partName: string, instance: unknown): void {
 		super.partRemoved(partName, instance);
 		if (partName === 'horizontalScrollBar') {
-			if (instance instanceof HScrollBar) instance.viewport = null;
-			this.horizontalScrollBar = null;
+			if (instance instanceof HScrollBar) instance.viewport = undefined;
+			this.horizontalScrollBar = undefined;
 		} else if (partName === 'verticalScrollBar') {
-			if (instance instanceof VScrollBar) instance.viewport = null;
-			this.verticalScrollBar = null;
+			if (instance instanceof VScrollBar) instance.viewport = undefined;
+			this.verticalScrollBar = undefined;
 		}
 	}
 

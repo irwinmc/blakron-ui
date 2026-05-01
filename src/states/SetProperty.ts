@@ -45,10 +45,10 @@ export class SetProperty implements IOverride {
 		this._applied = false;
 	}
 
-	private _resolve(skin: Skin): object | null {
+	private _resolve(skin: Skin): object | undefined {
 		if (!this.target) return skin;
 		const part = skin.getPart(this.target);
-		return part != null && typeof part === 'object' ? part : null;
+		return part != null && typeof part === 'object' ? part : undefined;
 	}
 }
 
