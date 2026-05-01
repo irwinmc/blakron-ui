@@ -15,7 +15,7 @@ export class ProgressBar extends Component {
 	private _maximum = 100;
 	private _value = 0;
 	private _direction: string = Direction.LTR;
-	private _labelFunction: ((value: number, minimum: number, maximum: number) => string) | null = null;
+	private _labelFunction: ((value: number, maximum: number) => string) | null = null;
 
 	/** Skin part: the fill/stretch area (positioned by updateDisplayList). */
 	thumb: Component | null = null;
@@ -77,13 +77,26 @@ export class ProgressBar extends Component {
 
 	// ── Label function ──────────────────────────────────────────────────
 
-	get labelFunction(): ((value: number, minimum: number, maximum: number) => string) | null {
+	get labelFunction(): ((value: number, maximum: number) => string) | null {
 		return this._labelFunction;
 	}
 
-	set labelFunction(fn: ((value: number, minimum: number, maximum: number) => string) | null) {
+	set labelFunction(fn: ((value: number, maximum: number) => string) | null) {
+		if (this._labelFunction === fn) return;
 		this._labelFunction = fn;
 		this.invalidateDisplayList();
+	}
+
+	/**
+	 * Converts the current value to display text.
+	 * Override this method to customize the label format.
+	 * The default format is `"value / maximum"`.
+	 */
+	protected valueToLabel(value: number, maximum: number): string {
+		if (this._labelFunction != null) {
+			return this._labelFunction(value, maximum);
+		}
+		return value + ' / ' + maximum;
 	}
 
 	// ── Computed ratio ──────────────────────────────────────────────────
@@ -132,12 +145,7 @@ export class ProgressBar extends Component {
 
 		// Update label
 		if (this.labelDisplay) {
-			if (this._labelFunction) {
-				this.labelDisplay.text = this._labelFunction(this._value, this._minimum, this._maximum);
-			} else {
-				const pct = Math.round(this.ratio * 100);
-				this.labelDisplay.text = `${pct}%`;
-			}
+			this.labelDisplay.text = this.valueToLabel(this._value, this._maximum);
 		}
 	}
 }

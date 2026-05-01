@@ -1,35 +1,36 @@
 import { Component } from './Component.js';
-import { Event, TouchEvent } from '@blakron/core';
+import { Event, TouchEvent, DisplayObject } from '@blakron/core';
+import type { Texture } from '@blakron/core';
 import type { IDisplayText } from '../core/IDisplayText.js';
+import type { Image } from './Image.js';
 
 /**
  * Button component with label, icon, and state management.
  *
  * States: `up`, `down`, `disabled`, `upAndSelected`, `downAndSelected`, `disabledAndSelected`.
- * Dispatches `Event.CHANGE` and `'click'` on tap (when enabled).
+ *
+ * When the button is tapped (and enabled), it calls `buttonReleased()` which subclasses
+ * can override. If `toggle` is true, the `selected` state is toggled automatically.
  */
 export class Button extends Component implements IDisplayText {
 	private _label: string = '';
-	private _icon: string | null = null;
+	private _icon: string | Texture | null = null;
 	private _selected = false;
 	private _toggle = false;
 	private _autoRepeat = false;
-	private _pressed = false;
+	private _touchCaptured = false;
 	private _stickyHighlighting = false;
 
 	/** Skin part: label display element (set by skin or manually). */
 	labelDisplay: IDisplayText | null = null;
 
 	/** Skin part: icon display element (set by skin or manually). */
-	iconDisplay: import('../components/Image.js').Image | null = null;
+	iconDisplay: Image | null = null;
 
 	constructor() {
 		super();
-		this.touchChildren = true;
+		this.touchChildren = false;
 		this.addEventListener(TouchEvent.TOUCH_BEGIN, this._onTouchBegin);
-		this.addEventListener(TouchEvent.TOUCH_END, this._onTouchEnd);
-		this.addEventListener(TouchEvent.TOUCH_TAP, this._onTouchTap);
-		this.addEventListener(TouchEvent.TOUCH_RELEASE_OUTSIDE, this._onTouchReleaseOutside);
 	}
 
 	// ── Label ───────────────────────────────────────────────────────────
@@ -39,7 +40,6 @@ export class Button extends Component implements IDisplayText {
 	}
 
 	set label(value: string) {
-		if (this._label === value) return;
 		this._label = value;
 		if (this.labelDisplay) {
 			this.labelDisplay.text = value;
@@ -54,12 +54,11 @@ export class Button extends Component implements IDisplayText {
 
 	// ── Icon ────────────────────────────────────────────────────────────
 
-	get icon(): string | null {
+	get icon(): string | Texture | null {
 		return this._icon;
 	}
 
-	set icon(value: string | null) {
-		if (this._icon === value) return;
+	set icon(value: string | Texture | null) {
 		this._icon = value;
 		if (this.iconDisplay) {
 			this.iconDisplay.source = value;
@@ -98,10 +97,10 @@ export class Button extends Component implements IDisplayText {
 		this._autoRepeat = value;
 	}
 
-	// ── Pressed (read-only) ─────────────────────────────────────────────
+	// ── Touch captured (read-only) ──────────────────────────────────────
 
-	get pressed(): boolean {
-		return this._pressed;
+	get touchCaptured(): boolean {
+		return this._touchCaptured;
 	}
 
 	// ── Enabled ─────────────────────────────────────────────────────────
@@ -120,10 +119,10 @@ export class Button extends Component implements IDisplayText {
 			return this._selected ? 'disabledAndSelected' : 'disabled';
 		}
 		if (this._selected) {
-			if (this._pressed || this._stickyHighlighting) return 'downAndSelected';
+			if (this._touchCaptured || this._stickyHighlighting) return 'downAndSelected';
 			return 'upAndSelected';
 		}
-		if (this._pressed) return 'down';
+		if (this._touchCaptured) return 'down';
 		return 'up';
 	}
 
@@ -135,41 +134,60 @@ export class Button extends Component implements IDisplayText {
 			this.labelDisplay!.text = this._label;
 		}
 		if (instance === this.iconDisplay) {
-			if (this._icon) this.iconDisplay!.source = this._icon;
+			this.iconDisplay!.source = this._icon;
 		}
+	}
+
+	/**
+	 * Called when the user taps the button (touch ends within the button bounds).
+	 * Subclasses should override this to perform the button action.
+	 * The base implementation handles toggle behavior.
+	 */
+	protected buttonReleased(): void {
+		if (this._toggle) {
+			this._selected = !this._selected;
+			this._stickyHighlighting = this._selected;
+		}
+		this.invalidateState();
+		this.dispatchEventWith(Event.CHANGE);
 	}
 
 	// ── Event handlers ──────────────────────────────────────────────────
 
 	private _onTouchBegin = (e: Event): void => {
 		if (!this.enabled) return;
-		e.stopPropagation();
-		this._pressed = true;
-		this._stickyHighlighting = false;
+		this._touchCaptured = true;
 		this.invalidateState();
-	};
-
-	private _onTouchEnd = (e: Event): void => {
-		this._pressed = false;
-		this.invalidateState();
-	};
-
-	private _onTouchTap = (e: Event): void => {
-		if (!this.enabled) return;
-
-		if (this._toggle) {
-			this._selected = !this._selected;
-			this._stickyHighlighting = this._selected;
+		// Listen on stage for TOUCH_END and TOUCH_CANCEL to properly release
+		const stage = this.stage;
+		if (stage) {
+			stage.addEventListener(TouchEvent.TOUCH_END, this._onStageTouchEnd);
+			stage.addEventListener(TouchEvent.TOUCH_CANCEL, this._onTouchCancel);
 		}
-
-		this.invalidateState();
-		this.dispatchEventWith(Event.CHANGE);
-		this.dispatchEventWith('click');
 	};
 
-	private _onTouchReleaseOutside = (_e: Event): void => {
-		this._pressed = false;
-		this._stickyHighlighting = false;
+	private _onStageTouchEnd = (e: Event): void => {
+		const stage = this.stage;
+		if (stage) {
+			stage.removeEventListener(TouchEvent.TOUCH_END, this._onStageTouchEnd);
+			stage.removeEventListener(TouchEvent.TOUCH_CANCEL, this._onTouchCancel);
+		}
+		// Check if the touch target is within this button
+		const target = (e as TouchEvent).target;
+		if (target instanceof DisplayObject && this.contains(target)) {
+			this.buttonReleased();
+		}
+		this._touchCaptured = false;
+		this.invalidateState();
+	};
+
+	private _onTouchCancel = (e: Event): void => {
+		const stage = this.stage;
+		if (stage) {
+			stage.removeEventListener(TouchEvent.TOUCH_END, this._onStageTouchEnd);
+			stage.removeEventListener(TouchEvent.TOUCH_CANCEL, this._onTouchCancel);
+		}
+		this._touchCaptured = false;
 		this.invalidateState();
 	};
 }

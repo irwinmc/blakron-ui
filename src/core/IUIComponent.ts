@@ -6,27 +6,45 @@ import type { Rectangle } from '@blakron/core';
  * and bounds query methods used by layout classes.
  */
 export interface IUIComponent {
-	/** Whether this component participates in parent layout. Default true. */
+	/**
+	 * Whether this component participates in parent layout. Default true.
+	 */
 	includeInLayout: boolean;
 
 	// ── Anchor constraints ────────────────────────────────────────────────
-	/** Distance from the left edge of the parent container. */
+	/**
+	 * Distance from the left edge of the parent container
+	 */
 	left: number | string;
-	/** Distance from the right edge of the parent container. */
+	/**
+	 * Distance from the right edge of the parent container.
+	 */
 	right: number | string;
-	/** Distance from the top edge of the parent container. */
+	/**
+	 * Distance from the top edge of the parent container.
+	 */
 	top: number | string;
-	/** Distance from the bottom edge of the parent container. */
+	/**
+	 * Distance from the bottom edge of the parent container.
+	 */
 	bottom: number | string;
-	/** Offset from the horizontal center of the parent container. */
+	/**
+	 * Offset from the horizontal center of the parent container.
+	 */
 	horizontalCenter: number | string;
-	/** Offset from the vertical center of the parent container. */
+	/**
+	 * Offset from the vertical center of the parent container.
+	 */
 	verticalCenter: number | string;
 
 	// ── Percentage sizing ─────────────────────────────────────────────────
-	/** Width as a percentage of the parent's width (0–100). */
+	/**
+	 * Width as a percentage of the parent's width (0–100).
+	 */
 	percentWidth: number;
-	/** Height as a percentage of the parent's height (0–100). */
+	/**
+	 * Height as a percentage of the parent's height (0–100).
+	 */
 	percentHeight: number;
 
 	// ── Explicit / measured sizes ─────────────────────────────────────────

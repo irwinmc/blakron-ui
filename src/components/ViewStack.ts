@@ -3,15 +3,18 @@ import { Component } from './Component.js';
 import { Event, DisplayObject } from '@blakron/core';
 
 /**
- * ViewStack component that shows only one child at a time, determined by `selectedIndex`.
+ * ViewStack navigator container consisting of a collection of child containers
+ * stacked on top of each other, where only one child at a time is visible.
  *
- * All children are kept but only the active one is visible.
- * This is useful for tab-based navigation, wizard-style flows, etc.
+ * When a different child is selected, it appears to replace the old one because
+ * it appears in the same location. However, the old child still exists; it is
+ * just invisible and excluded from layout.
  *
- * States: none (container component, delegates state to children).
+ * States: none (container component).
  */
 export class ViewStack extends Group {
-	private _selectedIndex = 0;
+	private _selectedIndex = -1;
+	private _selectedChild: DisplayObject | null = null;
 
 	constructor() {
 		super();
@@ -24,10 +27,58 @@ export class ViewStack extends Group {
 	}
 
 	set selectedIndex(value: number) {
+		value = +value | 0;
 		if (this._selectedIndex === value) return;
-		this._selectedIndex = value;
-		this.invalidateDisplayList();
+		this.commitSelection(value);
 		this.dispatchEventWith(Event.CHANGE);
+	}
+
+	// ── Selected Child ──────────────────────────────────────────────────
+
+	get selectedChild(): DisplayObject | null {
+		const index = this.selectedIndex;
+		if (index >= 0 && index < this.numChildren) return this.getChildAt(index) ?? null;
+		return null;
+	}
+
+	set selectedChild(value: DisplayObject) {
+		const index = this.getChildIndex(value);
+		if (index >= 0 && index < this.numChildren) {
+			this.selectedIndex = index;
+		}
+	}
+
+	// ── Selection commit ────────────────────────────────────────────────
+
+	private commitSelection(newIndex: number): void {
+		if (newIndex >= 0 && newIndex < this.numChildren) {
+			this._selectedIndex = newIndex;
+			if (this._selectedChild) {
+				this.showOrHide(this._selectedChild, false);
+			}
+			this._selectedChild = this.getChildAt(newIndex) ?? null;
+			if (this._selectedChild) {
+				this.showOrHide(this._selectedChild, true);
+			}
+		} else {
+			if (this._selectedChild) {
+				this.showOrHide(this._selectedChild, false);
+			}
+			this._selectedChild = null;
+			this._selectedIndex = -1;
+		}
+		this.invalidateSize();
+		this.invalidateDisplayList();
+	}
+
+	/**
+	 * Show or hide a child, also managing `includeInLayout`.
+	 */
+	private showOrHide(child: DisplayObject, visible: boolean): void {
+		child.visible = visible;
+		if (child instanceof Component) {
+			child.includeInLayout = visible;
+		}
 	}
 
 	// ── Rendering ───────────────────────────────────────────────────────
@@ -35,23 +86,18 @@ export class ViewStack extends Group {
 	override updateDisplayList(unscaledWidth: number, unscaledHeight: number): void {
 		super.updateDisplayList(unscaledWidth, unscaledHeight);
 
-		const n = this.numChildren;
-		for (let i = 0; i < n; i++) {
-			const child = this.getChildAt(i)!;
-			child.visible = i === this._selectedIndex;
-			if (child.visible) {
-				child.width = unscaledWidth;
-				child.height = unscaledHeight;
-			}
+		// Size the selected child to fill the ViewStack
+		if (this._selectedChild) {
+			this._selectedChild.width = unscaledWidth;
+			this._selectedChild.height = unscaledHeight;
 		}
 	}
 
 	// ── Measurement ─────────────────────────────────────────────────────
 
 	override measure(): void {
-		const selectedChild = this.getChildAt(this._selectedIndex);
-		if (selectedChild) {
-			this.setMeasuredSize(selectedChild.width, selectedChild.height);
+		if (this._selectedChild) {
+			this.setMeasuredSize(this._selectedChild.width, this._selectedChild.height);
 		} else {
 			this.setMeasuredSize(0, 0);
 		}
@@ -59,21 +105,40 @@ export class ViewStack extends Group {
 
 	// ── Child management ────────────────────────────────────────────────
 
-	override addChildAt(child: DisplayObject, index: number): DisplayObject {
-		const result = super.addChildAt(child, index);
-		child.visible = index === this._selectedIndex;
-		this.invalidateSize();
-		return result;
+	override childAdded(child: DisplayObject, index: number): void {
+		super.childAdded(child, index);
+		// Hide the new child by default
+		this.showOrHide(child, false);
+		// Auto-select first child, or adjust index
+		if (this._selectedIndex === -1) {
+			this.commitSelection(index);
+		} else if (index <= this._selectedIndex) {
+			this._selectedIndex++;
+		}
 	}
 
-	override removeChildAt(index: number): DisplayObject | undefined {
-		const result = super.removeChildAt(index);
-		// Adjust selectedIndex if needed
-		if (this._selectedIndex >= this.numChildren) {
-			this._selectedIndex = Math.max(0, this.numChildren - 1);
+	override childRemoved(child: DisplayObject, index: number): void {
+		super.childRemoved(child, index);
+		this.showOrHide(child, true); // restore visibility
+
+		if (index === this._selectedIndex) {
+			// Currently selected child removed
+			if (this.numChildren > 0) {
+				this.commitSelection(0);
+			} else {
+				this._selectedChild = null;
+				this._selectedIndex = -1;
+			}
+		} else if (index < this._selectedIndex) {
+			this._selectedIndex--;
+		} else {
+			// Removed child is after the selected one, no index change needed
+			// but we should clean up reference
+			if (this._selectedChild === child) {
+				this._selectedChild = null;
+			}
 		}
 		this.invalidateSize();
 		this.invalidateDisplayList();
-		return result;
 	}
 }
