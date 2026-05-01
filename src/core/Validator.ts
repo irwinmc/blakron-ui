@@ -63,7 +63,9 @@ export class Validator extends EventDispatcher {
 		this._displayQueue.insert(client);
 	}
 
-	/** Force immediate validation of all components at or below `target`'s depth. */
+	/**
+	 * Force immediate validation of all components at or below `target`'s depth.
+	 */
 	validateClient(target: ValidatorClient): void {
 		const oldLevel = this._targetLevel;
 		if (this._targetLevel === Infinity) this._targetLevel = target.nestLevel;
@@ -202,7 +204,9 @@ class DepthQueue {
 		bin.insert(client);
 	}
 
-	/** Pop deepest (for size validation — children before parents). */
+	/**
+	 * Pop deepest (for size validation — children before parents).
+	 */
 	pop(): QueueClient | null {
 		let max = this._max;
 		const min = this._min;
@@ -222,7 +226,9 @@ class DepthQueue {
 		return null;
 	}
 
-	/** Shift shallowest (for properties / display list — parents before children). */
+	/**
+	 * Shift shallowest (for properties / display list — parents before children).
+	 */
 	shift(): QueueClient | null {
 		let min = this._min;
 		const max = this._max;
@@ -329,7 +335,9 @@ class DepthBin {
 		}
 	}
 
-	/** Find a direct or indirect child of `ancestor` in this bin. */
+	/**
+	 * Find a direct or indirect child of `ancestor` in this bin.
+	 */
 	findDescendant(ancestor: QueueClient): QueueClient | null {
 		// ancestor must be a DisplayObjectContainer to use contains()
 		const container = ancestor as unknown as { contains?: (child: unknown) => boolean };
@@ -341,5 +349,7 @@ class DepthBin {
 	}
 }
 
-/** Singleton validator instance shared by all UI components. */
+/**
+ * Singleton validator instance shared by all UI components.
+ */
 export const validator: Validator = new Validator();

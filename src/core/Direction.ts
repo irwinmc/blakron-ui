@@ -1,4 +1,6 @@
-/** Direction constants for ProgressBar and similar components. */
+/**
+ * Direction constants for ProgressBar and similar components.
+ */
 export class Direction {
 	static readonly LTR = 'ltr';
 	static readonly RTL = 'rtl';

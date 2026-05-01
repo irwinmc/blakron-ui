@@ -7,9 +7,13 @@ import type { Skin } from '../components/Skin.js';
  * Restores the previous value when the state is deactivated.
  */
 export class SetStateProperty implements IOverride {
-	/** The property name on the host component to set. */
+	/**
+	 * The property name on the host component to set.
+	 */
 	name: string;
-	/** The value to set when the state is active. */
+	/**
+	 * The value to set when the state is active.
+	 */
 	value: unknown;
 
 	private _oldValue: unknown = undefined;

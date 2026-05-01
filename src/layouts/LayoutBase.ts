@@ -6,7 +6,9 @@ import type { Group } from '../components/Group.js';
  * Subclasses must implement `measure()` and `updateDisplayList()`.
  */
 export abstract class LayoutBase extends EventDispatcher {
-	/** @internal */
+	/**
+	 * @internal
+	 */
 	$target: Group | null = null;
 
 	get target(): Group | null {

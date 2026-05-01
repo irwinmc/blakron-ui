@@ -56,7 +56,9 @@ export class Component extends Sprite implements IUIComponent {
 	private _explicitState = '';
 	private _stateIsDirty = false;
 
-	/** @internal used by Theme to check if skinName was set explicitly */
+	/**
+	 * @internal used by Theme to check if skinName was set explicitly
+	 */
 	skinNameExplicitlySet = false;
 
 	constructor() {
@@ -98,7 +100,9 @@ export class Component extends Sprite implements IUIComponent {
 		this._parseSkinName();
 	}
 
-	/** @internal Called by Theme when it resolves a default skin name. */
+	/**
+	 * @internal Called by Theme when it resolves a default skin name.
+	 */
 	$applySkinName(skinName: string): void {
 		this._skinName = skinName;
 		this._parseSkinName();
@@ -227,7 +231,9 @@ export class Component extends Sprite implements IUIComponent {
 		this.invalidateState();
 	}
 
-	/** Mark the view state as dirty so it will be re-applied on next commit. */
+	/**
+	 * Mark the view state as dirty so it will be re-applied on next commit.
+	 */
 	invalidateState(): void {
 		if (this._stateIsDirty) return;
 		this._stateIsDirty = true;

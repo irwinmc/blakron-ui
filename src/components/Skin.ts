@@ -1,5 +1,6 @@
 import { EventDispatcher, DisplayObject } from '@blakron/core';
 import { PropertyEvent } from '../events/PropertyEvent.js';
+import type { State } from '../states/State.js';
 import type { Component } from './Component.js';
 
 /**
@@ -75,8 +76,10 @@ export class Skin extends EventDispatcher {
 
 	// ── View states ───────────────────────────────────────────────────────
 
-	/** State definitions. Set by EXML compiler or manually. */
-	states: import('../states/State.js').State[] = [];
+	/**
+	 * State definitions. Set by EXML compiler or manually.
+	 */
+	states: State[] = [];
 
 	private _currentState = '';
 	private _stateInitialized = false;

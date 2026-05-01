@@ -151,12 +151,16 @@ const defaultThemeAdapter: IThemeAdapter = {
 
 let _currentTheme: Theme | null = null;
 
-/** Register the active theme. Called automatically by Theme constructor when a stage is provided. */
+/**
+ * Register the active theme. Called automatically by Theme constructor when a stage is provided.
+ */
 export function setTheme(theme: Theme): void {
 	_currentTheme = theme;
 }
 
-/** Get the currently active theme, if any. */
+/**
+ * Get the currently active theme, if any.
+ */
 export function getTheme(): Theme | null {
 	return _currentTheme;
 }
