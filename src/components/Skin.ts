@@ -1,4 +1,4 @@
-import { EventDispatcher, DisplayObject } from '@blakron/core';
+import { EventDispatcher, DisplayObject, Event } from '@blakron/core';
 import { PropertyEvent } from '../events/PropertyEvent.js';
 import type { State } from '../states/State.js';
 import type { Component } from './Component.js';
@@ -33,10 +33,17 @@ export class Skin extends EventDispatcher {
 	 * The visual children managed by this skin.
 	 * Set by the EXML compiler via `elementsContent = [...]`.
 	 */
-	$elementsContent: DisplayObject[] = [];
+	_elementsContent: DisplayObject[] = [];
 
 	set elementsContent(value: DisplayObject[]) {
-		this.$elementsContent = value ?? [];
+		this._elementsContent = value ?? [];
+	}
+
+	/**
+	 * Get a skin part by name. Used by Component to bind parts.
+	 */
+	getPart(name: string): unknown {
+		return (this as Record<string, unknown>)[name];
 	}
 
 	// ── Host component ────────────────────────────────────────────────────
@@ -51,7 +58,7 @@ export class Skin extends EventDispatcher {
 		if (this._hostComponent === value) return;
 
 		if (this._hostComponent) {
-			this._hostComponent.removeEventListener('addedToStage', this._onHostAddedToStage);
+			this._hostComponent.removeEventListener(Event.ADDED_TO_STAGE, this._onHostAddedToStage);
 		}
 
 		this._hostComponent = value;
@@ -62,7 +69,7 @@ export class Skin extends EventDispatcher {
 				if (value.stage) {
 					this._initializeStates();
 				} else {
-					value.once('addedToStage', this._onHostAddedToStage);
+					value.once(Event.ADDED_TO_STAGE, this._onHostAddedToStage);
 				}
 			}
 		}

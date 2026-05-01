@@ -3,6 +3,7 @@ import { UIComponentImpl, isUIComponent } from '../core/UIComponent.js';
 import { BasicLayout } from '../layouts/BasicLayout.js';
 import { getTheme } from '../core/Theme.js';
 import type { IUIComponent } from '../core/IUIComponent.js';
+import type { ILayoutTarget } from '../layouts/ILayoutTarget.js';
 import type { Skin } from './Skin.js';
 
 /**
@@ -14,39 +15,7 @@ import type { Skin } from './Skin.js';
  * 3. Override `partRemoved()` to clean up skin part bindings.
  * 4. Override `createChildren()` to perform one-time initialization.
  */
-export class Component extends Sprite implements IUIComponent {
-	// UIComponent mixin declarations
-	declare $ui: Record<number, number | boolean>;
-	declare $includeInLayout: boolean;
-	declare nestLevel: number;
-	declare includeInLayout: boolean;
-	declare left: number | string;
-	declare right: number | string;
-	declare top: number | string;
-	declare bottom: number | string;
-	declare horizontalCenter: number | string;
-	declare verticalCenter: number | string;
-	declare percentWidth: number;
-	declare percentHeight: number;
-	declare explicitWidth: number;
-	declare explicitHeight: number;
-	declare minWidth: number;
-	declare maxWidth: number;
-	declare minHeight: number;
-	declare maxHeight: number;
-	declare setMeasuredSize: (w: number, h: number) => void;
-	declare invalidateProperties: () => void;
-	declare validateProperties: () => void;
-	declare invalidateSize: () => void;
-	declare validateSize: (recursive?: boolean) => void;
-	declare invalidateDisplayList: () => void;
-	declare validateDisplayList: () => void;
-	declare validateNow: () => void;
-	declare setLayoutBoundsSize: (lw: number, lh: number) => void;
-	declare setLayoutBoundsPosition: (x: number, y: number) => void;
-	declare getLayoutBounds: (bounds: Rectangle) => void;
-	declare getPreferredBounds: (bounds: Rectangle) => void;
-
+export class Component extends Sprite implements IUIComponent, ILayoutTarget {
 	// ── Component state ───────────────────────────────────────────────────
 
 	private _hostComponentKey: string | null = null;
@@ -63,7 +32,7 @@ export class Component extends Sprite implements IUIComponent {
 
 	constructor() {
 		super();
-		UIComponentImpl.call(this as never);
+		applyUIComponentMixin(this);
 		this.touchEnabled = true;
 	}
 
@@ -103,7 +72,7 @@ export class Component extends Sprite implements IUIComponent {
 	/**
 	 * @internal Called by Theme when it resolves a default skin name.
 	 */
-	$applySkinName(skinName: string): void {
+	_applySkinName(skinName: string): void {
 		this._skinName = skinName;
 		this._parseSkinName();
 	}
@@ -149,7 +118,7 @@ export class Component extends Sprite implements IUIComponent {
 					this.setSkinPart(partName, null);
 				}
 			}
-			for (const child of oldSkin.$elementsContent) {
+			for (const child of oldSkin._elementsContent) {
 				if (child.parent === this) this.removeChild(child);
 			}
 			oldSkin.hostComponent = null;
@@ -160,12 +129,12 @@ export class Component extends Sprite implements IUIComponent {
 		// Attach new skin
 		if (skin) {
 			for (const partName of skin.skinParts) {
-				const instance = (skin as unknown as Record<string, unknown>)[partName];
+				const instance = skin.getPart(partName);
 				if (instance) this.setSkinPart(partName, instance);
 			}
 			// Add skin children in reverse so index 0 ends up at the bottom
-			for (let i = skin.$elementsContent.length - 1; i >= 0; i--) {
-				this.addChildAt(skin.$elementsContent[i], 0);
+			for (let i = skin._elementsContent.length - 1; i >= 0; i--) {
+				this.addChildAt(skin._elementsContent[i], 0);
 			}
 			skin.hostComponent = this;
 		}
@@ -255,7 +224,7 @@ export class Component extends Sprite implements IUIComponent {
 			const theme = getTheme();
 			if (theme) {
 				const skinName = theme.getSkinName(this);
-				if (skinName) this.$applySkinName(skinName);
+				if (skinName) this._applySkinName(skinName);
 			}
 		}
 	}
@@ -273,40 +242,51 @@ export class Component extends Sprite implements IUIComponent {
 	}
 
 	protected measure(): void {
-		// BasicLayout measurement for any direct children
-		_basicLayout.measure.call({ $target: this } as never);
+		_basicLayout.target = this;
+		_basicLayout.measure();
+		_basicLayout.target = null;
 
 		const skin = this._skin;
 		if (!skin) return;
 
-		const v = this.$ui;
-		const mwKey = 16; // K.measuredWidth
-		const mhKey = 17; // K.measuredHeight
+		// skin.width/height/min/max override the measured size from layout
+		const bounds = new Rectangle();
+		this.getPreferredBounds(bounds);
+		let mw = bounds.width;
+		let mh = bounds.height;
 
 		if (!isNaN(skin.width)) {
-			v[mwKey] = skin.width;
+			mw = skin.width;
 		} else {
-			v[mwKey] = Math.max(Math.min(v[mwKey] as number, skin.maxWidth), skin.minWidth);
+			mw = Math.max(Math.min(mw, skin.maxWidth), skin.minWidth);
 		}
 		if (!isNaN(skin.height)) {
-			v[mhKey] = skin.height;
+			mh = skin.height;
 		} else {
-			v[mhKey] = Math.max(Math.min(v[mhKey] as number, skin.maxHeight), skin.minHeight);
+			mh = Math.max(Math.min(mh, skin.maxHeight), skin.minHeight);
 		}
+		this.setMeasuredSize(mw, mh);
 	}
 
 	protected updateDisplayList(w: number, h: number): void {
-		_basicLayout.updateDisplayList.call({ $target: this } as never, w, h);
+		_basicLayout.target = this;
+		_basicLayout.updateDisplayList(w, h);
+		_basicLayout.target = null;
 	}
 
 	protected _invalidateParentLayout(): void {
 		const parent = this.parent;
-		if (!parent || !this.$includeInLayout || !isUIComponent(parent)) return;
+		if (!parent || !this.includeInLayout || !isUIComponent(parent)) return;
 		parent.invalidateSize();
 		parent.invalidateDisplayList();
 	}
 
 	// ── Child hooks ───────────────────────────────────────────────────────
+
+	setContentSize(_w: number, _h: number): void {
+		// Component doesn't expose contentWidth/contentHeight like Group,
+		// but the method is required by ILayoutTarget for layout algorithms.
+	}
 
 	override childAdded(_child: unknown, _index: number): void {
 		this.invalidateSize();
@@ -317,30 +297,56 @@ export class Component extends Sprite implements IUIComponent {
 		this.invalidateSize();
 		this.invalidateDisplayList();
 	}
+	// ── IUIComponent (injected by mixin) ──────────────────────────────────
+
+	declare includeInLayout: boolean;
+	declare left: number | string;
+	declare right: number | string;
+	declare top: number | string;
+	declare bottom: number | string;
+	declare horizontalCenter: number | string;
+	declare verticalCenter: number | string;
+	declare percentWidth: number;
+	declare percentHeight: number;
+	declare explicitWidth: number;
+	declare explicitHeight: number;
+	declare minWidth: number;
+	declare maxWidth: number;
+	declare minHeight: number;
+	declare maxHeight: number;
+	declare setMeasuredSize: (w: number, h: number) => void;
+	declare invalidateProperties: () => void;
+	declare validateProperties: () => void;
+	declare invalidateSize: () => void;
+	declare validateSize: (recursive?: boolean) => void;
+	declare invalidateDisplayList: () => void;
+	declare validateDisplayList: () => void;
+	declare validateNow: () => void;
+	declare setLayoutBoundsSize: (lw: number, lh: number) => void;
+	declare setLayoutBoundsPosition: (x: number, y: number) => void;
+	declare getLayoutBounds: (bounds: Rectangle) => void;
+	declare getPreferredBounds: (bounds: Rectangle) => void;
 }
 
 // Shared BasicLayout instance for Component measurement/layout
 const _basicLayout = new BasicLayout();
 
-// Apply UIComponentImpl mixin to Component
-applyUIComponentMixin(Component);
-
-function applyUIComponentMixin(TargetClass: typeof Component): void {
-	const src = UIComponentImpl.prototype as unknown as Record<string, unknown>;
-	const dst = TargetClass.prototype as unknown as Record<string, unknown>;
+function applyUIComponentMixin(instance: Component): void {
+	UIComponentImpl.call(instance as never);
+	const src = UIComponentImpl.prototype;
+	const dst = Object.getPrototypeOf(instance) as typeof Component.prototype;
 	for (const key of Object.getOwnPropertyNames(src)) {
 		if (key === 'constructor') continue;
-		// Don't overwrite methods the Component class explicitly defines
-		if (dst[key] !== undefined && !isEmptyFn(dst, key)) continue;
+		if (key in dst && !isEmptyFn(dst, key)) continue;
 		const desc = Object.getOwnPropertyDescriptor(src, key)!;
 		Object.defineProperty(dst, key, desc);
 	}
-	dst.$super = Sprite.prototype;
 }
 
-function isEmptyFn(proto: Record<string, unknown>, key: string): boolean {
-	if (typeof proto[key] !== 'function') return false;
-	const body = String(proto[key]);
+function isEmptyFn(proto: object, key: string): boolean {
+	const val = (proto as Record<string, unknown>)[key];
+	if (typeof val !== 'function') return false;
+	const body = String(val);
 	const start = body.indexOf('{');
 	const end = body.lastIndexOf('}');
 	return body.substring(start + 1, end).trim() === '';

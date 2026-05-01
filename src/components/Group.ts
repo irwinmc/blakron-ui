@@ -2,6 +2,7 @@ import { Sprite, Rectangle } from '@blakron/core';
 import { UIComponentImpl, isUIComponent } from '../core/UIComponent.js';
 import type { LayoutBase } from '../layouts/LayoutBase.js';
 import type { IUIComponent } from '../core/IUIComponent.js';
+import type { ILayoutTarget } from '../layouts/ILayoutTarget.js';
 
 /**
  * Group is the base container for UI components.
@@ -11,49 +12,14 @@ import type { IUIComponent } from '../core/IUIComponent.js';
  * Extends Sprite (which extends DisplayObjectContainer) so it can hold
  * display children, while UIComponentImpl provides the layout contract.
  */
-export class Group extends Sprite implements IUIComponent {
-	// Re-declare all IUIComponent members — they are mixed in from UIComponentImpl
-	// via the prototype copy in the constructor.
-	declare $ui: Record<number, number | boolean>;
-	declare $includeInLayout: boolean;
-	declare nestLevel: number;
-
-	declare includeInLayout: boolean;
-	declare left: number | string;
-	declare right: number | string;
-	declare top: number | string;
-	declare bottom: number | string;
-	declare horizontalCenter: number | string;
-	declare verticalCenter: number | string;
-	declare percentWidth: number;
-	declare percentHeight: number;
-	declare explicitWidth: number;
-	declare explicitHeight: number;
-	declare minWidth: number;
-	declare maxWidth: number;
-	declare minHeight: number;
-	declare maxHeight: number;
-	declare setMeasuredSize: (w: number, h: number) => void;
-	declare invalidateProperties: () => void;
-	declare validateProperties: () => void;
-	declare invalidateSize: () => void;
-	declare validateSize: (recursive?: boolean) => void;
-	declare invalidateDisplayList: () => void;
-	declare validateDisplayList: () => void;
-	declare validateNow: () => void;
-	declare setLayoutBoundsSize: (lw: number, lh: number) => void;
-	declare setLayoutBoundsPosition: (x: number, y: number) => void;
-	declare getLayoutBounds: (bounds: Rectangle) => void;
-	declare getPreferredBounds: (bounds: Rectangle) => void;
-
+export class Group extends Sprite implements IUIComponent, ILayoutTarget {
 	private _layout: LayoutBase | null = null;
 	private _contentWidth = 0;
 	private _contentHeight = 0;
 
 	constructor() {
 		super();
-		// Apply UIComponent mixin
-		UIComponentImpl.call(this as never);
+		applyUIComponentMixin(this);
 	}
 
 	// ── Layout ────────────────────────────────────────────────────────────
@@ -113,26 +79,56 @@ export class Group extends Sprite implements IUIComponent {
 		this.invalidateDisplayList();
 		if (this._layout) this._layout.elementRemoved(index);
 	}
+
+	// ── IUIComponent (injected by mixin) ──────────────────────────────────
+	// These are implemented at runtime by applyUIComponentMixin().
+	// TypeScript knows about them via `implements IUIComponent`.
+
+	declare includeInLayout: boolean;
+	declare left: number | string;
+	declare right: number | string;
+	declare top: number | string;
+	declare bottom: number | string;
+	declare horizontalCenter: number | string;
+	declare verticalCenter: number | string;
+	declare percentWidth: number;
+	declare percentHeight: number;
+	declare explicitWidth: number;
+	declare explicitHeight: number;
+	declare minWidth: number;
+	declare maxWidth: number;
+	declare minHeight: number;
+	declare maxHeight: number;
+	declare setMeasuredSize: (w: number, h: number) => void;
+	declare invalidateProperties: () => void;
+	declare validateProperties: () => void;
+	declare invalidateSize: () => void;
+	declare validateSize: (recursive?: boolean) => void;
+	declare invalidateDisplayList: () => void;
+	declare validateDisplayList: () => void;
+	declare validateNow: () => void;
+	declare setLayoutBoundsSize: (lw: number, lh: number) => void;
+	declare setLayoutBoundsPosition: (x: number, y: number) => void;
+	declare getLayoutBounds: (bounds: Rectangle) => void;
+	declare getPreferredBounds: (bounds: Rectangle) => void;
 }
 
-// Apply UIComponentImpl prototype methods to Group
-applyUIComponentMixin(Group);
-
-function applyUIComponentMixin(TargetClass: typeof Group): void {
-	const src = UIComponentImpl.prototype as unknown as Record<string, unknown>;
-	const dst = TargetClass.prototype as unknown as Record<string, unknown>;
+function applyUIComponentMixin(instance: Group): void {
+	UIComponentImpl.call(instance as never);
+	const src = UIComponentImpl.prototype;
+	const dst = Object.getPrototypeOf(instance) as typeof Group.prototype;
 	for (const key of Object.getOwnPropertyNames(src)) {
 		if (key === 'constructor') continue;
-		if (dst[key] !== undefined && !isEmptyFn(dst, key)) continue;
+		if (key in dst && !isEmptyFn(dst, key)) continue;
 		const desc = Object.getOwnPropertyDescriptor(src, key)!;
 		Object.defineProperty(dst, key, desc);
 	}
-	dst.$super = Sprite.prototype;
 }
 
-function isEmptyFn(proto: Record<string, unknown>, key: string): boolean {
-	if (typeof proto[key] !== 'function') return false;
-	const body = String(proto[key]);
+function isEmptyFn(proto: object, key: string): boolean {
+	const val = (proto as Record<string, unknown>)[key];
+	if (typeof val !== 'function') return false;
+	const body = String(val);
 	const start = body.indexOf('{');
 	const end = body.lastIndexOf('}');
 	return body.substring(start + 1, end).trim() === '';

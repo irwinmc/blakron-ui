@@ -89,7 +89,7 @@ export class Theme extends EventDispatcher {
 			if (!client.skinNameExplicitlySet) {
 				const skinName = this.getSkinName(client);
 				if (skinName) {
-					client.$applySkinName(skinName);
+					client._applySkinName(skinName);
 				}
 			}
 		}
@@ -121,11 +121,12 @@ export class Theme extends EventDispatcher {
 	}
 
 	private _findSkinName(proto: unknown): string {
-		if (!proto) return '';
-		const key = (proto as Record<string, unknown>)['__class__'] as string | undefined;
-		if (!key) return '';
+		if (!proto || proto === Object.prototype) return '';
+		const ctor = (proto as { constructor?: { name?: string } }).constructor;
+		const key = ctor?.name;
+		if (!key || key === 'Component') return '';
 		const name = this._skinMap[key];
-		if (name || key === 'eui.Component') return name ?? '';
+		if (name) return name;
 		return this._findSkinName(Object.getPrototypeOf(proto));
 	}
 

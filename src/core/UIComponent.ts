@@ -60,12 +60,10 @@ function formatRelative(value: number | string, total: number): number {
  * or call `implementUIComponent(MyClass)` to apply it to a custom class.
  */
 export class UIComponentImpl extends DisplayObject implements IUIComponent {
-	/** @internal packed state bag — avoids per-property field overhead */
-	declare $ui: Record<number, number | boolean>;
-	declare $includeInLayout: boolean;
-
-	/** Nest depth in the display tree — set by Stage/DisplayObjectContainer. */
-	declare nestLevel: number;
+	// Internal state bag — packed numeric keys for compact storage.
+	// Accessed via the K enum. Not part of the public API.
+	protected _ui!: Record<number, number | boolean>;
+	protected _includeInLayout!: boolean;
 
 	constructor() {
 		super();
@@ -73,7 +71,7 @@ export class UIComponentImpl extends DisplayObject implements IUIComponent {
 	}
 
 	private _initUIValues(): void {
-		this.$ui = {
+		this._ui = {
 			[K.left]: NaN,
 			[K.right]: NaN,
 			[K.top]: NaN,
@@ -105,7 +103,7 @@ export class UIComponentImpl extends DisplayObject implements IUIComponent {
 			[K.layoutHeightExplicitlySet]: false,
 			[K.initialized]: false,
 		};
-		this.$includeInLayout = true;
+		this._includeInLayout = true;
 		this.touchEnabled = true;
 	}
 
@@ -119,7 +117,7 @@ export class UIComponentImpl extends DisplayObject implements IUIComponent {
 
 	/** Apply pending property changes. Override to react to invalidateProperties(). */
 	protected commitProperties(): void {
-		const v = this.$ui;
+		const v = this._ui;
 		if (v[K.oldWidth] !== v[K.width] || v[K.oldHeight] !== v[K.height]) {
 			this.dispatchEventWith(Event.RESIZE);
 			v[K.oldWidth] = v[K.width];
@@ -143,7 +141,7 @@ export class UIComponentImpl extends DisplayObject implements IUIComponent {
 	override onAddToStage(stage: unknown, nestLevel: number): void {
 		super.onAddToStage(stage as never, nestLevel);
 		this._checkInvalidateFlag();
-		const v = this.$ui;
+		const v = this._ui;
 		if (!v[K.initialized]) {
 			v[K.initialized] = true;
 			this.createChildren();
@@ -153,7 +151,7 @@ export class UIComponentImpl extends DisplayObject implements IUIComponent {
 	}
 
 	private _checkInvalidateFlag(): void {
-		const v = this.$ui;
+		const v = this._ui;
 		if (v[K.invalidatePropertiesFlag]) validator.invalidateProperties(this as never);
 		if (v[K.invalidateSizeFlag]) validator.invalidateSize(this as never);
 		if (v[K.invalidateDisplayListFlag]) validator.invalidateDisplayList(this as never);
@@ -162,97 +160,97 @@ export class UIComponentImpl extends DisplayObject implements IUIComponent {
 	// ── includeInLayout ───────────────────────────────────────────────────
 
 	get includeInLayout(): boolean {
-		return this.$includeInLayout;
+		return this._includeInLayout;
 	}
 	set includeInLayout(value: boolean) {
 		value = !!value;
-		if (this.$includeInLayout === value) return;
-		this.$includeInLayout = true;
+		if (this._includeInLayout === value) return;
+		this._includeInLayout = true;
 		this._invalidateParentLayout();
-		this.$includeInLayout = value;
+		this._includeInLayout = value;
 	}
 
 	// ── Anchor constraints ────────────────────────────────────────────────
 
 	get left(): number | string {
-		return this.$ui[K.left] as number;
+		return this._ui[K.left] as number;
 	}
 	set left(value: number | string) {
 		const v = typeof value === 'number' || !value ? +value : String(value).trim();
-		if (this.$ui[K.left] === v) return;
-		this.$ui[K.left] = v as number;
+		if (this._ui[K.left] === v) return;
+		this._ui[K.left] = v as number;
 		this._invalidateParentLayout();
 	}
 
 	get right(): number | string {
-		return this.$ui[K.right] as number;
+		return this._ui[K.right] as number;
 	}
 	set right(value: number | string) {
 		const v = typeof value === 'number' || !value ? +value : String(value).trim();
-		if (this.$ui[K.right] === v) return;
-		this.$ui[K.right] = v as number;
+		if (this._ui[K.right] === v) return;
+		this._ui[K.right] = v as number;
 		this._invalidateParentLayout();
 	}
 
 	get top(): number | string {
-		return this.$ui[K.top] as number;
+		return this._ui[K.top] as number;
 	}
 	set top(value: number | string) {
 		const v = typeof value === 'number' || !value ? +value : String(value).trim();
-		if (this.$ui[K.top] === v) return;
-		this.$ui[K.top] = v as number;
+		if (this._ui[K.top] === v) return;
+		this._ui[K.top] = v as number;
 		this._invalidateParentLayout();
 	}
 
 	get bottom(): number | string {
-		return this.$ui[K.bottom] as number;
+		return this._ui[K.bottom] as number;
 	}
 	set bottom(value: number | string) {
 		const v = typeof value === 'number' || !value ? +value : String(value).trim();
-		if (this.$ui[K.bottom] === v) return;
-		this.$ui[K.bottom] = v as number;
+		if (this._ui[K.bottom] === v) return;
+		this._ui[K.bottom] = v as number;
 		this._invalidateParentLayout();
 	}
 
 	get horizontalCenter(): number | string {
-		return this.$ui[K.horizontalCenter] as number;
+		return this._ui[K.horizontalCenter] as number;
 	}
 	set horizontalCenter(value: number | string) {
 		const v = typeof value === 'number' || !value ? +value : String(value).trim();
-		if (this.$ui[K.horizontalCenter] === v) return;
-		this.$ui[K.horizontalCenter] = v as number;
+		if (this._ui[K.horizontalCenter] === v) return;
+		this._ui[K.horizontalCenter] = v as number;
 		this._invalidateParentLayout();
 	}
 
 	get verticalCenter(): number | string {
-		return this.$ui[K.verticalCenter] as number;
+		return this._ui[K.verticalCenter] as number;
 	}
 	set verticalCenter(value: number | string) {
 		const v = typeof value === 'number' || !value ? +value : String(value).trim();
-		if (this.$ui[K.verticalCenter] === v) return;
-		this.$ui[K.verticalCenter] = v as number;
+		if (this._ui[K.verticalCenter] === v) return;
+		this._ui[K.verticalCenter] = v as number;
 		this._invalidateParentLayout();
 	}
 
 	// ── Percentage sizing ─────────────────────────────────────────────────
 
 	get percentWidth(): number {
-		return this.$ui[K.percentWidth] as number;
+		return this._ui[K.percentWidth] as number;
 	}
 	set percentWidth(value: number) {
 		value = +value;
-		if (this.$ui[K.percentWidth] === value) return;
-		this.$ui[K.percentWidth] = value;
+		if (this._ui[K.percentWidth] === value) return;
+		this._ui[K.percentWidth] = value;
 		this._invalidateParentLayout();
 	}
 
 	get percentHeight(): number {
-		return this.$ui[K.percentHeight] as number;
+		return this._ui[K.percentHeight] as number;
 	}
 	set percentHeight(value: number) {
 		value = +value;
-		if (this.$ui[K.percentHeight] === value) return;
-		this.$ui[K.percentHeight] = value;
+		if (this._ui[K.percentHeight] === value) return;
+		this._ui[K.percentHeight] = value;
 		this._invalidateParentLayout();
 	}
 
@@ -263,11 +261,11 @@ export class UIComponentImpl extends DisplayObject implements IUIComponent {
 
 	override get width(): number {
 		this._validateSizeNow();
-		return this.$ui[K.width] as number;
+		return this._ui[K.width] as number;
 	}
 	override set width(value: number) {
 		value = +value;
-		const v = this.$ui;
+		const v = this._ui;
 		if (value < 0 || (v[K.width] === value && this.explicitWidth === value)) return;
 		this.explicitWidth = value;
 		if (isNaN(value)) this.invalidateSize();
@@ -278,11 +276,11 @@ export class UIComponentImpl extends DisplayObject implements IUIComponent {
 
 	override get height(): number {
 		this._validateSizeNow();
-		return this.$ui[K.height] as number;
+		return this._ui[K.height] as number;
 	}
 	override set height(value: number) {
 		value = +value;
-		const v = this.$ui;
+		const v = this._ui;
 		if (value < 0 || (v[K.height] === value && this.explicitHeight === value)) return;
 		this.explicitHeight = value;
 		if (isNaN(value)) this.invalidateSize();
@@ -292,45 +290,45 @@ export class UIComponentImpl extends DisplayObject implements IUIComponent {
 	}
 
 	get minWidth(): number {
-		return this.$ui[K.minWidth] as number;
+		return this._ui[K.minWidth] as number;
 	}
 	set minWidth(value: number) {
 		value = +value || 0;
-		if (value < 0 || this.$ui[K.minWidth] === value) return;
-		this.$ui[K.minWidth] = value;
+		if (value < 0 || this._ui[K.minWidth] === value) return;
+		this._ui[K.minWidth] = value;
 		this.invalidateSize();
 		this._invalidateParentLayout();
 	}
 
 	get maxWidth(): number {
-		return this.$ui[K.maxWidth] as number;
+		return this._ui[K.maxWidth] as number;
 	}
 	set maxWidth(value: number) {
 		value = +value || 0;
-		if (value < 0 || this.$ui[K.maxWidth] === value) return;
-		this.$ui[K.maxWidth] = value;
+		if (value < 0 || this._ui[K.maxWidth] === value) return;
+		this._ui[K.maxWidth] = value;
 		this.invalidateSize();
 		this._invalidateParentLayout();
 	}
 
 	get minHeight(): number {
-		return this.$ui[K.minHeight] as number;
+		return this._ui[K.minHeight] as number;
 	}
 	set minHeight(value: number) {
 		value = +value || 0;
-		if (value < 0 || this.$ui[K.minHeight] === value) return;
-		this.$ui[K.minHeight] = value;
+		if (value < 0 || this._ui[K.minHeight] === value) return;
+		this._ui[K.minHeight] = value;
 		this.invalidateSize();
 		this._invalidateParentLayout();
 	}
 
 	get maxHeight(): number {
-		return this.$ui[K.maxHeight] as number;
+		return this._ui[K.maxHeight] as number;
 	}
 	set maxHeight(value: number) {
 		value = +value || 0;
-		if (value < 0 || this.$ui[K.maxHeight] === value) return;
-		this.$ui[K.maxHeight] = value;
+		if (value < 0 || this._ui[K.maxHeight] === value) return;
+		this._ui[K.maxHeight] = value;
 		this.invalidateSize();
 		this._invalidateParentLayout();
 	}
@@ -338,12 +336,12 @@ export class UIComponentImpl extends DisplayObject implements IUIComponent {
 	// ── Invalidation cycle ────────────────────────────────────────────────
 
 	setMeasuredSize(width: number, height: number): void {
-		this.$ui[K.measuredWidth] = Math.ceil(+width || 0);
-		this.$ui[K.measuredHeight] = Math.ceil(+height || 0);
+		this._ui[K.measuredWidth] = Math.ceil(+width || 0);
+		this._ui[K.measuredHeight] = Math.ceil(+height || 0);
 	}
 
 	invalidateProperties(): void {
-		const v = this.$ui;
+		const v = this._ui;
 		if (!v[K.invalidatePropertiesFlag]) {
 			v[K.invalidatePropertiesFlag] = true;
 			if (this.stage) validator.invalidateProperties(this as never);
@@ -351,7 +349,7 @@ export class UIComponentImpl extends DisplayObject implements IUIComponent {
 	}
 
 	validateProperties(): void {
-		const v = this.$ui;
+		const v = this._ui;
 		if (v[K.invalidatePropertiesFlag]) {
 			this.commitProperties();
 			v[K.invalidatePropertiesFlag] = false;
@@ -359,7 +357,7 @@ export class UIComponentImpl extends DisplayObject implements IUIComponent {
 	}
 
 	invalidateSize(): void {
-		const v = this.$ui;
+		const v = this._ui;
 		if (!v[K.invalidateSizeFlag]) {
 			v[K.invalidateSizeFlag] = true;
 			if (this.stage) validator.invalidateSize(this as never);
@@ -373,7 +371,7 @@ export class UIComponentImpl extends DisplayObject implements IUIComponent {
 				if (child && isUIComponent(child)) child.validateSize(true);
 			}
 		}
-		const v = this.$ui;
+		const v = this._ui;
 		if (v[K.invalidateSizeFlag]) {
 			if (this._measureSizes()) {
 				this.invalidateDisplayList();
@@ -384,7 +382,7 @@ export class UIComponentImpl extends DisplayObject implements IUIComponent {
 	}
 
 	invalidateDisplayList(): void {
-		const v = this.$ui;
+		const v = this._ui;
 		if (!v[K.invalidateDisplayListFlag]) {
 			v[K.invalidateDisplayListFlag] = true;
 			if (this.stage) validator.invalidateDisplayList(this as never);
@@ -392,7 +390,7 @@ export class UIComponentImpl extends DisplayObject implements IUIComponent {
 	}
 
 	validateDisplayList(): void {
-		const v = this.$ui;
+		const v = this._ui;
 		if (v[K.invalidateDisplayListFlag]) {
 			this._updateFinalSize();
 			this.updateDisplayList(v[K.width] as number, v[K.height] as number);
@@ -411,7 +409,7 @@ export class UIComponentImpl extends DisplayObject implements IUIComponent {
 		layoutHeight = +layoutHeight;
 		if (layoutWidth < 0 || layoutHeight < 0) return;
 
-		const v = this.$ui;
+		const v = this._ui;
 		const maxW = v[K.maxWidth] as number;
 		const maxH = v[K.maxHeight] as number;
 		const minW = Math.min(v[K.minWidth] as number, maxW);
@@ -473,17 +471,17 @@ export class UIComponentImpl extends DisplayObject implements IUIComponent {
 	}
 
 	getLayoutBounds(bounds: Rectangle): void {
-		const v = this.$ui;
+		const v = this._ui;
 		const w = (v[K.layoutWidthExplicitlySet] as boolean)
 			? (v[K.width] as number)
 			: isNaN(this.explicitWidth)
 				? (v[K.measuredWidth] as number)
-				: (this.explicitWidth);
+				: this.explicitWidth;
 		const h = (v[K.layoutHeightExplicitlySet] as boolean)
 			? (v[K.height] as number)
 			: isNaN(this.explicitHeight)
 				? (v[K.measuredHeight] as number)
-				: (this.explicitHeight);
+				: this.explicitHeight;
 		this._applyMatrix(bounds, w, h);
 	}
 
@@ -494,17 +492,17 @@ export class UIComponentImpl extends DisplayObject implements IUIComponent {
 	// ── Private helpers ───────────────────────────────────────────────────
 
 	private _preferredUWidth(): number {
-		const v = this.$ui;
-		return isNaN(this.explicitWidth) ? (v[K.measuredWidth] as number) : (this.explicitWidth);
+		const v = this._ui;
+		return isNaN(this.explicitWidth) ? (v[K.measuredWidth] as number) : this.explicitWidth;
 	}
 
 	private _preferredUHeight(): number {
-		const v = this.$ui;
-		return isNaN(this.explicitHeight) ? (v[K.measuredHeight] as number) : (this.explicitHeight);
+		const v = this._ui;
+		return isNaN(this.explicitHeight) ? (v[K.measuredHeight] as number) : this.explicitHeight;
 	}
 
 	private _setActualSize(w: number, h: number): void {
-		const v = this.$ui;
+		const v = this._ui;
 		let changed = false;
 		if (v[K.width] !== w) {
 			v[K.width] = w;
@@ -526,22 +524,22 @@ export class UIComponentImpl extends DisplayObject implements IUIComponent {
 	}
 
 	private _updateFinalSize(): void {
-		const v = this.$ui;
+		const v = this._ui;
 		const w = (v[K.layoutWidthExplicitlySet] as boolean)
 			? (v[K.width] as number)
 			: isNaN(this.explicitWidth)
 				? (v[K.measuredWidth] as number)
-				: (this.explicitWidth);
+				: this.explicitWidth;
 		const h = (v[K.layoutHeightExplicitlySet] as boolean)
 			? (v[K.height] as number)
 			: isNaN(this.explicitHeight)
 				? (v[K.measuredHeight] as number)
-				: (this.explicitHeight);
+				: this.explicitHeight;
 		this._setActualSize(w, h);
 	}
 
 	private _measureSizes(): boolean {
-		const v = this.$ui;
+		const v = this._ui;
 		if (!v[K.invalidateSizeFlag]) return false;
 		if (isNaN(this.explicitWidth) || isNaN(this.explicitHeight)) {
 			this.measure();
@@ -566,7 +564,7 @@ export class UIComponentImpl extends DisplayObject implements IUIComponent {
 
 	protected _invalidateParentLayout(): void {
 		const parent = this.parent;
-		if (!parent || !this.$includeInLayout || !isUIComponent(parent)) return;
+		if (!parent || !this._includeInLayout || !isUIComponent(parent)) return;
 		parent.invalidateSize();
 		parent.invalidateDisplayList();
 	}
@@ -607,8 +605,10 @@ export class UIComponentImpl extends DisplayObject implements IUIComponent {
 
 // ── Type guard ────────────────────────────────────────────────────────────────
 
+// Checks for the _ui bag which is present on any class that has applied the UIComponent mixin
+// (Group, Component, and any custom subclass). instanceof UIComponentImpl alone would miss them.
 export function isUIComponent(obj: unknown): obj is IUIComponent {
-	return obj instanceof UIComponentImpl;
+	return obj != null && typeof obj === 'object' && '_ui' in obj && '_includeInLayout' in obj;
 }
 
 // ── fitBounds helper (replaces MatrixUtil.fitBounds) ─────────────────────────

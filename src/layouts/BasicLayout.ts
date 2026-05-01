@@ -18,7 +18,7 @@ export class BasicLayout extends LayoutBase {
 	}
 
 	override measure(): void {
-		const target = this.$target;
+		const target = this.target;
 		if (!target) return;
 
 		let width = 0;
@@ -69,7 +69,7 @@ export class BasicLayout extends LayoutBase {
 	}
 
 	override updateDisplayList(unscaledWidth: number, unscaledHeight: number): void {
-		const target = this.$target;
+		const target = this.target;
 		if (!target) return;
 
 		let maxX = 0;

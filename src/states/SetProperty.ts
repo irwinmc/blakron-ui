@@ -32,9 +32,8 @@ export class SetProperty implements IOverride {
 	apply(_host: Component, skin: Skin): void {
 		const obj = this._resolve(skin);
 		if (!obj) return;
-		const rec = obj as Record<string, unknown>;
-		this._oldValue = rec[this.name];
-		rec[this.name] = this.value;
+		this._oldValue = getProp(obj, this.name);
+		setProp(obj, this.name, this.value);
 		this._applied = true;
 	}
 
@@ -42,12 +41,21 @@ export class SetProperty implements IOverride {
 		if (!this._applied) return;
 		const obj = this._resolve(skin);
 		if (!obj) return;
-		(obj as Record<string, unknown>)[this.name] = this._oldValue;
+		setProp(obj, this.name, this._oldValue);
 		this._applied = false;
 	}
 
-	private _resolve(skin: Skin): unknown {
+	private _resolve(skin: Skin): object | null {
 		if (!this.target) return skin;
-		return (skin as unknown as Record<string, unknown>)[this.target];
+		const part = skin.getPart(this.target);
+		return part != null && typeof part === 'object' ? part : null;
 	}
+}
+
+function getProp(obj: object, key: string): unknown {
+	return (obj as Record<string, unknown>)[key];
+}
+
+function setProp(obj: object, key: string, value: unknown): void {
+	(obj as Record<string, unknown>)[key] = value;
 }

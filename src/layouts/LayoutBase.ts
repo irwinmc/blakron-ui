@@ -1,24 +1,12 @@
 import { EventDispatcher } from '@blakron/core';
-import type { Group } from '../components/Group.js';
+import type { ILayoutTarget } from './ILayoutTarget.js';
 
 /**
  * Base class for all layout algorithms.
  * Subclasses must implement `measure()` and `updateDisplayList()`.
  */
 export abstract class LayoutBase extends EventDispatcher {
-	/**
-	 * @internal
-	 */
-	$target: Group | null = null;
-
-	get target(): Group | null {
-		return this.$target;
-	}
-	set target(value: Group | null) {
-		if (this.$target === value) return;
-		this.$target = value;
-		this.clearVirtualLayoutCache();
-	}
+	target: ILayoutTarget | null = null;
 
 	// ── Virtual layout ────────────────────────────────────────────────────
 
@@ -33,21 +21,21 @@ export abstract class LayoutBase extends EventDispatcher {
 		this._useVirtualLayout = value;
 		this.dispatchEventWith('useVirtualLayoutChanged');
 		if (!value) this.clearVirtualLayoutCache();
-		if (this.$target) this.$target.invalidateDisplayList();
+		if (this.target) this.target.invalidateDisplayList();
 	}
 
 	// ── Typical element size (for virtual layouts) ────────────────────────
 
-	$typicalWidth = 71;
-	$typicalHeight = 22;
+	typicalWidth = 71;
+	typicalHeight = 22;
 
 	setTypicalSize(width: number, height: number): void {
 		width = +width || 71;
 		height = +height || 22;
-		if (width !== this.$typicalWidth || height !== this.$typicalHeight) {
-			this.$typicalWidth = width;
-			this.$typicalHeight = height;
-			this.$target?.invalidateSize();
+		if (width !== this.typicalWidth || height !== this.typicalHeight) {
+			this.typicalWidth = width;
+			this.typicalHeight = height;
+			this.target?.invalidateSize();
 		}
 	}
 

@@ -1,4 +1,4 @@
-import { DisplayObject } from '@blakron/core';
+import { DisplayObject, DisplayObjectContainer } from '@blakron/core';
 import type { IOverride } from './IOverride.js';
 import type { Component } from '../components/Component.js';
 import type { Skin } from '../components/Skin.js';
@@ -33,26 +33,22 @@ export class AddItems implements IOverride {
 	}
 
 	apply(_host: Component, skin: Skin): void {
-		const skinObj = skin as unknown as Record<string, unknown>;
-		const item = skinObj[this.target] as DisplayObject | undefined;
-		const dest = skinObj[this.destination] as
-			| { addChild?: (c: DisplayObject) => void; addChildAt?: (c: DisplayObject, i: number) => void }
-			| undefined;
-		if (!item || !dest) return;
+		const item = skin.getPart(this.target);
+		const dest = skin.getPart(this.destination);
+		if (!(item instanceof DisplayObject) || !(dest instanceof DisplayObjectContainer)) return;
 
-		if (this.position >= 0 && dest.addChildAt) {
+		if (this.position >= 0) {
 			dest.addChildAt(item, this.position);
-		} else if (dest.addChild) {
+		} else {
 			dest.addChild(item);
 		}
 	}
 
 	remove(_host: Component, skin: Skin): void {
-		const skinObj = skin as unknown as Record<string, unknown>;
-		const item = skinObj[this.target] as DisplayObject | undefined;
-		const dest = skinObj[this.destination] as { removeChild?: (c: DisplayObject) => void } | undefined;
-		if (!item || !dest?.removeChild) return;
-		if (item.parent === (dest as unknown as DisplayObject)) {
+		const item = skin.getPart(this.target);
+		const dest = skin.getPart(this.destination);
+		if (!(item instanceof DisplayObject) || !(dest instanceof DisplayObjectContainer)) return;
+		if (item.parent === dest) {
 			dest.removeChild(item);
 		}
 	}

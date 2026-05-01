@@ -25,15 +25,22 @@ export class SetStateProperty implements IOverride {
 	}
 
 	apply(host: Component, _skin: Skin): void {
-		const rec = host as unknown as Record<string, unknown>;
-		this._oldValue = rec[this.name];
-		rec[this.name] = this.value;
+		this._oldValue = getProp(host, this.name);
+		setProp(host, this.name, this.value);
 		this._applied = true;
 	}
 
 	remove(host: Component, _skin: Skin): void {
 		if (!this._applied) return;
-		(host as unknown as Record<string, unknown>)[this.name] = this._oldValue;
+		setProp(host, this.name, this._oldValue);
 		this._applied = false;
 	}
+}
+
+function getProp(obj: object, key: string): unknown {
+	return (obj as Record<string, unknown>)[key];
+}
+
+function setProp(obj: object, key: string, value: unknown): void {
+	(obj as Record<string, unknown>)[key] = value;
 }

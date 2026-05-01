@@ -1,7 +1,7 @@
-import { EventDispatcher, type DisplayObject } from '@blakron/core';
+import { EventDispatcher, DisplayObjectContainer, type DisplayObject } from '@blakron/core';
 import type { IUIComponent } from './IUIComponent.js';
 
-type QueueClient = IUIComponent & Pick<DisplayObject, 'nestLevel' | 'stage' | 'hashCode'>;
+type QueueClient = IUIComponent & DisplayObject;
 type ValidatorClient = QueueClient;
 
 /**
@@ -339,11 +339,9 @@ class DepthBin {
 	 * Find a direct or indirect child of `ancestor` in this bin.
 	 */
 	findDescendant(ancestor: QueueClient): QueueClient | null {
-		// ancestor must be a DisplayObjectContainer to use contains()
-		const container = ancestor as unknown as { contains?: (child: unknown) => boolean };
-		if (typeof container.contains !== 'function') return null;
+		if (!(ancestor instanceof DisplayObjectContainer)) return null;
 		for (const item of this.items) {
-			if (container.contains(item)) return item;
+			if (ancestor.contains(item)) return item;
 		}
 		return null;
 	}
