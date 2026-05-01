@@ -144,7 +144,7 @@ export class TouchScroll {
 		let totalWeight = CURRENT_VELOCITY_WEIGHT;
 		for (let i = 0; i < len; i++) {
 			const weight = VELOCITY_WEIGHTS[i];
-			sum += pv[0] * weight;
+			sum += pv[i] * weight;
 			totalWeight += weight;
 		}
 

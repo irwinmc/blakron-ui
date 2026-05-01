@@ -1,13 +1,12 @@
 import { TouchEvent, Event, Rectangle } from '@blakron/core';
+import type { IEventDispatcher } from '@blakron/core';
 import { Component } from './Component.js';
 import type { IViewport } from '../core/IViewport.js';
-import type { IUIComponent } from '../core/IUIComponent.js';
 import { ScrollPolicy } from '../core/ScrollPolicy.js';
 import { TouchScroll } from './TouchScroll.js';
 import { HScrollBar } from './HScrollBar.js';
 import { VScrollBar } from './VScrollBar.js';
 import { PropertyEvent } from '../events/PropertyEvent.js';
-import type { IEventDispatcher } from '@blakron/core';
 
 /**
  * Scroller wraps an {@link IViewport} (typically a Group) and provides
@@ -40,10 +39,11 @@ export class Scroller extends Component {
 
 	// Touch tracking
 	private _touchPointID = -1;
-	private _currentTouchPointX = 0;
-	private _currentTouchPointY = 0;
 	private _startTouchPointX = 0;
 	private _startTouchPointY = 0;
+
+	/** Reusable Rectangle for viewport bounds queries. */
+	private static readonly _vpBounds = new Rectangle();
 
 	/** Scroll begin threshold in pixels. */
 	static readonly DEFAULT_THRESHOLD = 8;
@@ -143,10 +143,10 @@ export class Scroller extends Component {
 		const vp = this._viewport;
 		if (!vp) return;
 
-		const vpBounds = new Rectangle();
-		vp.getLayoutBounds(vpBounds);
-		const vpWidth = vpBounds.width;
-		const vpHeight = vpBounds.height;
+		const b = Scroller._vpBounds;
+		vp.getLayoutBounds(b);
+		const vpWidth = b.width;
+		const vpHeight = b.height;
 
 		// Horizontal
 		const hsb = this.horizontalScrollBar;
@@ -203,8 +203,6 @@ export class Scroller extends Component {
 		if (!vp) return;
 
 		this._touchPointID = te.touchPointID;
-		this._currentTouchPointX = te.stageX;
-		this._currentTouchPointY = te.stageY;
 		this._startTouchPointX = te.stageX;
 		this._startTouchPointY = te.stageY;
 
@@ -228,10 +226,10 @@ export class Scroller extends Component {
 				return;
 			}
 			// Start scrolling in the direction with larger movement
-			const vpBounds = new Rectangle();
-			vp.getLayoutBounds(vpBounds);
-			const maxH = Math.max(0, vp.contentWidth - vpBounds.width);
-			const maxV = Math.max(0, vp.contentHeight - vpBounds.height);
+			const tb = Scroller._vpBounds;
+			vp.getLayoutBounds(tb);
+			const maxH = Math.max(0, vp.contentWidth - tb.width);
+			const maxV = Math.max(0, vp.contentHeight - tb.height);
 
 			if (maxH > 0 && Math.abs(moveX) >= Math.abs(moveY)) {
 				this._hScroll.scrollFactor = this.scrollFactor;
@@ -246,18 +244,15 @@ export class Scroller extends Component {
 		}
 
 		if (this._hScroll.isStarted()) {
-			const vpBounds = new Rectangle();
-			vp.getLayoutBounds(vpBounds);
-			this._hScroll.update(te.stageX, Math.max(0, vp.contentWidth - vpBounds.width), vp.scrollH);
+			const b = Scroller._vpBounds;
+			vp.getLayoutBounds(b);
+			this._hScroll.update(te.stageX, Math.max(0, vp.contentWidth - b.width), vp.scrollH);
 		}
 		if (this._vScroll.isStarted()) {
-			const vpBounds = new Rectangle();
-			vp.getLayoutBounds(vpBounds);
-			this._vScroll.update(te.stageY, Math.max(0, vp.contentHeight - vpBounds.height), vp.scrollV);
+			const b = Scroller._vpBounds;
+			vp.getLayoutBounds(b);
+			this._vScroll.update(te.stageY, Math.max(0, vp.contentHeight - b.height), vp.scrollV);
 		}
-
-		this._currentTouchPointX = te.stageX;
-		this._currentTouchPointY = te.stageY;
 	};
 
 	private _onTouchEnd = (e: Event): void => {
@@ -269,14 +264,14 @@ export class Scroller extends Component {
 		if (!vp) return;
 
 		if (this._hScroll.isStarted()) {
-			const vpBounds = new Rectangle();
-			vp.getLayoutBounds(vpBounds);
-			this._hScroll.finish(vp.scrollH, Math.max(0, vp.contentWidth - vpBounds.width));
+			const b = Scroller._vpBounds;
+			vp.getLayoutBounds(b);
+			this._hScroll.finish(vp.scrollH, Math.max(0, vp.contentWidth - b.width));
 		}
 		if (this._vScroll.isStarted()) {
-			const vpBounds = new Rectangle();
-			vp.getLayoutBounds(vpBounds);
-			this._vScroll.finish(vp.scrollV, Math.max(0, vp.contentHeight - vpBounds.height));
+			const b = Scroller._vpBounds;
+			vp.getLayoutBounds(b);
+			this._vScroll.finish(vp.scrollV, Math.max(0, vp.contentHeight - b.height));
 		}
 	};
 

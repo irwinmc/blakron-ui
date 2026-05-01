@@ -17,3 +17,8 @@ export { ScrollBarBase } from './ScrollBarBase.js';
 export { HScrollBar } from './HScrollBar.js';
 export { VScrollBar } from './VScrollBar.js';
 export { Scroller } from './Scroller.js';
+export { ItemRenderer } from './ItemRenderer.js';
+export { DataGroup } from './DataGroup.js';
+export { ListBase } from './ListBase.js';
+export { List } from './List.js';
+export { TabBar } from './TabBar.js';

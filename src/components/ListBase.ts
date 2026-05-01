@@ -1,0 +1,116 @@
+import { TouchEvent, Event } from '@blakron/core';
+import { DataGroup } from './DataGroup.js';
+import { ItemRenderer } from './ItemRenderer.js';
+import { CollectionEventKind } from '../events/CollectionEvent.js';
+import { PropertyEvent } from '../events/PropertyEvent.js';
+import type { ICollection } from '../collections/ICollection.js';
+
+/**
+ * ListBase extends DataGroup with selection support.
+ *
+ * Maintains a `selectedIndex` and tracks the currently selected renderer.
+ * Subclasses (e.g. List) add touch interaction.
+ */
+export class ListBase extends DataGroup {
+	// ── selectedIndex ───────────────────────────────────────────────────
+
+	private _selectedIndex = -1;
+	private _selectedIndexChanged = false;
+
+	get selectedIndex(): number {
+		return this._selectedIndex;
+	}
+	set selectedIndex(value: number) {
+		if (this._selectedIndex === value) return;
+		this._selectedIndex = value;
+		this._selectedIndexChanged = true;
+		this.invalidateProperties();
+	}
+
+	// ── selectedItem ────────────────────────────────────────────────────
+
+	get selectedItem(): unknown {
+		if (this._selectedIndex < 0 || !this.dataProvider) return null;
+		return this.dataProvider.getItemAt(this._selectedIndex);
+	}
+	set selectedItem(value: unknown) {
+		if (!this.dataProvider) {
+			this.selectedIndex = -1;
+			return;
+		}
+		this.selectedIndex = this.dataProvider.getItemIndex(value);
+	}
+
+	// ── commitProperties ────────────────────────────────────────────────
+
+	override commitProperties(): void {
+		if (this._selectedIndexChanged) {
+			this._selectedIndexChanged = false;
+			this.commitSelection();
+		}
+		super.commitProperties();
+	}
+
+	// ── Selection ───────────────────────────────────────────────────────
+
+	protected commitSelection(): void {
+		const maxIndex = this.dataProvider ? this.dataProvider.length - 1 : -1;
+		if (this._selectedIndex < -1) this._selectedIndex = -1;
+		if (this._selectedIndex > maxIndex) this._selectedIndex = maxIndex;
+
+		PropertyEvent.dispatchPropertyEvent(this, 'selectedIndex');
+		this.itemSelected(this._selectedIndex, true);
+	}
+
+	/**
+	 * Called when an item is selected or deselected.
+	 * Override to update renderer visual state.
+	 */
+	protected itemSelected(index: number, selected: boolean): void {
+		const renderer = this._indexToRenderer[index];
+		if (renderer) renderer.selected = selected;
+	}
+
+	/** Adjust selection after the data provider changes. */
+	protected onCollectionChange(event: Event & { kind?: string; location?: number; items?: unknown[] }): void {
+		const kind = event.kind as CollectionEventKind;
+		const location = event.location ?? -1;
+
+		if (this._selectedIndex === -1) {
+			super.onCollectionChange(event as any);
+			return;
+		}
+
+		switch (kind) {
+			case CollectionEventKind.ADD: {
+				if (location <= this._selectedIndex) {
+					this._selectedIndex++;
+					PropertyEvent.dispatchPropertyEvent(this, 'selectedIndex');
+				}
+				break;
+			}
+			case CollectionEventKind.REMOVE: {
+				if (location < this._selectedIndex) {
+					this._selectedIndex--;
+					PropertyEvent.dispatchPropertyEvent(this, 'selectedIndex');
+				} else if (location === this._selectedIndex) {
+					this._selectedIndex = -1;
+					PropertyEvent.dispatchPropertyEvent(this, 'selectedIndex');
+				}
+				break;
+			}
+			case CollectionEventKind.MOVE: {
+				// handled by oldLocation / newLocation in full impl
+				break;
+			}
+			case CollectionEventKind.RESET:
+			case CollectionEventKind.REFRESH: {
+				this._selectedIndex = -1;
+				PropertyEvent.dispatchPropertyEvent(this, 'selectedIndex');
+				break;
+			}
+		}
+
+		super.onCollectionChange(event as any);
+	}
+}
