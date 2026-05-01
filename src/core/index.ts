@@ -1,5 +1,7 @@
-export { UIComponentImpl, isUIComponent } from './UIComponent.js';
+export { isUIComponent } from './UIComponent.js';
 export type { IUIComponent } from './IUIComponent.js';
+export { UIState } from './UIState.js';
+export type { IUIOwner } from './UIState.js';
 export { Validator, validator } from './Validator.js';
 export { Direction } from './Direction.js';
 export { ScrollPolicy } from './ScrollPolicy.js';

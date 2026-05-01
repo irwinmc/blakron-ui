@@ -1,5 +1,6 @@
 import { Sprite, Rectangle, Event } from '@blakron/core';
-import { UIComponentImpl, isUIComponent } from '../core/UIComponent.js';
+import { UIState, isUIComponent } from '../core/UIState.js';
+import type { IUIOwner } from '../core/UIState.js';
 import { BasicLayout } from '../layouts/BasicLayout.js';
 import { getTheme } from '../core/Theme.js';
 import type { IUIComponent } from '../core/IUIComponent.js';
@@ -15,8 +16,8 @@ import type { Skin } from './Skin.js';
  * 3. Override `partRemoved()` to clean up skin part bindings.
  * 4. Override `createChildren()` to perform one-time initialization.
  */
-export class Component extends Sprite implements IUIComponent, ILayoutTarget {
-	// ── Component state ───────────────────────────────────────────────────
+export class Component extends Sprite implements IUIComponent, ILayoutTarget, IUIOwner {
+	readonly ui: UIState;
 
 	private _hostComponentKey: string | null = null;
 	private _skinName: string | (new () => Skin) | Skin | null = null;
@@ -25,15 +26,19 @@ export class Component extends Sprite implements IUIComponent, ILayoutTarget {
 	private _explicitState = '';
 	private _stateIsDirty = false;
 
-	/**
-	 * @internal used by Theme to check if skinName was set explicitly
-	 */
 	skinNameExplicitlySet = false;
 
 	constructor() {
 		super();
-		applyUIComponentMixin(this);
+		this.ui = new UIState(this);
 		this.touchEnabled = true;
+	}
+
+	// ── Stage attachment ──────────────────────────────────────────────────
+
+	override onAddToStage(stage: unknown, nestLevel: number): void {
+		super.onAddToStage(stage as never, nestLevel);
+		this.ui.onAddToStage();
 	}
 
 	// ── hostComponentKey ──────────────────────────────────────────────────
@@ -45,7 +50,6 @@ export class Component extends Sprite implements IUIComponent, ILayoutTarget {
 	get hostComponentKey(): string {
 		return this._hostComponentKey ?? (this.constructor as { name?: string }).name ?? '';
 	}
-
 	set hostComponentKey(value: string) {
 		this._hostComponentKey = value;
 	}
@@ -61,7 +65,6 @@ export class Component extends Sprite implements IUIComponent, ILayoutTarget {
 	get skinName(): string | (new () => Skin) | Skin | null {
 		return this._skinName;
 	}
-
 	set skinName(value: string | (new () => Skin) | Skin | null) {
 		this.skinNameExplicitlySet = true;
 		if (this._skinName === value) return;
@@ -69,9 +72,6 @@ export class Component extends Sprite implements IUIComponent, ILayoutTarget {
 		this._parseSkinName();
 	}
 
-	/**
-	 * @internal Called by Theme when it resolves a default skin name.
-	 */
 	_applySkinName(skinName: string): void {
 		this._skinName = skinName;
 		this._parseSkinName();
@@ -80,21 +80,16 @@ export class Component extends Sprite implements IUIComponent, ILayoutTarget {
 	private _parseSkinName(): void {
 		const skinName = this._skinName;
 		let skin: Skin | null = null;
-
 		if (skinName) {
 			if (typeof skinName === 'function') {
-				// Constructor
 				skin = new (skinName as new () => Skin)();
 			} else if (typeof skinName === 'string') {
-				// Class name string — look up in global scope
 				const clazz = (globalThis as Record<string, unknown>)[skinName] as (new () => Skin) | undefined;
 				if (clazz) skin = new clazz();
 			} else {
-				// Already a Skin instance
 				skin = skinName as Skin;
 			}
 		}
-
 		this._setSkin(skin);
 	}
 
@@ -110,35 +105,26 @@ export class Component extends Sprite implements IUIComponent, ILayoutTarget {
 
 	private _setSkin(skin: Skin | null): void {
 		const oldSkin = this._skin;
-
-		// Detach old skin
 		if (oldSkin) {
 			for (const partName of oldSkin.skinParts) {
-				if ((this as Record<string, unknown>)[partName]) {
-					this.setSkinPart(partName, null);
-				}
+				if ((this as Record<string, unknown>)[partName]) this.setSkinPart(partName, null);
 			}
 			for (const child of oldSkin._elementsContent) {
 				if (child.parent === this) this.removeChild(child);
 			}
 			oldSkin.hostComponent = null;
 		}
-
 		this._skin = skin;
-
-		// Attach new skin
 		if (skin) {
 			for (const partName of skin.skinParts) {
 				const instance = skin.getPart(partName);
 				if (instance) this.setSkinPart(partName, instance);
 			}
-			// Add skin children in reverse so index 0 ends up at the bottom
 			for (let i = skin._elementsContent.length - 1; i >= 0; i--) {
 				this.addChildAt(skin._elementsContent[i], 0);
 			}
 			skin.hostComponent = this;
 		}
-
 		this.invalidateSize();
 		this.invalidateDisplayList();
 		this.dispatchEventWith(Event.COMPLETE);
@@ -188,12 +174,11 @@ export class Component extends Sprite implements IUIComponent, ILayoutTarget {
 
 	/**
 	 * The current view state. Setting this explicitly overrides `getCurrentState()`.
-	 * Set to `''` or `null` to revert to the computed state.
+	 * Set to `''` to revert to the computed state.
 	 */
 	get currentState(): string {
 		return this._explicitState || this.getCurrentState();
 	}
-
 	set currentState(value: string) {
 		if (this._explicitState === value) return;
 		this._explicitState = value;
@@ -211,15 +196,14 @@ export class Component extends Sprite implements IUIComponent, ILayoutTarget {
 
 	/**
 	 * Return the current view-state name. Override in subclasses.
-	 * Examples: `"up"`, `"down"`, `"disabled"`, `"selected"`.
 	 */
 	protected getCurrentState(): string {
 		return this._enabled ? '' : 'disabled';
 	}
 
-	// ── UIComponent lifecycle overrides ───────────────────────────────────
+	// ── IUIOwner lifecycle ────────────────────────────────────────────────
 
-	protected createChildren(): void {
+	createChildren(): void {
 		if (!this._skinName) {
 			const theme = getTheme();
 			if (theme) {
@@ -229,19 +213,17 @@ export class Component extends Sprite implements IUIComponent, ILayoutTarget {
 		}
 	}
 
-	protected commitProperties(): void {
-		// Call UIComponentImpl's commitProperties (handles RESIZE / MOVE events)
-		UIComponentImpl.prototype['commitProperties'].call(this);
+	childrenCreated(): void {}
 
+	commitProperties(): void {
+		this.ui.onCommitProperties();
 		if (this._stateIsDirty) {
 			this._stateIsDirty = false;
-			if (this._skin) {
-				this._skin.currentState = this.currentState;
-			}
+			if (this._skin) this._skin.currentState = this.currentState;
 		}
 	}
 
-	protected measure(): void {
+	measure(): void {
 		_basicLayout.target = this;
 		_basicLayout.measure();
 		_basicLayout.target = null;
@@ -249,7 +231,6 @@ export class Component extends Sprite implements IUIComponent, ILayoutTarget {
 		const skin = this._skin;
 		if (!skin) return;
 
-		// skin.width/height/min/max override the measured size from layout
 		const bounds = new Rectangle();
 		this.getPreferredBounds(bounds);
 		let mw = bounds.width;
@@ -268,25 +249,15 @@ export class Component extends Sprite implements IUIComponent, ILayoutTarget {
 		this.setMeasuredSize(mw, mh);
 	}
 
-	protected updateDisplayList(w: number, h: number): void {
+	updateDisplayList(w: number, h: number): void {
 		_basicLayout.target = this;
 		_basicLayout.updateDisplayList(w, h);
 		_basicLayout.target = null;
 	}
 
-	protected _invalidateParentLayout(): void {
-		const parent = this.parent;
-		if (!parent || !this.includeInLayout || !isUIComponent(parent)) return;
-		parent.invalidateSize();
-		parent.invalidateDisplayList();
-	}
+	// ── ILayoutTarget ─────────────────────────────────────────────────────
 
-	// ── Child hooks ───────────────────────────────────────────────────────
-
-	setContentSize(_w: number, _h: number): void {
-		// Component doesn't expose contentWidth/contentHeight like Group,
-		// but the method is required by ILayoutTarget for layout algorithms.
-	}
+	setContentSize(_w: number, _h: number): void {}
 
 	override childAdded(_child: unknown, _index: number): void {
 		this.invalidateSize();
@@ -297,57 +268,152 @@ export class Component extends Sprite implements IUIComponent, ILayoutTarget {
 		this.invalidateSize();
 		this.invalidateDisplayList();
 	}
-	// ── IUIComponent (injected by mixin) ──────────────────────────────────
 
-	declare includeInLayout: boolean;
-	declare left: number | string;
-	declare right: number | string;
-	declare top: number | string;
-	declare bottom: number | string;
-	declare horizontalCenter: number | string;
-	declare verticalCenter: number | string;
-	declare percentWidth: number;
-	declare percentHeight: number;
-	declare explicitWidth: number;
-	declare explicitHeight: number;
-	declare minWidth: number;
-	declare maxWidth: number;
-	declare minHeight: number;
-	declare maxHeight: number;
-	declare setMeasuredSize: (w: number, h: number) => void;
-	declare invalidateProperties: () => void;
-	declare validateProperties: () => void;
-	declare invalidateSize: () => void;
-	declare validateSize: (recursive?: boolean) => void;
-	declare invalidateDisplayList: () => void;
-	declare validateDisplayList: () => void;
-	declare validateNow: () => void;
-	declare setLayoutBoundsSize: (lw: number, lh: number) => void;
-	declare setLayoutBoundsPosition: (x: number, y: number) => void;
-	declare getLayoutBounds: (bounds: Rectangle) => void;
-	declare getPreferredBounds: (bounds: Rectangle) => void;
-}
+	// ── IUIComponent — delegated to UIState ───────────────────────────────
 
-// Shared BasicLayout instance for Component measurement/layout
-const _basicLayout = new BasicLayout();
+	get includeInLayout(): boolean {
+		return this.ui.includeInLayout;
+	}
+	set includeInLayout(v: boolean) {
+		this.ui.includeInLayout = v;
+	}
 
-function applyUIComponentMixin(instance: Component): void {
-	UIComponentImpl.call(instance as never);
-	const src = UIComponentImpl.prototype;
-	const dst = Object.getPrototypeOf(instance) as typeof Component.prototype;
-	for (const key of Object.getOwnPropertyNames(src)) {
-		if (key === 'constructor') continue;
-		if (key in dst && !isEmptyFn(dst, key)) continue;
-		const desc = Object.getOwnPropertyDescriptor(src, key)!;
-		Object.defineProperty(dst, key, desc);
+	get left(): number | string {
+		return this.ui.left;
+	}
+	set left(v: number | string) {
+		this.ui.left = v;
+	}
+
+	get right(): number | string {
+		return this.ui.right;
+	}
+	set right(v: number | string) {
+		this.ui.right = v;
+	}
+
+	get top(): number | string {
+		return this.ui.top;
+	}
+	set top(v: number | string) {
+		this.ui.top = v;
+	}
+
+	get bottom(): number | string {
+		return this.ui.bottom;
+	}
+	set bottom(v: number | string) {
+		this.ui.bottom = v;
+	}
+
+	get horizontalCenter(): number | string {
+		return this.ui.horizontalCenter;
+	}
+	set horizontalCenter(v: number | string) {
+		this.ui.horizontalCenter = v;
+	}
+
+	get verticalCenter(): number | string {
+		return this.ui.verticalCenter;
+	}
+	set verticalCenter(v: number | string) {
+		this.ui.verticalCenter = v;
+	}
+
+	get percentWidth(): number {
+		return this.ui.percentWidth;
+	}
+	set percentWidth(v: number) {
+		this.ui.percentWidth = v;
+	}
+
+	get percentHeight(): number {
+		return this.ui.percentHeight;
+	}
+	set percentHeight(v: number) {
+		this.ui.percentHeight = v;
+	}
+
+	override get width(): number {
+		return this.ui.getWidth();
+	}
+	override set width(v: number) {
+		this.ui.setWidth(v);
+	}
+
+	override get height(): number {
+		return this.ui.getHeight();
+	}
+	override set height(v: number) {
+		this.ui.setHeight(v);
+	}
+
+	get minWidth(): number {
+		return this.ui.minWidth;
+	}
+	set minWidth(v: number) {
+		this.ui.minWidth = v;
+	}
+
+	get maxWidth(): number {
+		return this.ui.maxWidth;
+	}
+	set maxWidth(v: number) {
+		this.ui.maxWidth = v;
+	}
+
+	get minHeight(): number {
+		return this.ui.minHeight;
+	}
+	set minHeight(v: number) {
+		this.ui.minHeight = v;
+	}
+
+	get maxHeight(): number {
+		return this.ui.maxHeight;
+	}
+	set maxHeight(v: number) {
+		this.ui.maxHeight = v;
+	}
+
+	setMeasuredSize(w: number, h: number): void {
+		this.ui.setMeasuredSize(w, h);
+	}
+	invalidateProperties(): void {
+		this.ui.invalidateProperties();
+	}
+	validateProperties(): void {
+		this.ui.validateProperties();
+	}
+	invalidateSize(): void {
+		this.ui.invalidateSize();
+	}
+	validateSize(recursive?: boolean): void {
+		this.ui.validateSize(recursive);
+	}
+	invalidateDisplayList(): void {
+		this.ui.invalidateDisplayList();
+	}
+	validateDisplayList(): void {
+		this.ui.validateDisplayList();
+	}
+	validateNow(): void {
+		this.ui.validateNow();
+	}
+	setLayoutBoundsSize(lw: number, lh: number): void {
+		this.ui.setLayoutBoundsSize(lw, lh);
+	}
+	setLayoutBoundsPosition(x: number, y: number): void {
+		this.ui.setLayoutBoundsPosition(x, y);
+	}
+	getLayoutBounds(bounds: Rectangle): void {
+		this.ui.getLayoutBounds(bounds);
+	}
+	getPreferredBounds(bounds: Rectangle): void {
+		this.ui.getPreferredBounds(bounds);
 	}
 }
 
-function isEmptyFn(proto: object, key: string): boolean {
-	const val = (proto as Record<string, unknown>)[key];
-	if (typeof val !== 'function') return false;
-	const body = String(val);
-	const start = body.indexOf('{');
-	const end = body.lastIndexOf('}');
-	return body.substring(start + 1, end).trim() === '';
-}
+const _basicLayout = new BasicLayout();
+
+export { isUIComponent };
