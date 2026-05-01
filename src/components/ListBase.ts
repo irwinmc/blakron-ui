@@ -1,9 +1,7 @@
-import { TouchEvent, Event } from '@blakron/core';
+import { Event } from '@blakron/core';
 import { DataGroup } from './DataGroup.js';
-import { ItemRenderer } from './ItemRenderer.js';
-import { CollectionEventKind } from '../events/CollectionEvent.js';
+import { CollectionEvent, CollectionEventKind } from '../events/CollectionEvent.js';
 import { PropertyEvent } from '../events/PropertyEvent.js';
-import type { ICollection } from '../collections/ICollection.js';
 
 /**
  * ListBase extends DataGroup with selection support.
@@ -72,12 +70,12 @@ export class ListBase extends DataGroup {
 	}
 
 	/** Adjust selection after the data provider changes. */
-	protected onCollectionChange(event: Event & { kind?: string; location?: number; items?: unknown[] }): void {
-		const kind = event.kind as CollectionEventKind;
+	protected override onCollectionChange(event: CollectionEvent): void {
+		const kind = event.kind;
 		const location = event.location ?? -1;
 
 		if (this._selectedIndex === -1) {
-			super.onCollectionChange(event as any);
+			super.onCollectionChange(event);
 			return;
 		}
 
@@ -111,6 +109,6 @@ export class ListBase extends DataGroup {
 			}
 		}
 
-		super.onCollectionChange(event as any);
+		super.onCollectionChange(event);
 	}
 }

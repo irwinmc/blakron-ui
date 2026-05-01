@@ -2,7 +2,7 @@
  * Constants for the TileLayout `rowAlign` property.
  */
 export class RowAlign {
-	static TOP = 'top';
-	static JUSTIFY_USING_GAP = 'justifyUsingGap';
-	static JUSTIFY_USING_HEIGHT = 'justifyUsingHeight';
+	public static readonly TOP = 'top';
+	public static readonly JUSTIFY_USING_GAP = 'justifyUsingGap';
+	public static readonly JUSTIFY_USING_HEIGHT = 'justifyUsingHeight';
 }

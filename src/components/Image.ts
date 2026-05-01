@@ -1,5 +1,5 @@
 import { Component } from './Component.js';
-import { Texture, Event, Bitmap, BitmapFillMode } from '@blakron/core';
+import { Texture, Event, Bitmap, BitmapFillMode, Rectangle } from '@blakron/core';
 import { getAssetAdapter } from '../core/AssetAdapterRegistry.js';
 
 /**
@@ -33,22 +33,22 @@ export class Image extends Component {
 			this._sourceChanged = true;
 			this.invalidateProperties();
 		} else {
-			this.applyTexture(value as Texture | null);
+			this.applyTexture((value as Texture) ?? undefined);
 		}
 	}
 
 	// ── Scale9Grid ──────────────────────────────────────────────────────
 
-	private _scale9Grid: import('@blakron/core').Rectangle | null = null;
+	private _scale9Grid: Rectangle | undefined;
 
-	get scale9Grid(): import('@blakron/core').Rectangle | null {
+	get scale9Grid(): Rectangle | undefined {
 		return this._scale9Grid;
 	}
 
-	set scale9Grid(value: import('@blakron/core').Rectangle | null) {
+	set scale9Grid(value: Rectangle | undefined) {
 		if (this._scale9Grid === value) return;
 		this._scale9Grid = value;
-		if (this._bitmap) this._bitmap.scale9Grid = value ?? undefined;
+		if (this._bitmap) this._bitmap.scale9Grid = value;
 		this.invalidateDisplayList();
 	}
 
@@ -112,17 +112,17 @@ export class Image extends Component {
 			const capturedSource = source;
 			getAssetAdapter().getAsset(capturedSource, content => {
 				if (this._source !== capturedSource) return;
-				this.applyTexture(content);
+				this.applyTexture(content ?? undefined);
 				if (content) {
 					this.dispatchEventWith(Event.COMPLETE);
 				}
 			});
 		} else {
-			this.applyTexture(source as Texture | null);
+			this.applyTexture((source as Texture) ?? undefined);
 		}
 	}
 
-	private applyTexture(texture: Texture | null): void {
+	private applyTexture(texture: Texture | undefined): void {
 		if (!this._bitmap) {
 			this._bitmap = new Bitmap();
 			this._bitmap.smoothing = this._smoothing;
@@ -130,7 +130,7 @@ export class Image extends Component {
 			if (this._scale9Grid) this._bitmap.scale9Grid = this._scale9Grid;
 			this.addChild(this._bitmap);
 		}
-		this._bitmap.texture = texture ?? undefined;
+		this._bitmap.texture = texture;
 		this.invalidateSize();
 		this.invalidateDisplayList();
 	}

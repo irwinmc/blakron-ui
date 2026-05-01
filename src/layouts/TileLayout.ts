@@ -351,7 +351,7 @@ export class TileLayout extends LayoutBase {
 		let measuredWidth = 0;
 		let measuredHeight = 0;
 
-		this.calculateRowAndColumn((target as any).explicitWidth ?? NaN, (target as any).explicitHeight ?? NaN);
+		this.calculateRowAndColumn(target.explicitWidth, target.explicitHeight);
 
 		const columnCount = this._requestedColumnCount > 0 ? this._requestedColumnCount : this._columnCount;
 		const rowCount = this._requestedRowCount > 0 ? this._requestedRowCount : this._rowCount;
@@ -390,7 +390,7 @@ export class TileLayout extends LayoutBase {
 	// ── Get index in view (virtual) ─────────────────────────────────────
 
 	private getIndexInView(): boolean {
-		const target = this.target as any;
+		const target = this.target;
 		if (!target || target.numChildren === 0) {
 			this.startIndex = this.endIndex = -1;
 			return false;

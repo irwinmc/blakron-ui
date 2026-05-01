@@ -105,6 +105,10 @@ export class Button extends Component implements IDisplayText {
 
 	// ── Enabled ─────────────────────────────────────────────────────────
 
+	override get enabled(): boolean {
+		return super.enabled;
+	}
+
 	override set enabled(value: boolean) {
 		if (this.enabled === value) return;
 		super.enabled = value;

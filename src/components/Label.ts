@@ -1,5 +1,6 @@
 import { Component } from './Component.js';
 import { TextField } from '@blakron/core';
+import type { HorizontalAlign, VerticalAlign } from '@blakron/core';
 import type { IDisplayText } from '../core/IDisplayText.js';
 
 /**
@@ -118,7 +119,7 @@ export class Label extends Component implements IDisplayText {
 
 	set textAlign(value: string) {
 		if (this._textField.textAlign !== value) {
-			this._textField.textAlign = value as any;
+			this._textField.textAlign = value as HorizontalAlign;
 			this.invalidateDisplayList();
 		}
 	}
@@ -129,7 +130,7 @@ export class Label extends Component implements IDisplayText {
 
 	set verticalAlign(value: string) {
 		if (this._textField.verticalAlign !== value) {
-			this._textField.verticalAlign = value as any;
+			this._textField.verticalAlign = value as VerticalAlign;
 			this.invalidateDisplayList();
 		}
 	}
@@ -188,7 +189,7 @@ export class Label extends Component implements IDisplayText {
 	// ── Measurement ─────────────────────────────────────────────────────
 
 	override measure(): void {
-		this._textField.width = this.explicitWidth > 0 ? this.explicitWidth : 100000;
+		this._textField.width = isNaN(this.explicitWidth) ? 100000 : this.explicitWidth;
 		this.setMeasuredSize(this._textField.textWidth, this._textField.textHeight);
 	}
 

@@ -149,9 +149,8 @@ export class UIState {
 	set includeInLayout(value: boolean) {
 		value = !!value;
 		if (this._includeInLayout === value) return;
-		this._includeInLayout = true;
-		this._invalidateParentLayout();
 		this._includeInLayout = value;
+		this._invalidateParentLayout();
 	}
 
 	// ── Anchor constraints ────────────────────────────────────────────────

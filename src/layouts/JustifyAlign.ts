@@ -2,6 +2,6 @@
  * Constants for justify alignment in layouts.
  */
 export class JustifyAlign {
-	static JUSTIFY = 'justify';
-	static CONTENT_JUSTIFY = 'contentJustify';
+	public static readonly JUSTIFY = 'justify';
+	public static readonly CONTENT_JUSTIFY = 'contentJustify';
 }

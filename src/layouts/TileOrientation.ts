@@ -2,6 +2,6 @@
  * Constants for tile layout orientation.
  */
 export class TileOrientation {
-	static ROWS = 'rows';
-	static COLUMNS = 'columns';
+	public static readonly ROWS = 'rows';
+	public static readonly COLUMNS = 'columns';
 }

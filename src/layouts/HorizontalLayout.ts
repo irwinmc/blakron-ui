@@ -235,7 +235,7 @@ export class HorizontalLayout extends LinearLayoutBase {
 	// ── Virtual layout ──────────────────────────────────────────────────
 
 	protected override updateDisplayListVirtual(width: number, height: number): void {
-		const target = this.target as ILayoutTarget & { scrollH: number };
+		const target = this.target!;
 		if (this.indexInViewCalculated) this.indexInViewCalculated = false;
 		else this.getIndexInView();
 
@@ -246,7 +246,7 @@ export class HorizontalLayout extends LinearLayoutBase {
 
 		if (this.startIndex === -1 || this.endIndex === -1) {
 			const contentWidth = this.getStartPosition(numElements) - gap + paddingR;
-			target.setContentSize(contentWidth, (target as any).contentHeight || height);
+			target.setContentSize(contentWidth, target.contentHeight || height);
 			return;
 		}
 
@@ -326,7 +326,11 @@ export class HorizontalLayout extends LinearLayoutBase {
 	protected override getStartPosition(index: number): number {
 		if (!this._useVirtualLayout && this.target) {
 			const el = asLayoutElement(this.target, index);
-			if (el) return (el as any).x ?? 0;
+			if (el) {
+				const b = new Rectangle();
+				el.getLayoutBounds(b);
+				return b.x;
+			}
 		}
 		const typicalW = this.typicalWidth;
 		let startPos = this._paddingLeft;
@@ -346,7 +350,11 @@ export class HorizontalLayout extends LinearLayoutBase {
 		}
 		if (this.target) {
 			const el = asLayoutElement(this.target, index);
-			return el ? ((el as any).width ?? 0) : 0;
+			if (el) {
+				el.getLayoutBounds(tmpBounds);
+				return tmpBounds.width;
+			}
+			return 0;
 		}
 		return 0;
 	}
@@ -372,7 +380,7 @@ export class HorizontalLayout extends LinearLayoutBase {
 	}
 
 	protected override getIndexInView(): boolean {
-		const target = this.target as any;
+		const target = this.target;
 		if (!target || target.numChildren === 0) {
 			this.startIndex = this.endIndex = -1;
 			return false;

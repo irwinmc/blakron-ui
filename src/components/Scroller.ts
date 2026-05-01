@@ -277,21 +277,21 @@ export class Scroller extends Component {
 
 	// ── TouchScroll callbacks ───────────────────────────────────────────
 
-	private onHScrollUpdate(scrollPos: number): void {
+	private onHScrollUpdate = (scrollPos: number): void => {
 		const vp = this._viewport;
 		if (vp) vp.scrollH = scrollPos;
-	}
+	};
 
-	private onVScrollUpdate(scrollPos: number): void {
+	private onVScrollUpdate = (scrollPos: number): void => {
 		const vp = this._viewport;
 		if (vp) vp.scrollV = scrollPos;
-	}
+	};
 
-	private onHScrollEnd(): void {
+	private onHScrollEnd = (): void => {
 		// Horizontal throw animation ended
-	}
+	};
 
-	private onVScrollEnd(): void {
+	private onVScrollEnd = (): void => {
 		// Vertical throw animation ended
-	}
+	};
 }

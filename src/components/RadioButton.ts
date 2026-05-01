@@ -155,6 +155,10 @@ export class RadioButton extends ToggleButton {
 	}
 
 	// When a RadioButton is selected, notify the group for mutual exclusion
+	override get selected(): boolean {
+		return super.selected;
+	}
+
 	override set selected(value: boolean) {
 		if (this.selected === value) return;
 		super.selected = value;

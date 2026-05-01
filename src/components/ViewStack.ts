@@ -1,6 +1,6 @@
 import { Group } from './Group.js';
-import { Component } from './Component.js';
 import { Event, DisplayObject } from '@blakron/core';
+import { isUIComponent } from '../core/UIState.js';
 
 /**
  * ViewStack navigator container consisting of a collection of child containers
@@ -41,7 +41,11 @@ export class ViewStack extends Group {
 		return null;
 	}
 
-	set selectedChild(value: DisplayObject) {
+	set selectedChild(value: DisplayObject | null) {
+		if (!value) {
+			this.selectedIndex = -1;
+			return;
+		}
 		const index = this.getChildIndex(value);
 		if (index >= 0 && index < this.numChildren) {
 			this.selectedIndex = index;
@@ -76,7 +80,7 @@ export class ViewStack extends Group {
 	 */
 	private showOrHide(child: DisplayObject, visible: boolean): void {
 		child.visible = visible;
-		if (child instanceof Component) {
+		if (isUIComponent(child)) {
 			child.includeInLayout = visible;
 		}
 	}
@@ -105,10 +109,11 @@ export class ViewStack extends Group {
 
 	// ── Child management ────────────────────────────────────────────────
 
-	override childAdded(child: DisplayObject, index: number): void {
+	override childAdded(child: unknown, index: number): void {
 		super.childAdded(child, index);
+		const displayChild = child as DisplayObject;
 		// Hide the new child by default
-		this.showOrHide(child, false);
+		this.showOrHide(displayChild, false);
 		// Auto-select first child, or adjust index
 		if (this._selectedIndex === -1) {
 			this.commitSelection(index);
@@ -117,9 +122,10 @@ export class ViewStack extends Group {
 		}
 	}
 
-	override childRemoved(child: DisplayObject, index: number): void {
+	override childRemoved(child: unknown, index: number): void {
 		super.childRemoved(child, index);
-		this.showOrHide(child, true); // restore visibility
+		const displayChild = child as DisplayObject;
+		this.showOrHide(displayChild, true); // restore visibility
 
 		if (index === this._selectedIndex) {
 			// Currently selected child removed

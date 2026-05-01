@@ -1,4 +1,4 @@
-import { Sprite, Rectangle, Event } from '@blakron/core';
+import { Sprite, Rectangle, Event, type DisplayObject } from '@blakron/core';
 import { UIState, isUIComponent } from '../core/UIState.js';
 import type { IUIOwner } from '../core/UIState.js';
 import { BasicLayout } from '../layouts/BasicLayout.js';
@@ -275,6 +275,44 @@ export class Component extends Sprite implements IUIComponent, ILayoutTarget, IU
 	}
 
 	// ── ILayoutTarget ─────────────────────────────────────────────────────
+
+	get numElements(): number {
+		return this.numChildren;
+	}
+
+	get contentWidth(): number {
+		return this.width;
+	}
+
+	get contentHeight(): number {
+		return this.height;
+	}
+
+	get scrollH(): number {
+		return 0;
+	}
+	set scrollH(_v: number) {
+		/* no-op for Component */
+	}
+
+	get scrollV(): number {
+		return 0;
+	}
+	set scrollV(_v: number) {
+		/* no-op for Component */
+	}
+
+	getElementAt(index: number): DisplayObject | undefined {
+		return this.getChildAt(index);
+	}
+
+	getVirtualElementAt(index: number): DisplayObject | undefined {
+		return this.getChildAt(index);
+	}
+
+	setVirtualElementIndicesInView(_startIndex: number, _endIndex: number): void {
+		/* no-op for Component */
+	}
 
 	setContentSize(_w: number, _h: number): void {}
 

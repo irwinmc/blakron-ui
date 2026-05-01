@@ -1,4 +1,5 @@
 import { Watcher } from './Watcher.js';
+import type { IEventDispatcher } from '@blakron/core';
 import type { Skin } from '../components/Skin.js';
 
 /**
@@ -18,7 +19,7 @@ export class Binding {
 	 * ```
 	 */
 	static bindProperty(host: unknown, chain: string[], target: unknown, prop: string): Watcher | null {
-		const watcher = Watcher.watch(host as never, chain, null, null);
+		const watcher = Watcher.watch(host as IEventDispatcher | null, chain, null, null);
 		if (watcher) {
 			const assign = (value: unknown): void => {
 				(target as Record<string, unknown>)[prop] = value;
@@ -49,7 +50,7 @@ export class Binding {
 		handler: (value: unknown) => void,
 		thisObject: unknown,
 	): Watcher | null {
-		const watcher = Watcher.watch(host as never, chain, handler, thisObject);
+		const watcher = Watcher.watch(host as IEventDispatcher | null, chain, handler, thisObject);
 		if (watcher) {
 			handler.call(thisObject, watcher.getValue());
 		}
@@ -87,10 +88,10 @@ export class Binding {
 			let watcher: Watcher | null = null;
 
 			if (typeof element === 'string') {
-				watcher = Watcher.watch(host as never, element.split('.'), null, null);
+				watcher = Watcher.watch(host as IEventDispatcher | null, element.split('.'), null, null);
 			} else if (element instanceof Watcher) {
 				watcher = element;
-				watcher.reset(host as never);
+				watcher.reset(host as IEventDispatcher | null);
 			}
 
 			if (watcher) {

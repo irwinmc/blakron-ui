@@ -1,3 +1,4 @@
+export type { ILayoutTarget } from './ILayoutTarget.js';
 export { LayoutBase } from './LayoutBase.js';
 export { BasicLayout } from './BasicLayout.js';
 export { LinearLayoutBase } from './LinearLayoutBase.js';

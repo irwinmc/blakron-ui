@@ -236,7 +236,7 @@ export class VerticalLayout extends LinearLayoutBase {
 	// ── Virtual layout ──────────────────────────────────────────────────
 
 	protected override updateDisplayListVirtual(width: number, height: number): void {
-		const target = this.target as ILayoutTarget & { scrollV: number };
+		const target = this.target!;
 		if (this.indexInViewCalculated) this.indexInViewCalculated = false;
 		else this.getIndexInView();
 
@@ -247,7 +247,7 @@ export class VerticalLayout extends LinearLayoutBase {
 
 		if (this.startIndex === -1 || this.endIndex === -1) {
 			const contentHeight = this.getStartPosition(numElements) - gap + paddingB;
-			target.setContentSize((target as any).contentWidth || width, contentHeight);
+			target.setContentSize(target.contentWidth || width, contentHeight);
 			return;
 		}
 
@@ -327,7 +327,11 @@ export class VerticalLayout extends LinearLayoutBase {
 	protected override getStartPosition(index: number): number {
 		if (!this._useVirtualLayout && this.target) {
 			const el = asLayoutElement(this.target, index);
-			if (el) return (el as any).y ?? 0;
+			if (el) {
+				const b = new Rectangle();
+				el.getLayoutBounds(b);
+				return b.y;
+			}
 		}
 		const typicalH = this.typicalHeight;
 		let startPos = this._paddingTop;
@@ -347,7 +351,11 @@ export class VerticalLayout extends LinearLayoutBase {
 		}
 		if (this.target) {
 			const el = asLayoutElement(this.target, index);
-			return el ? ((el as any).height ?? 0) : 0;
+			if (el) {
+				el.getLayoutBounds(tmpBounds);
+				return tmpBounds.height;
+			}
+			return 0;
 		}
 		return 0;
 	}
@@ -373,7 +381,7 @@ export class VerticalLayout extends LinearLayoutBase {
 	}
 
 	protected override getIndexInView(): boolean {
-		const target = this.target as any;
+		const target = this.target;
 		if (!target || target.numChildren === 0) {
 			this.startIndex = this.endIndex = -1;
 			return false;
