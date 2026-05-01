@@ -87,9 +87,9 @@ btn.skinName = 'MyButtonSkin'; // resolved from globalThis
 | Layout             | Description                                                                                                                    |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
 | `BasicLayout`      | Positions children using `left`/`right`/`top`/`bottom`/`horizontalCenter`/`verticalCenter` and `percentWidth`/`percentHeight`. |
-| `VerticalLayout`   | _(planned)_ Linear vertical arrangement.                                                                                       |
-| `HorizontalLayout` | _(planned)_ Linear horizontal arrangement.                                                                                     |
-| `TileLayout`       | _(planned)_ Grid arrangement.                                                                                                  |
+| `VerticalLayout`   | Linear vertical arrangement with gap, padding, alignment, percent sizes, and virtual layout support.                           |
+| `HorizontalLayout` | Linear horizontal arrangement with gap, padding, alignment, percent sizes, and virtual layout support.                         |
+| `TileLayout`       | Grid arrangement with configurable orientation, column/row counts, justification, and virtual layout support.                  |
 
 ## Constraint Properties
 
