@@ -23,6 +23,8 @@ export class Component extends Sprite implements IUIComponent, ILayoutTarget, IU
 	private _skinName: string | (new () => Skin) | Skin | null = null;
 	private _skin: Skin | null = null;
 	private _enabled = true;
+	private _explicitTouchEnabled = true;
+	private _explicitTouchChildren = true;
 	private _explicitState = '';
 	private _stateIsDirty = false;
 
@@ -156,6 +158,18 @@ export class Component extends Sprite implements IUIComponent, ILayoutTarget, IU
 	 */
 	protected partRemoved(_partName: string, _instance: unknown): void {}
 
+	// ── Touch interception ────────────────────────────────────────────────
+
+	override set touchEnabled(value: boolean) {
+		this._explicitTouchEnabled = value;
+		if (this._enabled) super.touchEnabled = value;
+	}
+
+	override set touchChildren(value: boolean) {
+		this._explicitTouchChildren = value;
+		if (this._enabled) super.touchChildren = value;
+	}
+
 	// ── enabled ───────────────────────────────────────────────────────────
 
 	get enabled(): boolean {
@@ -165,8 +179,13 @@ export class Component extends Sprite implements IUIComponent, ILayoutTarget, IU
 		value = !!value;
 		if (this._enabled === value) return;
 		this._enabled = value;
-		this.touchEnabled = value;
-		this.touchChildren = value;
+		if (value) {
+			this.touchEnabled = this._explicitTouchEnabled;
+			this.touchChildren = this._explicitTouchChildren;
+		} else {
+			this.touchEnabled = false;
+			this.touchChildren = false;
+		}
 		this.invalidateState();
 	}
 
