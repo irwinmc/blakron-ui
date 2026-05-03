@@ -203,15 +203,6 @@ export class Scroller extends Component {
 		this._hScroll.stop();
 		this._vScroll.stop();
 
-		const b = Scroller._vpBounds;
-		vp.getLayoutBounds(b);
-		console.log(`[Scroller] TOUCH_BEGIN stageY=${te.stageY.toFixed(1)}`);
-		console.log(`[Scroller]   vp bounds: w=${b.width} h=${b.height} x=${b.x} y=${b.y}`);
-		console.log(`[Scroller]   vp content: w=${vp.contentWidth} h=${vp.contentHeight}`);
-		console.log(
-			`[Scroller]   vp scroll: scrollV=${vp.scrollV.toFixed(1)} maxScrollV=${Math.max(0, vp.contentHeight - b.height).toFixed(1)}`,
-		);
-
 		// Register move/end on stage so we receive them regardless of target
 		const stage = (this as unknown as { stage?: { addEventListener: Function; removeEventListener: Function } })
 			.stage;
@@ -252,10 +243,6 @@ export class Scroller extends Component {
 			vp.getLayoutBounds(tb);
 			const maxH = Math.max(0, vp.contentWidth - tb.width);
 			const maxV = Math.max(0, vp.contentHeight - tb.height);
-
-			console.log(
-				`[Scroller] SCROLL_START moveX=${moveX.toFixed(1)} moveY=${moveY.toFixed(1)} maxH=${maxH} maxV=${maxV}`,
-			);
 
 			if (maxH > 0 && Math.abs(moveX) >= Math.abs(moveY)) {
 				this._hScroll.scrollFactor = this.scrollFactor;
@@ -306,15 +293,21 @@ export class Scroller extends Component {
 
 	private onHScrollUpdate = (scrollPos: number): void => {
 		const vp = this._viewport;
-		if (vp) vp.scrollH = scrollPos;
+		if (!vp) return;
+		const b = Scroller._vpBounds;
+		vp.getLayoutBounds(b);
+		const maxH = Math.max(0, vp.contentWidth - b.width);
+		vp.scrollH = Math.max(0, Math.min(maxH, scrollPos));
 	};
 
 	private onVScrollUpdate = (scrollPos: number): void => {
 		const vp = this._viewport;
-		if (vp) {
-			console.log(`[Scroller] scrollV: ${vp.scrollV.toFixed(1)} → ${scrollPos.toFixed(1)}`);
-			vp.scrollV = scrollPos;
-		}
+		if (!vp) return;
+		// Clamp to valid range to prevent visual glitches from bounce overshoot
+		const b = Scroller._vpBounds;
+		vp.getLayoutBounds(b);
+		const maxV = Math.max(0, vp.contentHeight - b.height);
+		vp.scrollV = Math.max(0, Math.min(maxV, scrollPos));
 	};
 
 	private onHScrollEnd = (): void => {
