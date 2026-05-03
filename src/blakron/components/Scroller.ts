@@ -69,18 +69,12 @@ export class Scroller extends Component {
 			const d = old as unknown as IEventDispatcher;
 			d.removeEventListener(PropertyEvent.PROPERTY_CHANGE, this._onViewportPropChange);
 			d.removeEventListener(TouchEvent.TOUCH_BEGIN, this._onTouchBegin);
-			d.removeEventListener(TouchEvent.TOUCH_MOVE, this._onTouchMove);
-			d.removeEventListener(TouchEvent.TOUCH_END, this._onTouchEnd);
-			d.removeEventListener(TouchEvent.TOUCH_CANCEL, this._onTouchEnd);
 		}
 		this._viewport = value;
 		if (value) {
 			const d = value as unknown as IEventDispatcher;
 			d.addEventListener(PropertyEvent.PROPERTY_CHANGE, this._onViewportPropChange);
 			d.addEventListener(TouchEvent.TOUCH_BEGIN, this._onTouchBegin);
-			d.addEventListener(TouchEvent.TOUCH_MOVE, this._onTouchMove);
-			d.addEventListener(TouchEvent.TOUCH_END, this._onTouchEnd);
-			d.addEventListener(TouchEvent.TOUCH_CANCEL, this._onTouchEnd);
 			value.scrollEnabled = true;
 		}
 		this.invalidateDisplayList();
@@ -208,7 +202,35 @@ export class Scroller extends Component {
 
 		this._hScroll.stop();
 		this._vScroll.stop();
+
+		const b = Scroller._vpBounds;
+		vp.getLayoutBounds(b);
+		console.log(`[Scroller] TOUCH_BEGIN stageY=${te.stageY.toFixed(1)}`);
+		console.log(`[Scroller]   vp bounds: w=${b.width} h=${b.height} x=${b.x} y=${b.y}`);
+		console.log(`[Scroller]   vp content: w=${vp.contentWidth} h=${vp.contentHeight}`);
+		console.log(
+			`[Scroller]   vp scroll: scrollV=${vp.scrollV.toFixed(1)} maxScrollV=${Math.max(0, vp.contentHeight - b.height).toFixed(1)}`,
+		);
+
+		// Register move/end on stage so we receive them regardless of target
+		const stage = (this as unknown as { stage?: { addEventListener: Function; removeEventListener: Function } })
+			.stage;
+		if (stage) {
+			stage.addEventListener(TouchEvent.TOUCH_MOVE, this._onTouchMove);
+			stage.addEventListener(TouchEvent.TOUCH_END, this._onTouchEnd);
+			stage.addEventListener(TouchEvent.TOUCH_CANCEL, this._onTouchEnd);
+		}
 	};
+
+	private _removeStageTouchListeners(): void {
+		const stage = (this as unknown as { stage?: { addEventListener: Function; removeEventListener: Function } })
+			.stage;
+		if (stage) {
+			stage.removeEventListener(TouchEvent.TOUCH_MOVE, this._onTouchMove);
+			stage.removeEventListener(TouchEvent.TOUCH_END, this._onTouchEnd);
+			stage.removeEventListener(TouchEvent.TOUCH_CANCEL, this._onTouchEnd);
+		}
+	}
 
 	private _onTouchMove = (e: Event): void => {
 		const te = e as TouchEvent;
@@ -230,6 +252,10 @@ export class Scroller extends Component {
 			vp.getLayoutBounds(tb);
 			const maxH = Math.max(0, vp.contentWidth - tb.width);
 			const maxV = Math.max(0, vp.contentHeight - tb.height);
+
+			console.log(
+				`[Scroller] SCROLL_START moveX=${moveX.toFixed(1)} moveY=${moveY.toFixed(1)} maxH=${maxH} maxV=${maxV}`,
+			);
 
 			if (maxH > 0 && Math.abs(moveX) >= Math.abs(moveY)) {
 				this._hScroll.scrollFactor = this.scrollFactor;
@@ -260,6 +286,7 @@ export class Scroller extends Component {
 		if (te.touchPointID !== this._touchPointID) return;
 
 		this._touchPointID = -1;
+		this._removeStageTouchListeners();
 		const vp = this._viewport;
 		if (!vp) return;
 
@@ -284,7 +311,10 @@ export class Scroller extends Component {
 
 	private onVScrollUpdate = (scrollPos: number): void => {
 		const vp = this._viewport;
-		if (vp) vp.scrollV = scrollPos;
+		if (vp) {
+			console.log(`[Scroller] scrollV: ${vp.scrollV.toFixed(1)} → ${scrollPos.toFixed(1)}`);
+			vp.scrollV = scrollPos;
+		}
 	};
 
 	private onHScrollEnd = (): void => {
