@@ -13,22 +13,37 @@ Requires `@blakron/core` as a peer dependency.
 ## Quick Start
 
 ```ts
-import { Group, Component, BasicLayout, Theme, setTheme } from '@blakron/ui';
+import { Group, Label, Button, Rect, BasicLayout } from '@blakron/ui';
 
-// Load theme (maps component class names to skin class names)
-const theme = new Theme('resource/default.thm.js');
-setTheme(theme);
-
-// Create a container with absolute layout
 const group = new Group();
 group.layout = new BasicLayout();
 group.width = 400;
 group.height = 300;
 
-// Add a skinnable component
-const btn = new MyButton();
+const btn = new Button();
+btn.label = 'Click Me';
+btn.width = 120;
+btn.height = 36;
 btn.left = 20;
 btn.top = 20;
+
+// Manual skin: transparent hit area + visual children
+btn.graphics.beginFill(0x000000, 0.01);
+btn.graphics.drawRect(0, 0, 120, 36);
+btn.graphics.endFill();
+
+const bg = new Rect(120, 36, 0x6c5ce7);
+btn.addChild(bg);
+
+const lbl = new Label('Click Me');
+lbl.width = 120;
+lbl.height = 36;
+lbl.textAlign = 'center';
+lbl.verticalAlign = 'middle';
+lbl.textColor = 0xffffff;
+btn.labelDisplay = lbl;
+btn.addChild(lbl);
+
 group.addChild(btn);
 ```
 
@@ -58,29 +73,74 @@ invalidateProperties / invalidateSize / invalidateDisplayList
 ### Skin system
 
 ```ts
-// EXML compiler generates skin classes like this:
+import { Skin, State, SetProperty } from '@blakron/ui';
+
 class MyButtonSkin extends Skin {
-	skinParts = ['labelDisplay', 'iconDisplay'];
-	// ...children set up in constructor
+	constructor() {
+		super();
+		this.skinParts = ['labelDisplay'];
+		this.states = [
+			new State('up'),
+			new State('down', [new SetProperty('bg', 'fillColor', 0x5a4bd1)]),
+			new State('disabled', [new SetProperty('bg', 'fillColor', 0x636e72)]),
+		];
+		// build visual children...
+	}
 }
 
-// Component picks up the skin via Theme or explicit assignment
 btn.skinName = MyButtonSkin;
-// or
-btn.skinName = 'MyButtonSkin'; // resolved from globalThis
 ```
 
-## Key Classes
+## Components
 
-| Class         | Description                                                             |
-| ------------- | ----------------------------------------------------------------------- |
-| `Group`       | Base container. Holds a `LayoutBase` for child positioning.             |
-| `Component`   | Base for skinnable components. Manages skin lifecycle and view states.  |
-| `Skin`        | Base for all skins. Holds visual children and exposes named skin parts. |
-| `UIState`     | Layout state engine. Shared logic for all UI components.                |
-| `Theme`       | Maps component class names to default skin class names.                 |
-| `BasicLayout` | Absolute (constraint-based) layout.                                     |
-| `Validator`   | Deferred invalidation/validation scheduler.                             |
+### Basic Controls
+
+| Component      | Description                                                                 |
+| -------------- | --------------------------------------------------------------------------- |
+| `Label`        | Text display. Wraps `TextField` in the UI lifecycle.                        |
+| `Button`       | Tappable button with `up`/`down`/`disabled` states and `labelDisplay` part. |
+| `CheckBox`     | Toggle button. Dispatches `Event.CHANGE` on selection change.               |
+| `RadioButton`  | Mutually exclusive toggle. Use `groupName` to link buttons.                 |
+| `ToggleButton` | Base for toggle-style buttons.                                              |
+| `ToggleSwitch` | Binary on/off switch (visual variant of `ToggleButton`).                    |
+| `ProgressBar`  | Value indicator. Inject `thumb` (a `Component`) as the fill part.           |
+| `HSlider`      | Horizontal slider. Inject `thumb` and `track` skin parts.                   |
+| `VSlider`      | Vertical slider. Inject `thumb` and `track` skin parts.                     |
+| `Rect`         | Filled/stroked rectangle. Supports `fillColor`, `strokeColor`, `fillAlpha`. |
+| `Image`        | Bitmap display. Supports URL string or `Texture`, `scale9Grid`, `fillMode`. |
+
+### Text Input
+
+| Component      | Description                                                                |
+| -------------- | -------------------------------------------------------------------------- |
+| `EditableText` | Editable text field with `prompt` (placeholder) and `promptColor` support. |
+| `TextInput`    | Skinnable input component. Skin parts: `textDisplay`, `promptDisplay`.     |
+
+### Containers
+
+| Component   | Description                                                                                  |
+| ----------- | -------------------------------------------------------------------------------------------- |
+| `Group`     | Base container. Holds a `LayoutBase` for child positioning. Implements `IViewport`.          |
+| `Panel`     | Container with title bar. Skin parts: `titleDisplay`, `closeButton`, `moveArea` (draggable). |
+| `ViewStack` | Shows one child at a time. Set `selectedIndex` or `selectedChild` to switch.                 |
+| `Scroller`  | Touch-scrolling wrapper for any `IViewport`. Supports bounce, scroll bars, scroll policies.  |
+| `UILayer`   | Full-screen overlay container.                                                               |
+
+### Data-Driven
+
+| Component      | Description                                                                                 |
+| -------------- | ------------------------------------------------------------------------------------------- |
+| `DataGroup`    | Renders a data collection using item renderers. Supports virtual layout for large datasets. |
+| `List`         | `DataGroup` with tap-to-select. Dispatches `ItemTapEvent.ITEM_TAP`.                         |
+| `TabBar`       | Horizontal tab strip driven by `dataProvider`. Dispatches `ItemTapEvent.ITEM_TAP`.          |
+| `ItemRenderer` | Base class for custom item renderers. Override `dataChanged()` to update visuals.           |
+
+### Scroll Bars
+
+| Component    | Description                                               |
+| ------------ | --------------------------------------------------------- |
+| `HScrollBar` | Horizontal scroll bar. Bind to a viewport via `viewport`. |
+| `VScrollBar` | Vertical scroll bar. Bind to a viewport via `viewport`.   |
 
 ## Layouts
 
@@ -91,44 +151,103 @@ btn.skinName = 'MyButtonSkin'; // resolved from globalThis
 | `HorizontalLayout` | Linear horizontal arrangement with gap, padding, alignment, percent sizes, and virtual layout support.                         |
 | `TileLayout`       | Grid arrangement with configurable orientation, column/row counts, justification, and virtual layout support.                  |
 
+## Data Collections
+
+```ts
+import { ArrayCollection } from '@blakron/ui';
+
+const data = new ArrayCollection(['Apple', 'Banana', 'Cherry']);
+
+data.addItem('Durian');
+data.addItemAt('Elderberry', 1);
+data.removeItemAt(0);
+data.replaceItemAt('Fig', 0);
+data.sortOn('name'); // sort by field
+data.sort((a, b) => (a > b ? 1 : -1)); // custom sort
+data.filterFunction(item => item !== 'Fig');
+data.refresh(); // notify view after manual source changes
+```
+
+## Virtual Layout
+
+For large datasets, enable virtual layout so only visible renderers are created:
+
+```ts
+import { List, ItemRenderer, ArrayCollection, Label } from '@blakron/ui';
+
+class MyRenderer extends ItemRenderer {
+	private _label: Label;
+	constructor() {
+		super();
+		this._label = new Label('');
+		this._label.width = 200;
+		this._label.height = 36;
+		this.addChild(this._label);
+	}
+	protected override dataChanged(): void {
+		this._label.text = String(this.data ?? '');
+	}
+}
+
+const list = new List();
+list.dataProvider = new ArrayCollection(largeArray);
+list.itemRenderer = MyRenderer;
+list.useVirtualLayout = true; // only visible renderers are instantiated
+list.width = 200;
+list.height = 300; // visible window height
+list.scrollEnabled = true;
+```
+
 ## Constraint Properties
 
 All UI components support these layout constraint properties:
 
 ```ts
-component.left = 20; // pixels from parent left edge
-component.right = 20; // pixels from parent right edge
-component.top = 10; // pixels from parent top edge
-component.bottom = 10; // pixels from parent bottom edge
-component.horizontalCenter = 0; // offset from horizontal center
-component.verticalCenter = 0; // offset from vertical center
-component.percentWidth = 50; // 50% of parent width
-component.percentHeight = 100; // 100% of parent height
+component.left = 20;
+component.right = 20;
+component.top = 10;
+component.bottom = 10;
+component.horizontalCenter = 0;
+component.verticalCenter = 0;
+component.percentWidth = 50;
+component.percentHeight = 100;
 ```
 
 ## View States
 
-Components expose a `currentState` property. Skins define `states` that apply overrides when the state changes:
-
 ```ts
-import { State, SetProperty } from '@blakron/ui';
+import { State, SetProperty, AddItems } from '@blakron/ui';
 
 class MyButtonSkin extends Skin {
 	states = [
-		new State('up', []),
-		new State('down', [new SetProperty('bg', 'alpha', 0.8)]),
-		new State('disabled', [new SetProperty('bg', 'alpha', 0.4)]),
+		new State('up'),
+		new State('down', [new SetProperty('bg', 'fillColor', 0x5a4bd1)]),
+		new State('disabled', [
+			new SetProperty('bg', 'fillColor', 0x636e72),
+			new SetProperty('lbl', 'textColor', 0xb2bec3),
+		]),
 	];
 }
 ```
 
+## Events
+
+| Event                               | Dispatched by                   | Description                                          |
+| ----------------------------------- | ------------------------------- | ---------------------------------------------------- |
+| `Event.CHANGE`                      | `CheckBox`, `RadioButton`, etc. | Selection or value changed                           |
+| `ItemTapEvent.ITEM_TAP`             | `List`, `TabBar`                | Item tapped. Has `item`, `itemIndex`, `itemRenderer` |
+| `CollectionEvent.COLLECTION_CHANGE` | `ArrayCollection`               | Data added, removed, replaced, reset                 |
+| `UIEvent.CLOSING`                   | `Panel`                         | Close button tapped (cancelable)                     |
+| `UIEvent.CREATION_COMPLETE`         | Any `Component`                 | First `createChildren` completed                     |
+
 ## Differences from Egret EUI
 
-|                | Egret EUI                   | @blakron/ui                        |
-| -------------- | --------------------------- | ---------------------------------- |
-| Namespace      | `eui.*` global              | ES Module named exports            |
-| Component base | `namespace` + `mixin`       | Standard class inheritance         |
-| Layout state   | Prototype-injected          | `UIState` delegation               |
-| EXML runtime   | Built-in parser             | Compile-time only (`@blakron/cli`) |
-| `thisObject`   | Required in event listeners | Not needed — use arrow functions   |
-| i18n           | Built-in                    | Not supported                      |
+|                | Egret EUI                   | @blakron/ui                          |
+| -------------- | --------------------------- | ------------------------------------ |
+| Namespace      | `eui.*` global              | ES Module named exports              |
+| Component base | `namespace` + `mixin`       | Standard class inheritance           |
+| Layout state   | Prototype-injected          | `UIState` delegation                 |
+| EXML runtime   | Built-in parser             | Compile-time only (`@blakron/cli`)   |
+| `thisObject`   | Required in event listeners | Not needed — use arrow functions     |
+| Virtual layout | Default on                  | Opt-in via `useVirtualLayout = true` |
+| i18n           | Built-in                    | Not supported                        |
