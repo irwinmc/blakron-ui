@@ -7,30 +7,30 @@ import type { Skin } from '../components/Skin.js';
  * Restores the previous value when the state is deactivated.
  */
 export class SetStateProperty implements IOverride {
-	/**
-	 * The property name on the host component to set.
-	 */
-	name: string;
-	/**
-	 * The value to set when the state is active.
-	 */
-	value: unknown;
+	// ── Instance fields ───────────────────────────────────────────────────
 
-	private _oldValue: unknown = undefined;
+	public name: string;
+	public value: unknown;
+
+	private _oldValue: unknown;
 	private _applied = false;
 
-	constructor(name: string, value: unknown) {
+	// ── Constructor ───────────────────────────────────────────────────────
+
+	public constructor(name: string, value: unknown) {
 		this.name = name;
 		this.value = value;
 	}
 
-	apply(host: Component, _skin: Skin): void {
+	// ── Public methods ────────────────────────────────────────────────────
+
+	public apply(host: Component, _skin: Skin): void {
 		this._oldValue = getProp(host, this.name);
 		setProp(host, this.name, this.value);
 		this._applied = true;
 	}
 
-	remove(host: Component, _skin: Skin): void {
+	public remove(host: Component, _skin: Skin): void {
 		if (!this._applied) return;
 		setProp(host, this.name, this._oldValue);
 		this._applied = false;

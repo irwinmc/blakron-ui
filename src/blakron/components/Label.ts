@@ -10,190 +10,184 @@ import type { IDisplayText } from '../core/IDisplayText.js';
  * States: none (non-interactive visual element).
  */
 export class Label extends Component implements IDisplayText {
+	// ── Instance fields ───────────────────────────────────────────────────
+
 	protected _textField: TextField;
 
-	constructor(text?: string) {
+	// ── Constructor ───────────────────────────────────────────────────────
+
+	public constructor(text?: string) {
 		super();
 		this._textField = new TextField();
 		this.touchChildren = false;
 		if (text) this.text = text;
 	}
 
-	// ── Lifecycle ───────────────────────────────────────────────────────
+	// ── Getters / Setters ─────────────────────────────────────────────────
 
-	override createChildren(): void {
-		super.createChildren();
-		this.addChild(this._textField);
-	}
-
-	// ── Text ────────────────────────────────────────────────────────────
-
-	get text(): string {
+	public get text(): string {
 		return this._textField.text;
 	}
 
-	set text(value: string) {
+	public set text(value: string) {
 		if (this._textField.text === value) return;
 		this._textField.text = value;
 		this.invalidateSize();
 		this.invalidateDisplayList();
 	}
 
-	// ── Font ────────────────────────────────────────────────────────────
-
-	get fontFamily(): string {
+	public get fontFamily(): string {
 		return this._textField.fontFamily;
 	}
 
-	set fontFamily(value: string) {
+	public set fontFamily(value: string) {
 		if (this._textField.fontFamily !== value) {
 			this._textField.fontFamily = value;
 			this.invalidateSize();
 		}
 	}
 
-	get size(): number {
+	public get size(): number {
 		return this._textField.size;
 	}
 
-	set size(value: number) {
+	public set size(value: number) {
 		if (this._textField.size !== value) {
 			this._textField.size = value;
 			this.invalidateSize();
 		}
 	}
 
-	get bold(): boolean {
+	public get bold(): boolean {
 		return this._textField.bold;
 	}
 
-	set bold(value: boolean) {
+	public set bold(value: boolean) {
 		if (this._textField.bold !== value) {
 			this._textField.bold = value;
 			this.invalidateSize();
 		}
 	}
 
-	get italic(): boolean {
+	public get italic(): boolean {
 		return this._textField.italic;
 	}
 
-	set italic(value: boolean) {
+	public set italic(value: boolean) {
 		if (this._textField.italic !== value) {
 			this._textField.italic = value;
 			this.invalidateSize();
 		}
 	}
 
-	// ── Color ───────────────────────────────────────────────────────────
-
-	get textColor(): number {
+	public get textColor(): number {
 		return this._textField.textColor;
 	}
 
-	set textColor(value: number) {
+	public set textColor(value: number) {
 		this._textField.textColor = value;
 	}
 
-	get strokeColor(): number {
+	public get strokeColor(): number {
 		return this._textField.strokeColor;
 	}
 
-	set strokeColor(value: number) {
+	public set strokeColor(value: number) {
 		this._textField.strokeColor = value;
 	}
 
-	get stroke(): number {
+	public get stroke(): number {
 		return this._textField.stroke;
 	}
 
-	set stroke(value: number) {
+	public set stroke(value: number) {
 		this._textField.stroke = value;
 	}
 
-	// ── Alignment ───────────────────────────────────────────────────────
-
-	get textAlign(): string {
+	public get textAlign(): string {
 		return this._textField.textAlign;
 	}
 
-	set textAlign(value: string) {
+	public set textAlign(value: string) {
 		if (this._textField.textAlign !== value) {
 			this._textField.textAlign = value as HorizontalAlign;
 			this.invalidateDisplayList();
 		}
 	}
 
-	get verticalAlign(): string {
+	public get verticalAlign(): string {
 		return this._textField.verticalAlign;
 	}
 
-	set verticalAlign(value: string) {
+	public set verticalAlign(value: string) {
 		if (this._textField.verticalAlign !== value) {
 			this._textField.verticalAlign = value as VerticalAlign;
 			this.invalidateDisplayList();
 		}
 	}
 
-	// ── Layout ──────────────────────────────────────────────────────────
-
-	get multiline(): boolean {
+	public get multiline(): boolean {
 		return this._textField.multiline;
 	}
 
-	set multiline(value: boolean) {
+	public set multiline(value: boolean) {
 		if (this._textField.multiline !== value) {
 			this._textField.multiline = value;
 			this.invalidateSize();
 		}
 	}
 
-	get wordWrap(): boolean {
+	public get wordWrap(): boolean {
 		return this._textField.wordWrap;
 	}
 
-	set wordWrap(value: boolean) {
+	public set wordWrap(value: boolean) {
 		if (this._textField.wordWrap !== value) {
 			this._textField.wordWrap = value;
 			this.invalidateSize();
 		}
 	}
 
-	get lineSpacing(): number {
+	public get lineSpacing(): number {
 		return this._textField.lineSpacing;
 	}
 
-	set lineSpacing(value: number) {
+	public set lineSpacing(value: number) {
 		if (this._textField.lineSpacing !== value) {
 			this._textField.lineSpacing = value;
 			this.invalidateSize();
 		}
 	}
 
-	get maxChars(): number {
+	public get maxChars(): number {
 		return this._textField.maxChars;
 	}
 
-	set maxChars(value: number) {
+	public set maxChars(value: number) {
 		this._textField.maxChars = value;
 	}
 
-	get displayAsPassword(): boolean {
+	public get displayAsPassword(): boolean {
 		return this._textField.displayAsPassword;
 	}
 
-	set displayAsPassword(value: boolean) {
+	public set displayAsPassword(value: boolean) {
 		this._textField.displayAsPassword = value;
 	}
 
-	// ── Measurement ─────────────────────────────────────────────────────
+	// ── Override methods ──────────────────────────────────────────────────
 
-	override measure(): void {
+	public override createChildren(): void {
+		super.createChildren();
+		this.addChild(this._textField);
+	}
+
+	public override measure(): void {
 		this._textField.width = isNaN(this.explicitWidth) ? 100000 : this.explicitWidth;
 		this.setMeasuredSize(this._textField.textWidth, this._textField.textHeight);
 	}
 
-	override updateDisplayList(unscaledWidth: number, unscaledHeight: number): void {
+	public override updateDisplayList(unscaledWidth: number, unscaledHeight: number): void {
 		super.updateDisplayList(unscaledWidth, unscaledHeight);
 		this._textField.width = unscaledWidth;
 		this._textField.height = unscaledHeight;

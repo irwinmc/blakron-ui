@@ -2,20 +2,25 @@ import { Event, type IEventDispatcher } from '@blakron/core';
 import type { ItemRenderer } from '../components/ItemRenderer.js';
 
 export class ItemTapEvent extends Event {
-	static readonly ITEM_TAP = 'itemTap';
+	// ── Static fields ─────────────────────────────────────────────────────
 
-	/** The data item that was tapped. */
-	item: unknown;
-	/** The index of the tapped item in the data provider. */
-	itemIndex = -1;
-	/** The ItemRenderer that was tapped. */
-	itemRenderer?: ItemRenderer;
+	public static readonly ITEM_TAP = 'itemTap';
 
-	constructor(type: string, bubbles = false, cancelable = false) {
+	// ── Instance fields ───────────────────────────────────────────────────
+
+	public item: unknown;
+	public itemIndex = -1;
+	public itemRenderer?: ItemRenderer;
+
+	// ── Constructor ───────────────────────────────────────────────────────
+
+	public constructor(type: string, bubbles = false, cancelable = false) {
 		super(type, bubbles, cancelable);
 	}
 
-	static dispatchItemTapEvent(
+	// ── Public methods ────────────────────────────────────────────────────
+
+	public static dispatchItemTapEvent(
 		target: IEventDispatcher,
 		item: unknown,
 		itemIndex: number,

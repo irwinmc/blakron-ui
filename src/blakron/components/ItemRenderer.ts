@@ -13,55 +13,66 @@ import type { IItemRenderer } from '../core/IItemRenderer.js';
  * @skinPart labelDisplay — optional IDisplayText for the item label
  */
 export class ItemRenderer extends Component implements IItemRenderer {
-	// ── Constructor ─────────────────────────────────────────────────────
+	// ── Instance fields ───────────────────────────────────────────────────
 
-	constructor() {
+	public itemIndex = -1;
+
+	private _data: unknown;
+	private _selected = false;
+	private _touchCaptured = false;
+
+	// ── Constructor ───────────────────────────────────────────────────────
+
+	public constructor() {
 		super();
 		this.addEventListener(TouchEvent.TOUCH_BEGIN, this._onTouchBegin);
 	}
 
-	// ── data ────────────────────────────────────────────────────────────
+	// ── Getters / Setters ─────────────────────────────────────────────────
 
-	private _data: unknown;
-
-	/** The data object to render or edit. */
-	get data(): unknown {
+	public get data(): unknown {
 		return this._data;
 	}
-	set data(value: unknown) {
+
+	public set data(value: unknown) {
 		if (this._data === value) return;
 		this._data = value;
 		PropertyEvent.dispatchPropertyEvent(this, 'data');
 		this.dataChanged();
 	}
 
-	/** Called after `data` changes. Override to update the view. */
-	protected dataChanged(): void {
-		// override point
-	}
-
-	// ── selected ────────────────────────────────────────────────────────
-
-	private _selected = false;
-
-	/** Whether this item renderer is selected. */
-	get selected(): boolean {
+	public get selected(): boolean {
 		return this._selected;
 	}
-	set selected(value: boolean) {
+
+	public set selected(value: boolean) {
 		if (this._selected === value) return;
 		this._selected = value;
 		this.invalidateState();
 	}
 
-	// ── itemIndex ───────────────────────────────────────────────────────
+	// ── Override methods ──────────────────────────────────────────────────
 
-	/** The index of this item in the data provider. */
-	itemIndex = -1;
+	protected override getCurrentState(): string {
+		if (!this.enabled) return 'disabled';
+		if (this._touchCaptured) return this._selected ? 'downAndSelected' : 'down';
+		if (this._selected) {
+			if (this.skin?.hasState('upAndSelected')) return 'upAndSelected';
+			return 'down';
+		}
+		return 'up';
+	}
 
-	// ── Touch state machine ─────────────────────────────────────────────
+	// ── Protected methods ─────────────────────────────────────────────────
 
-	private _touchCaptured = false;
+	/**
+	 * Called after `data` changes. Override to update the view.
+	 */
+	protected dataChanged(): void {
+		// override point
+	}
+
+	// ── Private methods ───────────────────────────────────────────────────
 
 	private _onTouchBegin = (e: Event): void => {
 		const te = e as TouchEvent;
@@ -82,17 +93,4 @@ export class ItemRenderer extends Component implements IItemRenderer {
 		this._touchCaptured = false;
 		this.invalidateState();
 	};
-
-	// ── State ───────────────────────────────────────────────────────────
-
-	protected override getCurrentState(): string {
-		if (!this.enabled) return 'disabled';
-		if (this._touchCaptured) return this._selected ? 'downAndSelected' : 'down';
-		if (this._selected) {
-			// Prefer "upAndSelected" if the skin supports it
-			if (this.skin?.hasState('upAndSelected')) return 'upAndSelected';
-			return 'down'; // fallback for minimal skins
-		}
-		return 'up';
-	}
 }

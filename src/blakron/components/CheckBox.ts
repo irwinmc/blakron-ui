@@ -7,7 +7,7 @@ import { ToggleButton } from './ToggleButton.js';
  * States: same as Button (`up`, `down`, `disabled`, `upAndSelected`, `downAndSelected`, `disabledAndSelected`).
  */
 export class CheckBox extends ToggleButton {
-	constructor() {
+	public constructor() {
 		super();
 	}
 }

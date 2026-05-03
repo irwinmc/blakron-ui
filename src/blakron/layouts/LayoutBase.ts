@@ -6,16 +6,21 @@ import type { ILayoutTarget } from './ILayoutTarget.js';
  * Subclasses must implement `measure()` and `updateDisplayList()`.
  */
 export abstract class LayoutBase extends EventDispatcher {
-	target: ILayoutTarget | undefined;
+	// ── Instance fields ───────────────────────────────────────────────────
 
-	// ── Virtual layout ────────────────────────────────────────────────────
+	public target?: ILayoutTarget;
+	public typicalWidth = 71;
+	public typicalHeight = 22;
 
 	protected _useVirtualLayout = false;
 
-	get useVirtualLayout(): boolean {
+	// ── Getters / Setters ─────────────────────────────────────────────────
+
+	public get useVirtualLayout(): boolean {
 		return this._useVirtualLayout;
 	}
-	set useVirtualLayout(value: boolean) {
+
+	public set useVirtualLayout(value: boolean) {
 		value = !!value;
 		if (this._useVirtualLayout === value) return;
 		this._useVirtualLayout = value;
@@ -24,12 +29,9 @@ export abstract class LayoutBase extends EventDispatcher {
 		if (this.target) this.target.invalidateDisplayList();
 	}
 
-	// ── Typical element size (for virtual layouts) ────────────────────────
+	// ── Public methods ────────────────────────────────────────────────────
 
-	typicalWidth = 71;
-	typicalHeight = 22;
-
-	setTypicalSize(width: number, height: number): void {
+	public setTypicalSize(width: number, height: number): void {
 		width = +width || 71;
 		height = +height || 22;
 		if (width !== this.typicalWidth || height !== this.typicalHeight) {
@@ -39,18 +41,19 @@ export abstract class LayoutBase extends EventDispatcher {
 		}
 	}
 
-	// ── Hooks ─────────────────────────────────────────────────────────────
+	public scrollPositionChanged(): void {}
 
-	scrollPositionChanged(): void {}
-	clearVirtualLayoutCache(): void {}
-	elementAdded(_index: number): void {}
-	elementRemoved(_index: number): void {}
-	getElementIndicesInView(): number[] {
+	public clearVirtualLayoutCache(): void {}
+
+	public elementAdded(_index: number): void {}
+
+	public elementRemoved(_index: number): void {}
+
+	public getElementIndicesInView(): number[] {
 		return [];
 	}
 
-	// ── Abstract ──────────────────────────────────────────────────────────
+	public abstract measure(): void;
 
-	abstract measure(): void;
-	abstract updateDisplayList(width: number, height: number): void;
+	public abstract updateDisplayList(width: number, height: number): void;
 }

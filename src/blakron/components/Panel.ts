@@ -18,58 +18,51 @@ import type { IDisplayText } from '../core/IDisplayText.js';
  * @defaultProperty elementsContent
  */
 export class Panel extends Component {
-	// ── title ─────────────────────────────────────────────────────────────────
+	// ── Instance fields ───────────────────────────────────────────────────
+
+	public closeButton?: Button;
+	public moveArea?: DisplayObject;
 
 	private _title = '';
 	private _titleChanged = false;
+	private _titleDisplay?: IDisplayText;
+	private _dragStartX = 0;
+	private _dragStartY = 0;
+	private _panelStartX = 0;
+	private _panelStartY = 0;
 
-	get title(): string {
+	// ── Getters / Setters ─────────────────────────────────────────────────
+
+	public get title(): string {
 		return this._title;
 	}
-	set title(value: string) {
+
+	public set title(value: string) {
 		if (this._title === value) return;
 		this._title = value;
 		this._titleChanged = true;
 		this.invalidateProperties();
 	}
 
-	// ── Skin parts ────────────────────────────────────────────────────────────
-
-	private _titleDisplay: IDisplayText | undefined;
-
-	get titleDisplay(): IDisplayText | undefined {
+	public get titleDisplay(): IDisplayText | undefined {
 		return this._titleDisplay;
 	}
-	set titleDisplay(value: IDisplayText | undefined) {
+
+	public set titleDisplay(value: IDisplayText | undefined) {
 		if (this._titleDisplay === value) return;
 		this._titleDisplay = value;
 		if (value && this._title) value.text = this._title;
 	}
 
-	/** Close button skin part. Tapping it dispatches UIEvent.CLOSING. */
-	closeButton?: Button;
+	// ── Override methods ──────────────────────────────────────────────────
 
-	/** Drag handle skin part. Dragging it moves the panel. */
-	moveArea?: DisplayObject;
-
-	// ── Drag state ────────────────────────────────────────────────────────────
-
-	private _dragStartX = 0;
-	private _dragStartY = 0;
-	private _panelStartX = 0;
-	private _panelStartY = 0;
-
-	// ── commitProperties ──────────────────────────────────────────────────────
-
-	override commitProperties(): void {
+	public override commitProperties(): void {
 		super.commitProperties();
 		if (this._titleChanged) {
 			this._titleChanged = false;
 			if (this._titleDisplay) this._titleDisplay.text = this._title;
 		}
 	}
-
-	// ── Skin part lifecycle ───────────────────────────────────────────────────
 
 	protected override partAdded(partName: string, instance: unknown): void {
 		super.partAdded(partName, instance);
@@ -93,7 +86,7 @@ export class Panel extends Component {
 		}
 	}
 
-	// ── Close ─────────────────────────────────────────────────────────────────
+	// ── Public methods ────────────────────────────────────────────────────
 
 	/**
 	 * Close the panel by removing it from its parent.
@@ -103,7 +96,7 @@ export class Panel extends Component {
 		if (this.parent) this.parent.removeChild(this);
 	}
 
-	// ── Private ───────────────────────────────────────────────────────────────
+	// ── Private methods ───────────────────────────────────────────────────
 
 	private _onCloseButtonTap = (): void => {
 		if (UIEvent.dispatchUIEvent(this, UIEvent.CLOSING, true, true)) {

@@ -13,20 +13,20 @@ import { Event, type IEventDispatcher } from '@blakron/core';
  * @skinPart thumb — the draggable thumb indicator.
  */
 export class ScrollBarBase extends Component {
-	/** [SkinPart] The thumb display object. */
-	thumb?: IUIComponent;
+	// ── Instance fields ───────────────────────────────────────────────────
 
-	private _viewport: IViewport | undefined;
+	public thumb?: IUIComponent;
+	public autoVisibility = true;
 
-	/** Whether the scrollbar auto-hides when not needed. */
-	autoVisibility = true;
+	private _viewport?: IViewport;
 
-	// ── viewport ────────────────────────────────────────────────────────
+	// ── Getters / Setters ─────────────────────────────────────────────────
 
-	get viewport(): IViewport | undefined {
+	public get viewport(): IViewport | undefined {
 		return this._viewport;
 	}
-	set viewport(value: IViewport | undefined) {
+
+	public set viewport(value: IViewport | undefined) {
 		if (value === this._viewport) return;
 		const vp = this._viewport;
 		if (vp) {
@@ -43,6 +43,16 @@ export class ScrollBarBase extends Component {
 		this.invalidateDisplayList();
 	}
 
+	// ── Protected methods ─────────────────────────────────────────────────
+
+	/**
+	 * Called when viewport properties (scrollH, scrollV, contentWidth, etc.) change.
+	 * Override in subclasses to react.
+	 */
+	protected onPropertyChanged(_event: PropertyEvent): void {}
+
+	// ── Private methods ───────────────────────────────────────────────────
+
 	private _onPropChange = (e: Event): void => {
 		this.onPropertyChanged(e as PropertyEvent);
 	};
@@ -50,10 +60,4 @@ export class ScrollBarBase extends Component {
 	private _onResize = (_e: Event): void => {
 		this.invalidateDisplayList();
 	};
-
-	/**
-	 * Called when viewport properties (scrollH, scrollV, contentWidth, etc.) change.
-	 * Override in subclasses to react.
-	 */
-	protected onPropertyChanged(_event: PropertyEvent): void {}
 }

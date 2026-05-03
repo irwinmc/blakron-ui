@@ -13,112 +13,109 @@ import type { Image } from './Image.js';
  * can override. If `toggle` is true, the `selected` state is toggled automatically.
  */
 export class Button extends Component implements IDisplayText {
-	private _label: string = '';
-	private _icon: string | Texture | undefined;
+	// ── Instance fields ───────────────────────────────────────────────────
+
+	public labelDisplay?: IDisplayText;
+	public iconDisplay?: Image;
+
+	private _label = '';
+	private _icon?: string | Texture;
 	private _selected = false;
 	private _toggle = false;
 	private _autoRepeat = false;
 	private _touchCaptured = false;
 	private _stickyHighlighting = false;
 
-	/** Skin part: label display element (set by skin or manually). */
-	labelDisplay?: IDisplayText;
+	// ── Constructor ───────────────────────────────────────────────────────
 
-	/** Skin part: icon display element (set by skin or manually). */
-	iconDisplay?: Image;
-
-	constructor() {
+	public constructor() {
 		super();
 		this.touchChildren = false;
 		this.addEventListener(TouchEvent.TOUCH_BEGIN, this._onTouchBegin);
 	}
 
-	// ── Label ───────────────────────────────────────────────────────────
+	// ── Getters / Setters ─────────────────────────────────────────────────
 
-	get label(): string {
+	public get label(): string {
 		return this._label;
 	}
 
-	set label(value: string) {
+	public set label(value: string) {
 		this._label = value;
 		if (this.labelDisplay) {
 			this.labelDisplay.text = value;
 		}
 	}
 
-	// ── Text (IDisplayText) ─────────────────────────────────────────────
-
-	get text(): string {
+	public get text(): string {
 		return this._label;
 	}
 
-	// ── Icon ────────────────────────────────────────────────────────────
-
-	get icon(): string | Texture | undefined {
+	public get icon(): string | Texture | undefined {
 		return this._icon;
 	}
 
-	set icon(value: string | Texture | undefined) {
+	public set icon(value: string | Texture | undefined) {
 		this._icon = value;
 		if (this.iconDisplay) {
 			this.iconDisplay.source = value;
 		}
 	}
 
-	// ── Selected ────────────────────────────────────────────────────────
-
-	get selected(): boolean {
+	public get selected(): boolean {
 		return this._selected;
 	}
 
-	set selected(value: boolean) {
+	public set selected(value: boolean) {
 		if (this._selected === value) return;
 		this._selected = value;
 		this.invalidateState();
 	}
 
-	// ── Toggle ──────────────────────────────────────────────────────────
-
-	get toggle(): boolean {
+	public get toggle(): boolean {
 		return this._toggle;
 	}
 
-	set toggle(value: boolean) {
+	public set toggle(value: boolean) {
 		this._toggle = value;
 	}
 
-	// ── AutoRepeat ──────────────────────────────────────────────────────
-
-	get autoRepeat(): boolean {
+	public get autoRepeat(): boolean {
 		return this._autoRepeat;
 	}
 
-	set autoRepeat(value: boolean) {
+	public set autoRepeat(value: boolean) {
 		this._autoRepeat = value;
 	}
 
-	// ── Touch captured (read-only) ──────────────────────────────────────
-
-	get touchCaptured(): boolean {
+	public get touchCaptured(): boolean {
 		return this._touchCaptured;
 	}
 
-	// ── Enabled ─────────────────────────────────────────────────────────
-
-	override get enabled(): boolean {
+	public override get enabled(): boolean {
 		return super.enabled;
 	}
 
-	override set enabled(value: boolean) {
+	public override set enabled(value: boolean) {
 		if (this.enabled === value) return;
 		super.enabled = value;
 		this.invalidateState();
 		this.touchEnabled = value;
 	}
 
-	// ── State ───────────────────────────────────────────────────────────
+	// ── Override methods ──────────────────────────────────────────────────
 
-	override getCurrentState(): string {
+	public override partAdded(partName: string, instance: unknown): void {
+		super.partAdded(partName, instance);
+		if (instance === this.labelDisplay) {
+			this.labelDisplay!.text = this._label;
+		}
+		if (instance === this.iconDisplay) {
+			this.iconDisplay!.source = this._icon;
+		}
+	}
+
+	protected override getCurrentState(): string {
 		if (!this.enabled) {
 			return this._selected ? 'disabledAndSelected' : 'disabled';
 		}
@@ -130,17 +127,7 @@ export class Button extends Component implements IDisplayText {
 		return 'up';
 	}
 
-	// ── Skin part injection ─────────────────────────────────────────────
-
-	override partAdded(partName: string, instance: any): void {
-		super.partAdded(partName, instance);
-		if (instance === this.labelDisplay) {
-			this.labelDisplay!.text = this._label;
-		}
-		if (instance === this.iconDisplay) {
-			this.iconDisplay!.source = this._icon;
-		}
-	}
+	// ── Protected methods ─────────────────────────────────────────────────
 
 	/**
 	 * Called when the user taps the button (touch ends within the button bounds).
@@ -156,13 +143,12 @@ export class Button extends Component implements IDisplayText {
 		this.dispatchEventWith(Event.CHANGE);
 	}
 
-	// ── Event handlers ──────────────────────────────────────────────────
+	// ── Private methods ───────────────────────────────────────────────────
 
-	private _onTouchBegin = (e: Event): void => {
+	private _onTouchBegin = (_e: Event): void => {
 		if (!this.enabled) return;
 		this._touchCaptured = true;
 		this.invalidateState();
-		// Listen on stage for TOUCH_END and TOUCH_CANCEL to properly release
 		const stage = this.stage;
 		if (stage) {
 			stage.addEventListener(TouchEvent.TOUCH_END, this._onStageTouchEnd);
@@ -176,7 +162,6 @@ export class Button extends Component implements IDisplayText {
 			stage.removeEventListener(TouchEvent.TOUCH_END, this._onStageTouchEnd);
 			stage.removeEventListener(TouchEvent.TOUCH_CANCEL, this._onTouchCancel);
 		}
-		// Check if the touch target is within this button
 		const target = (e as TouchEvent).target;
 		if (target instanceof DisplayObject && this.contains(target)) {
 			this.buttonReleased();
@@ -185,7 +170,7 @@ export class Button extends Component implements IDisplayText {
 		this.invalidateState();
 	};
 
-	private _onTouchCancel = (e: Event): void => {
+	private _onTouchCancel = (_e: Event): void => {
 		const stage = this.stage;
 		if (stage) {
 			stage.removeEventListener(TouchEvent.TOUCH_END, this._onStageTouchEnd);

@@ -21,14 +21,18 @@ interface ThemeConfig {
  * @event Event.COMPLETE  Dispatched when the theme config is loaded and all skins are registered.
  */
 export class Theme extends EventDispatcher {
+	// ── Instance fields ───────────────────────────────────────────────────
+
 	private _configURL: string;
 	private _initialized: boolean;
 	private _skinMap: Record<string, string> = {};
 	private _styles: Record<string, unknown> = {};
 	private _delayList: Component[] = [];
-	private _adapter: IThemeAdapter | undefined;
+	private _adapter?: IThemeAdapter;
 
-	constructor(configURL: string, adapter?: IThemeAdapter) {
+	// ── Constructor ───────────────────────────────────────────────────────
+
+	public constructor(configURL: string, adapter?: IThemeAdapter) {
 		super();
 		this._configURL = configURL;
 		this._initialized = !configURL;
@@ -36,10 +40,38 @@ export class Theme extends EventDispatcher {
 		if (configURL) this._load(configURL);
 	}
 
-	// ── Loading ───────────────────────────────────────────────────────────
+	// ── Public methods ────────────────────────────────────────────────────
+
+	/**
+	 * Map a default skin class name for a host component class name.
+	 * @param hostComponentKey  e.g. "eui.Button" or "app.MyButton"
+	 * @param skinName          e.g. "skins.ButtonSkin"
+	 */
+	public mapSkin(hostComponentKey: string, skinName: string): void {
+		if (!hostComponentKey || !skinName) return;
+		this._skinMap[hostComponentKey] = skinName;
+	}
+
+	/**
+	 * Look up the default skin name for a component instance.
+	 * Search order: hostComponentKey → class name → parent class names up to Component.
+	 */
+	public getSkinName(client: Component): string {
+		if (!this._initialized) {
+			if (!this._delayList.includes(client)) this._delayList.push(client);
+			return '';
+		}
+		return this._skinMap[client.hostComponentKey] ?? this._findSkinName(client);
+	}
+
+	public getStyleConfig(style: string): unknown {
+		return this._styles[style];
+	}
+
+	// ── Private methods ───────────────────────────────────────────────────
 
 	private _load(url: string): void {
-		const adapter = this._adapter ?? defaultThemeAdapter;
+		const adapter = this._adapter ?? _defaultThemeAdapter;
 		adapter.getTheme(
 			url,
 			data => this._onConfigLoaded(data),
@@ -62,7 +94,6 @@ export class Theme extends EventDispatcher {
 			data = raw as ThemeConfig;
 		}
 
-		// Register skin mappings
 		if (data.skins) {
 			for (const [key, val] of Object.entries(data.skins)) {
 				if (!this._skinMap[key]) this.mapSkin(key, val);
@@ -70,9 +101,6 @@ export class Theme extends EventDispatcher {
 		}
 
 		if (data.styles) this._styles = data.styles;
-
-		// gjs policy: skins are already registered via generateEUI at script load time.
-		// path/content policies: not handled at runtime (compile-time only).
 
 		this._onLoaded();
 	}
@@ -96,30 +124,6 @@ export class Theme extends EventDispatcher {
 		list.length = 0;
 	}
 
-	// ── Public API ────────────────────────────────────────────────────────
-
-	/**
-	 * Map a default skin class name for a host component class name.
-	 * @param hostComponentKey  e.g. "eui.Button" or "app.MyButton"
-	 * @param skinName          e.g. "skins.ButtonSkin"
-	 */
-	mapSkin(hostComponentKey: string, skinName: string): void {
-		if (!hostComponentKey || !skinName) return;
-		this._skinMap[hostComponentKey] = skinName;
-	}
-
-	/**
-	 * Look up the default skin name for a component instance.
-	 * Search order: hostComponentKey → class name → parent class names up to Component.
-	 */
-	getSkinName(client: Component): string {
-		if (!this._initialized) {
-			if (!this._delayList.includes(client)) this._delayList.push(client);
-			return '';
-		}
-		return this._skinMap[client.hostComponentKey] ?? this._findSkinName(client);
-	}
-
 	private _findSkinName(proto: unknown): string {
 		if (!proto || proto === Object.prototype) return '';
 		const ctor = (proto as { constructor?: { name?: string } }).constructor;
@@ -129,15 +133,11 @@ export class Theme extends EventDispatcher {
 		if (name) return name;
 		return this._findSkinName(Object.getPrototypeOf(proto));
 	}
-
-	getStyleConfig(style: string): unknown {
-		return this._styles[style];
-	}
 }
 
 // ── Default theme adapter (fetch via XHR) ─────────────────────────────────────
 
-const defaultThemeAdapter: IThemeAdapter = {
+const _defaultThemeAdapter: IThemeAdapter = {
 	getTheme(url, onSuccess, onError) {
 		const xhr = new XMLHttpRequest();
 		xhr.open('GET', url);

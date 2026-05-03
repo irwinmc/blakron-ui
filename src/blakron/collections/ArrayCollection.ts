@@ -12,88 +12,84 @@ import type { ICollection } from './ICollection.js';
  * @defaultProperty source
  */
 export class ArrayCollection extends EventDispatcher implements ICollection {
+	// ── Instance fields ───────────────────────────────────────────────────
+
 	private _source: unknown[];
 
-	constructor(source?: unknown[]) {
+	// ── Constructor ───────────────────────────────────────────────────────
+
+	public constructor(source?: unknown[]) {
 		super();
 		this._source = source ?? [];
 	}
 
-	// ── source ──────────────────────────────────────────────────────────
+	// ── Getters / Setters ─────────────────────────────────────────────────
 
-	/** The underlying array. Setting this replaces the entire collection (RESET). */
-	get source(): unknown[] {
+	public get source(): unknown[] {
 		return this._source;
 	}
-	set source(value: unknown[]) {
+
+	public set source(value: unknown[]) {
 		this._source = value ?? [];
-		this.dispatchCoEvent(CollectionEventKind.RESET);
+		this._dispatchCoEvent(CollectionEventKind.RESET);
 	}
 
-	// ── ICollection ─────────────────────────────────────────────────────
-
-	get length(): number {
+	public get length(): number {
 		return this._source.length;
 	}
 
-	getItemAt(index: number): unknown {
+	// ── Public methods ────────────────────────────────────────────────────
+
+	public getItemAt(index: number): unknown {
 		return this._source[index];
 	}
 
-	getItemIndex(item: unknown): number {
+	public getItemIndex(item: unknown): number {
 		return this._source.indexOf(item);
 	}
 
-	// ── Mutation helpers ────────────────────────────────────────────────
-
-	/** Append an item to the end of the list. */
-	addItem(item: unknown): void {
+	public addItem(item: unknown): void {
 		this._source.push(item);
-		this.dispatchCoEvent(CollectionEventKind.ADD, this._source.length - 1, -1, [item]);
+		this._dispatchCoEvent(CollectionEventKind.ADD, this._source.length - 1, -1, [item]);
 	}
 
-	/** Insert an item at the given index. */
-	addItemAt(item: unknown, index: number): void {
+	public addItemAt(item: unknown, index: number): void {
 		if (index < 0 || index > this._source.length) {
 			throw new RangeError(`ArrayCollection.addItemAt: index ${index} out of range`);
 		}
 		this._source.splice(index, 0, item);
-		this.dispatchCoEvent(CollectionEventKind.ADD, index, -1, [item]);
+		this._dispatchCoEvent(CollectionEventKind.ADD, index, -1, [item]);
 	}
 
-	/** Remove and return the item at the given index. */
-	removeItemAt(index: number): unknown {
+	public removeItemAt(index: number): unknown {
 		if (index < 0 || index >= this._source.length) {
 			throw new RangeError(`ArrayCollection.removeItemAt: index ${index} out of range`);
 		}
 		const item = this._source.splice(index, 1)[0];
-		this.dispatchCoEvent(CollectionEventKind.REMOVE, index, -1, [item]);
+		this._dispatchCoEvent(CollectionEventKind.REMOVE, index, -1, [item]);
 		return item;
 	}
 
-	/** Replace the item at the given index and return the old item. */
-	replaceItemAt(item: unknown, index: number): unknown {
+	public replaceItemAt(item: unknown, index: number): unknown {
 		if (index < 0 || index >= this._source.length) {
 			throw new RangeError(`ArrayCollection.replaceItemAt: index ${index} out of range`);
 		}
 		const old = this._source.splice(index, 1, item)[0];
-		this.dispatchCoEvent(CollectionEventKind.REPLACE, index, -1, [item], [old]);
+		this._dispatchCoEvent(CollectionEventKind.REPLACE, index, -1, [item], [old]);
 		return old;
 	}
 
-	/** Notify the view that the given item's properties have changed. */
-	itemUpdated(item: unknown): void {
+	public itemUpdated(item: unknown): void {
 		const index = this.getItemIndex(item);
 		if (index !== -1) {
-			this.dispatchCoEvent(CollectionEventKind.UPDATE, index, -1, [item]);
+			this._dispatchCoEvent(CollectionEventKind.UPDATE, index, -1, [item]);
 		}
 	}
 
-	/** Remove every item from the list. */
-	removeAll(): void {
+	public removeAll(): void {
 		const items = this._source.slice();
 		this._source.length = 0;
-		this.dispatchCoEvent(CollectionEventKind.REMOVE, 0, -1, items);
+		this._dispatchCoEvent(CollectionEventKind.REMOVE, 0, -1, items);
 	}
 
 	/**
@@ -101,15 +97,13 @@ export class ArrayCollection extends EventDispatcher implements ICollection {
 	 * **not** reset scroll position in the view — individual add/remove events
 	 * are dispatched instead.
 	 */
-	replaceAll(newSource: unknown[]): void {
+	public replaceAll(newSource: unknown[]): void {
 		const src = newSource ?? [];
 		const newLen = src.length;
 		const oldLen = this._source.length;
-		// Remove extras from the tail
 		for (let i = newLen; i < oldLen; i++) {
 			this.removeItemAt(newLen);
 		}
-		// Replace or add from head
 		for (let i = 0; i < newLen; i++) {
 			if (i >= oldLen) this.addItemAt(src[i], i);
 			else this.replaceItemAt(src[i], i);
@@ -117,18 +111,17 @@ export class ArrayCollection extends EventDispatcher implements ICollection {
 		this._source = src;
 	}
 
-	/** Manually refresh the view (e.g. after sorting/filtering the source directly). */
-	refresh(): void {
-		this.dispatchCoEvent(CollectionEventKind.REFRESH);
+	public refresh(): void {
+		this._dispatchCoEvent(CollectionEventKind.REFRESH);
 	}
 
 	/**
 	 * Sort the collection in place using a comparator function.
 	 * Dispatches REFRESH after sorting.
 	 */
-	sort(compareFunction: (a: unknown, b: unknown) => number): void {
+	public sort(compareFunction: (a: unknown, b: unknown) => number): void {
 		this._source.sort(compareFunction);
-		this.dispatchCoEvent(CollectionEventKind.REFRESH);
+		this._dispatchCoEvent(CollectionEventKind.REFRESH);
 	}
 
 	/**
@@ -136,7 +129,7 @@ export class ArrayCollection extends EventDispatcher implements ICollection {
 	 * @param fieldName Property name to sort by.
 	 * @param options   Sort options: 0=ascending string, 4=descending, 16=numeric.
 	 */
-	sortOn(fieldName: string, options = 0): void {
+	public sortOn(fieldName: string, options = 0): void {
 		const descending = (options & 4) !== 0;
 		const numeric = (options & 16) !== 0;
 		this._source.sort((a, b) => {
@@ -150,7 +143,7 @@ export class ArrayCollection extends EventDispatcher implements ICollection {
 			}
 			return descending ? -result : result;
 		});
-		this.dispatchCoEvent(CollectionEventKind.REFRESH);
+		this._dispatchCoEvent(CollectionEventKind.REFRESH);
 	}
 
 	/**
@@ -158,14 +151,14 @@ export class ArrayCollection extends EventDispatcher implements ICollection {
 	 * Dispatches REFRESH after filtering.
 	 * Note: items that are filtered out are removed from the source array.
 	 */
-	filterFunction(testFn: (item: unknown) => boolean): void {
+	public filterFunction(testFn: (item: unknown) => boolean): void {
 		this._source = this._source.filter(testFn);
-		this.dispatchCoEvent(CollectionEventKind.REFRESH);
+		this._dispatchCoEvent(CollectionEventKind.REFRESH);
 	}
 
-	// ── Internal ────────────────────────────────────────────────────────
+	// ── Private methods ───────────────────────────────────────────────────
 
-	private dispatchCoEvent(
+	private _dispatchCoEvent(
 		kind: CollectionEventKind,
 		location = -1,
 		oldLocation = -1,

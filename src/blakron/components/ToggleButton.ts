@@ -7,7 +7,7 @@ import { Button } from './Button.js';
  * States: same as Button (`up`, `down`, `disabled`, `upAndSelected`, `downAndSelected`, `disabledAndSelected`).
  */
 export class ToggleButton extends Button {
-	constructor() {
+	public constructor() {
 		super();
 		this.toggle = true;
 	}

@@ -15,46 +15,37 @@ import type { Component } from './Component.js';
  * changes to its children when `currentState` changes.
  */
 export class Skin extends EventDispatcher {
-	/**
-	 * Names of the skin parts exposed by this skin.
-	 * Set by the EXML compiler or manually in hand-written skins.
-	 */
-	skinParts: string[] = [];
+	// ── Instance fields ───────────────────────────────────────────────────
 
-	// ── Size hints (influence host component measurement) ─────────────────
-	width: number = NaN;
-	height: number = NaN;
-	minWidth: number = 0;
-	maxWidth: number = 100000;
-	minHeight: number = 0;
-	maxHeight: number = 100000;
+	public skinParts: string[] = [];
+	public width: number = NaN;
+	public height: number = NaN;
+	public minWidth: number = 0;
+	public maxWidth: number = 100000;
+	public minHeight: number = 0;
+	public maxHeight: number = 100000;
+	public states: State[] = [];
 
-	/**
-	 * The visual children managed by this skin.
-	 * Set by the EXML compiler via `elementsContent = [...]`.
-	 */
-	_elementsContent: DisplayObject[] = [];
+	private _elementsContent: DisplayObject[] = [];
+	private _hostComponent?: Component;
+	private _currentState = '';
+	private _stateInitialized = false;
 
-	set elementsContent(value: DisplayObject[]) {
+	// ── Getters / Setters ─────────────────────────────────────────────────
+
+	public get elementsContent(): DisplayObject[] {
+		return this._elementsContent;
+	}
+
+	public set elementsContent(value: DisplayObject[]) {
 		this._elementsContent = value ?? [];
 	}
 
-	/**
-	 * Get a skin part by name. Used by Component to bind parts.
-	 */
-	getPart(name: string): unknown {
-		return (this as Record<string, unknown>)[name];
-	}
-
-	// ── Host component ────────────────────────────────────────────────────
-
-	private _hostComponent: Component | undefined;
-
-	get hostComponent(): Component | undefined {
+	public get hostComponent(): Component | undefined {
 		return this._hostComponent;
 	}
 
-	set hostComponent(value: Component | undefined) {
+	public set hostComponent(value: Component | undefined) {
 		if (this._hostComponent === value) return;
 
 		if (this._hostComponent) {
@@ -77,39 +68,39 @@ export class Skin extends EventDispatcher {
 		PropertyEvent.dispatchPropertyEvent(this, 'hostComponent');
 	}
 
-	private _onHostAddedToStage = (): void => {
-		this._initializeStates();
-	};
-
-	// ── View states ───────────────────────────────────────────────────────
-
-	/**
-	 * State definitions. Set by EXML compiler or manually.
-	 */
-	states: State[] = [];
-
-	private _currentState = '';
-	private _stateInitialized = false;
-
-	get currentState(): string {
+	public get currentState(): string {
 		return this._currentState;
 	}
 
-	set currentState(value: string) {
+	public set currentState(value: string) {
 		if (this._currentState === value) return;
 		const old = this._currentState;
 		this._currentState = value;
 		this._applyState(old, value);
 	}
 
-	hasState(stateName: string): boolean {
+	// ── Public methods ────────────────────────────────────────────────────
+
+	/**
+	 * Get a skin part by name. Used by Component to bind parts.
+	 */
+	public getPart(name: string): unknown {
+		return (this as Record<string, unknown>)[name];
+	}
+
+	public hasState(stateName: string): boolean {
 		return this.states.some(s => s.name === stateName);
 	}
+
+	// ── Private methods ───────────────────────────────────────────────────
+
+	private _onHostAddedToStage = (): void => {
+		this._initializeStates();
+	};
 
 	private _initializeStates(): void {
 		if (this._stateInitialized) return;
 		this._stateInitialized = true;
-		// Apply initial state overrides
 		this._applyState('', this._currentState);
 	}
 
@@ -121,7 +112,6 @@ export class Skin extends EventDispatcher {
 	private _applyState(fromState: string, toState: string): void {
 		if (!this.states || this.states.length === 0) return;
 
-		// Remove overrides from old state
 		const oldState = this.states.find(s => s.name === fromState);
 		if (oldState) {
 			for (const override of oldState.overrides) {
@@ -129,7 +119,6 @@ export class Skin extends EventDispatcher {
 			}
 		}
 
-		// Apply overrides for new state
 		const newState = this.states.find(s => s.name === toState);
 		if (newState) {
 			for (const override of newState.overrides) {

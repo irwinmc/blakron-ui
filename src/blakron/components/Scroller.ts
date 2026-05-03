@@ -16,53 +16,44 @@ import { PropertyEvent } from '../events/PropertyEvent.js';
  * @skinPart verticalScrollBar   — the VScrollBar skin part.
  */
 export class Scroller extends Component {
-	// ── Skin parts ──────────────────────────────────────────────────────
+	// ── Static fields ─────────────────────────────────────────────────────
 
-	/** [SkinPart] Horizontal scroll bar. */
-	horizontalScrollBar?: HScrollBar;
-	/** [SkinPart] Vertical scroll bar. */
-	verticalScrollBar?: VScrollBar;
+	public static readonly DEFAULT_THRESHOLD = 8;
 
-	// ── Private state ───────────────────────────────────────────────────
+	private static readonly _vpBounds = new Rectangle();
 
-	private _viewport: IViewport | undefined;
+	// ── Instance fields ───────────────────────────────────────────────────
+
+	public horizontalScrollBar?: HScrollBar;
+	public verticalScrollBar?: VScrollBar;
+	public scrollFactor = 1.0;
+	public bounces = true;
+
+	private _viewport?: IViewport;
 	private _horizontalScrollPolicy = ScrollPolicy.AUTO;
 	private _verticalScrollPolicy = ScrollPolicy.AUTO;
-
-	/** Scroll throw speed multiplier. */
-	scrollFactor = 1.0;
-	/** Whether content bounces when dragged past the edge. */
-	bounces = true;
-
 	private _hScroll: TouchScroll;
 	private _vScroll: TouchScroll;
-
-	// Touch tracking
 	private _touchPointID = -1;
 	private _startTouchPointX = 0;
 	private _startTouchPointY = 0;
 
-	/** Reusable Rectangle for viewport bounds queries. */
-	private static readonly _vpBounds = new Rectangle();
+	// ── Constructor ───────────────────────────────────────────────────────
 
-	/** Scroll begin threshold in pixels. */
-	static readonly DEFAULT_THRESHOLD = 8;
-
-	// ── Constructor ─────────────────────────────────────────────────────
-
-	constructor() {
+	public constructor() {
 		super();
 		this._hScroll = new TouchScroll(this.onHScrollUpdate, this.onHScrollEnd);
 		this._vScroll = new TouchScroll(this.onVScrollUpdate, this.onVScrollEnd);
 		this.touchChildren = true;
 	}
 
-	// ── viewport ────────────────────────────────────────────────────────
+	// ── Getters / Setters ─────────────────────────────────────────────────
 
-	get viewport(): IViewport | undefined {
+	public get viewport(): IViewport | undefined {
 		return this._viewport;
 	}
-	set viewport(value: IViewport | undefined) {
+
+	public set viewport(value: IViewport | undefined) {
 		if (value === this._viewport) return;
 		const old = this._viewport;
 		if (old) {
@@ -80,27 +71,27 @@ export class Scroller extends Component {
 		this.invalidateDisplayList();
 	}
 
-	// ── Scroll policies ─────────────────────────────────────────────────
-
-	get horizontalScrollPolicy(): string {
+	public get horizontalScrollPolicy(): string {
 		return this._horizontalScrollPolicy;
 	}
-	set horizontalScrollPolicy(value: string) {
+
+	public set horizontalScrollPolicy(value: string) {
 		if (this._horizontalScrollPolicy === value) return;
 		this._horizontalScrollPolicy = value;
 		this.invalidateDisplayList();
 	}
 
-	get verticalScrollPolicy(): string {
+	public get verticalScrollPolicy(): string {
 		return this._verticalScrollPolicy;
 	}
-	set verticalScrollPolicy(value: string) {
+
+	public set verticalScrollPolicy(value: string) {
 		if (this._verticalScrollPolicy === value) return;
 		this._verticalScrollPolicy = value;
 		this.invalidateDisplayList();
 	}
 
-	// ── Skin part lifecycle ─────────────────────────────────────────────
+	// ── Override methods ──────────────────────────────────────────────────
 
 	protected override partAdded(partName: string, instance: unknown): void {
 		super.partAdded(partName, instance);
@@ -124,16 +115,22 @@ export class Scroller extends Component {
 		}
 	}
 
-	// ── updateDisplayList ───────────────────────────────────────────────
-
-	override updateDisplayList(unscaledWidth: number, unscaledHeight: number): void {
+	public override updateDisplayList(unscaledWidth: number, unscaledHeight: number): void {
 		super.updateDisplayList(unscaledWidth, unscaledHeight);
-		this.updateScrollBarVisibility();
+		this._updateScrollBarVisibility();
 	}
 
-	// ── Scroll bar visibility ───────────────────────────────────────────
+	public override onRemoveFromStage(): void {
+		super.onRemoveFromStage();
+		this._removeStageTouchListeners();
+		this._hScroll.stop();
+		this._vScroll.stop();
+		this._touchPointID = -1;
+	}
 
-	private updateScrollBarVisibility(): void {
+	// ── Private methods ───────────────────────────────────────────────────
+
+	private _updateScrollBarVisibility(): void {
 		const vp = this._viewport;
 		if (!vp) return;
 
@@ -142,7 +139,6 @@ export class Scroller extends Component {
 		const vpWidth = b.width;
 		const vpHeight = b.height;
 
-		// Horizontal
 		const hsb = this.horizontalScrollBar;
 		if (hsb) {
 			const maxScrollH = Math.max(0, vp.contentWidth - vpWidth);
@@ -153,12 +149,10 @@ export class Scroller extends Component {
 			} else if (policy === ScrollPolicy.OFF) {
 				hsb.visible = false;
 			} else {
-				// AUTO
 				hsb.visible = canScrollH;
 			}
 		}
 
-		// Vertical
 		const vsb = this.verticalScrollBar;
 		if (vsb) {
 			const maxScrollV = Math.max(0, vp.contentHeight - vpHeight);
@@ -169,29 +163,24 @@ export class Scroller extends Component {
 			} else if (policy === ScrollPolicy.OFF) {
 				vsb.visible = false;
 			} else {
-				// AUTO
 				vsb.visible = canScrollV;
 			}
 		}
 	}
-
-	// ── Viewport property change ────────────────────────────────────────
 
 	private _onViewportPropChange = (e: Event): void => {
 		const pe = e as PropertyEvent;
 		switch (pe.property) {
 			case 'contentWidth':
 			case 'contentHeight':
-				this.updateScrollBarVisibility();
+				this._updateScrollBarVisibility();
 				break;
 		}
 	};
 
-	// ── Touch handlers ──────────────────────────────────────────────────
-
 	private _onTouchBegin = (e: Event): void => {
 		const te = e as TouchEvent;
-		if (this._touchPointID !== -1) return; // already tracking
+		if (this._touchPointID !== -1) return;
 
 		const vp = this._viewport;
 		if (!vp) return;
@@ -203,9 +192,14 @@ export class Scroller extends Component {
 		this._hScroll.stop();
 		this._vScroll.stop();
 
-		// Register move/end on stage so we receive them regardless of target
-		const stage = (this as unknown as { stage?: { addEventListener: Function; removeEventListener: Function } })
-			.stage;
+		const stage = (
+			this as unknown as {
+				stage?: {
+					addEventListener: (t: string, l: (e: Event) => void) => void;
+					removeEventListener: (t: string, l: (e: Event) => void) => void;
+				};
+			}
+		).stage;
 		if (stage) {
 			stage.addEventListener(TouchEvent.TOUCH_MOVE, this._onTouchMove);
 			stage.addEventListener(TouchEvent.TOUCH_END, this._onTouchEnd);
@@ -214,8 +208,14 @@ export class Scroller extends Component {
 	};
 
 	private _removeStageTouchListeners(): void {
-		const stage = (this as unknown as { stage?: { addEventListener: Function; removeEventListener: Function } })
-			.stage;
+		const stage = (
+			this as unknown as {
+				stage?: {
+					addEventListener: (t: string, l: (e: Event) => void) => void;
+					removeEventListener: (t: string, l: (e: Event) => void) => void;
+				};
+			}
+		).stage;
 		if (stage) {
 			stage.removeEventListener(TouchEvent.TOUCH_MOVE, this._onTouchMove);
 			stage.removeEventListener(TouchEvent.TOUCH_END, this._onTouchEnd);
@@ -234,11 +234,9 @@ export class Scroller extends Component {
 		const moveY = this._startTouchPointY - te.stageY;
 
 		if (!this._hScroll.isStarted() && !this._vScroll.isStarted()) {
-			// Check if we've passed the threshold
 			if (Math.abs(moveX) < Scroller.DEFAULT_THRESHOLD && Math.abs(moveY) < Scroller.DEFAULT_THRESHOLD) {
 				return;
 			}
-			// Start scrolling in the direction with larger movement
 			const tb = Scroller._vpBounds;
 			vp.getLayoutBounds(tb);
 			const maxH = Math.max(0, vp.contentWidth - tb.width);
@@ -288,8 +286,6 @@ export class Scroller extends Component {
 			this._vScroll.finish(vp.scrollV, Math.max(0, vp.contentHeight - b.height));
 		}
 	};
-
-	// ── TouchScroll callbacks ───────────────────────────────────────────
 
 	private onHScrollUpdate = (scrollPos: number): void => {
 		const vp = this._viewport;

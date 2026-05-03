@@ -8,17 +8,14 @@ import type { IOverride } from './IOverride.js';
  * removed when it becomes inactive.
  */
 export class State {
-	/**
-	 * The name of this state.
-	 */
-	name: string;
+	// ── Instance fields ───────────────────────────────────────────────────
 
-	/**
-	 * The list of overrides to apply when this state is active.
-	 */
-	overrides: IOverride[];
+	public name: string;
+	public overrides: IOverride[];
 
-	constructor(name: string, overrides: IOverride[] = []) {
+	// ── Constructor ───────────────────────────────────────────────────────
+
+	public constructor(name: string, overrides: IOverride[] = []) {
 		this.name = name;
 		this.overrides = overrides;
 	}

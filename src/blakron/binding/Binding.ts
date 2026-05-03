@@ -18,16 +18,15 @@ export class Binding {
 	 * // label.text === user.name; auto-updates when user dispatches PropertyChange
 	 * ```
 	 */
-	static bindProperty(host: unknown, chain: string[], target: unknown, prop: string): Watcher | null {
-		const watcher = Watcher.watch(host as IEventDispatcher | null, chain, null, null);
+	public static bindProperty(host: unknown, chain: string[], target: unknown, prop: string): Watcher | undefined {
+		const watcher = Watcher.watch(host as IEventDispatcher | undefined, chain, undefined, undefined);
 		if (watcher) {
 			const assign = (value: unknown): void => {
 				(target as Record<string, unknown>)[prop] = value;
 			};
-			watcher.setHandler(assign, null);
+			watcher.setHandler(assign, undefined);
 			assign(watcher.getValue());
 
-			// Auto-register on Skin for cleanup
 			if (host && typeof host === 'object' && '$watchers' in host) {
 				const skin = host as unknown as Skin & { $watchers: Watcher[] };
 				if (!skin.$watchers) skin.$watchers = [];
@@ -44,13 +43,13 @@ export class Binding {
 	 * Binding.bindHandler(user, ['name'], (v) => console.log(v), null);
 	 * ```
 	 */
-	static bindHandler(
+	public static bindHandler(
 		host: unknown,
 		chain: string[],
 		handler: (value: unknown) => void,
 		thisObject: unknown,
-	): Watcher | null {
-		const watcher = Watcher.watch(host as IEventDispatcher | null, chain, handler, thisObject);
+	): Watcher | undefined {
+		const watcher = Watcher.watch(host as IEventDispatcher | undefined, chain, handler, thisObject);
 		if (watcher) {
 			handler.call(thisObject, watcher.getValue());
 		}
@@ -66,37 +65,36 @@ export class Binding {
 	 * The result is the string concatenation of all template values, written
 	 * to `target[prop]`.
 	 */
-	static bindProperties(
+	public static bindProperties(
 		host: unknown,
 		templates: unknown[],
 		chainIndex: number[],
 		target: unknown,
 		prop: string,
-	): Watcher | null {
-		// Simple single-chain fast path
+	): Watcher | undefined {
 		if (templates.length === 1 && chainIndex.length === 1) {
 			return Binding.bindProperty(host, (templates[0] as string).split('.'), target, prop);
 		}
 
 		const assign = (): void => {
-			(target as Record<string, unknown>)[prop] = joinValues(templates);
+			(target as Record<string, unknown>)[prop] = _joinValues(templates);
 		};
 
-		let lastWatcher: Watcher | null = null;
+		let lastWatcher: Watcher | undefined;
 		for (const index of chainIndex) {
 			const element = templates[index];
-			let watcher: Watcher | null = null;
+			let watcher: Watcher | undefined;
 
 			if (typeof element === 'string') {
-				watcher = Watcher.watch(host as IEventDispatcher | null, element.split('.'), null, null);
+				watcher = Watcher.watch(host as IEventDispatcher | undefined, element.split('.'), undefined, undefined);
 			} else if (element instanceof Watcher) {
 				watcher = element;
-				watcher.reset(host as IEventDispatcher | null);
+				watcher.reset(host as IEventDispatcher | undefined);
 			}
 
 			if (watcher) {
 				templates[index] = watcher;
-				watcher.setHandler(assign, null);
+				watcher.setHandler(assign, undefined);
 
 				if (host && typeof host === 'object' && '$watchers' in host) {
 					const skin = host as unknown as Skin & { $watchers: Watcher[] };
@@ -115,8 +113,8 @@ export class Binding {
 
 // ── Helpers ─────────────────────────────────────────────────────────
 
-function joinValues(templates: unknown[]): string {
-	let value: string = '';
+function _joinValues(templates: unknown[]): string {
+	let value = '';
 	for (const item of templates) {
 		value += item instanceof Watcher ? String(item.getValue() ?? '') : String(item);
 	}

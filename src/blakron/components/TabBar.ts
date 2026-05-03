@@ -14,19 +14,20 @@ import { JustifyAlign } from '../layouts/JustifyAlign.js';
  * @defaultProperty dataProvider
  */
 export class TabBar extends ListBase {
-	/** Per-renderer tap handler, stored so we can remove it in rendererRemoved. */
+	// ── Instance fields ───────────────────────────────────────────────────
+
 	private readonly _rendererHandlers = new Map<ItemRenderer, (e: Event) => void>();
 
-	// ── Constructor ─────────────────────────────────────────────────────
+	// ── Constructor ───────────────────────────────────────────────────────
 
-	constructor() {
+	public constructor() {
 		super();
 		this.useVirtualLayout = false;
 	}
 
-	// ── createChildren ──────────────────────────────────────────────────
+	// ── Override methods ──────────────────────────────────────────────────
 
-	override createChildren(): void {
+	public override createChildren(): void {
 		if (!this.layout) {
 			const hl = new HorizontalLayout();
 			hl.gap = 0;
@@ -36,10 +37,8 @@ export class TabBar extends ListBase {
 		super.createChildren();
 	}
 
-	// ── Renderer lifecycle ──────────────────────────────────────────────
-
 	protected override rendererAdded(renderer: ItemRenderer, _index: number, _item: unknown): void {
-		const handler = (e: Event): void => {
+		const handler = (_e: Event): void => {
 			const idx = renderer.itemIndex;
 			if (idx >= 0) this.selectedIndex = idx;
 			ItemTapEvent.dispatchItemTapEvent(this, renderer.data, idx, renderer);

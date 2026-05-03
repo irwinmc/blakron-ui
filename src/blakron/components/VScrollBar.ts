@@ -9,7 +9,9 @@ import { PropertyEvent } from '../events/PropertyEvent.js';
  * vertical scroll position (`scrollV`) relative to content height.
  */
 export class VScrollBar extends ScrollBarBase {
-	override updateDisplayList(unscaledWidth: number, unscaledHeight: number): void {
+	// ── Override methods ──────────────────────────────────────────────────
+
+	public override updateDisplayList(unscaledWidth: number, unscaledHeight: number): void {
 		super.updateDisplayList(unscaledWidth, unscaledHeight);
 		const thumb = this.thumb;
 		const viewport = this.viewport;

@@ -1,43 +1,48 @@
 import { ToggleButton } from './ToggleButton.js';
-import { Event } from '@blakron/core';
 
 /**
  * Manages a group of mutually exclusive RadioButtons.
  * Only one radio button in a group can be selected at a time.
  */
 export class RadioButtonGroup {
+	// ── Instance fields ───────────────────────────────────────────────────
+
 	private _radioButtons: RadioButton[] = [];
-	private _selectedValue: string | number | undefined;
-	private _selectedRadioButton: RadioButton | undefined;
+	private _selectedValue?: string | number;
+	private _selectedRadioButton?: RadioButton;
 	private _name: string;
 
-	constructor(name: string = '') {
+	// ── Constructor ───────────────────────────────────────────────────────
+
+	public constructor(name = '') {
 		this._name = name;
 	}
 
-	get name(): string {
+	// ── Getters / Setters ─────────────────────────────────────────────────
+
+	public get name(): string {
 		return this._name;
 	}
 
-	get numRadioButtons(): number {
+	public get numRadioButtons(): number {
 		return this._radioButtons.length;
 	}
 
-	get selectedValue(): string | number | undefined {
+	public get selectedValue(): string | number | undefined {
 		return this._selectedValue;
 	}
 
-	set selectedValue(value: string | number | undefined) {
+	public set selectedValue(value: string | number | undefined) {
 		if (this._selectedValue === value) return;
 		this._selectedValue = value;
-		this.updateSelected();
+		this._updateSelected();
 	}
 
-	get selection(): RadioButton | undefined {
+	public get selection(): RadioButton | undefined {
 		return this._selectedRadioButton;
 	}
 
-	set selection(value: RadioButton | undefined) {
+	public set selection(value: RadioButton | undefined) {
 		if (this._selectedRadioButton === value) return;
 		this._selectedRadioButton = value;
 		this._selectedValue = value?.value;
@@ -46,19 +51,18 @@ export class RadioButtonGroup {
 		}
 	}
 
-	/** Add a RadioButton to this group. */
-	addInstance(radioButton: RadioButton): void {
+	// ── Public methods ────────────────────────────────────────────────────
+
+	public addInstance(radioButton: RadioButton): void {
 		if (this._radioButtons.indexOf(radioButton) !== -1) return;
 		this._radioButtons.push(radioButton);
-		// If this radio's value matches the current selection, select it
 		if (this._selectedValue !== undefined && radioButton.value === this._selectedValue) {
 			radioButton.selected = true;
 			this._selectedRadioButton = radioButton;
 		}
 	}
 
-	/** Remove a RadioButton from this group. */
-	removeInstance(radioButton: RadioButton): void {
+	public removeInstance(radioButton: RadioButton): void {
 		const idx = this._radioButtons.indexOf(radioButton);
 		if (idx === -1) return;
 		this._radioButtons.splice(idx, 1);
@@ -68,8 +72,7 @@ export class RadioButtonGroup {
 		}
 	}
 
-	/** Called by a RadioButton when it gets selected. */
-	notifySelected(radioButton: RadioButton): void {
+	public notifySelected(radioButton: RadioButton): void {
 		this._selectedRadioButton = radioButton;
 		this._selectedValue = radioButton.value;
 		for (const rb of this._radioButtons) {
@@ -79,7 +82,9 @@ export class RadioButtonGroup {
 		}
 	}
 
-	private updateSelected(): void {
+	// ── Private methods ───────────────────────────────────────────────────
+
+	private _updateSelected(): void {
 		this._selectedRadioButton = undefined;
 		for (const rb of this._radioButtons) {
 			if (rb.value === this._selectedValue) {
@@ -112,19 +117,25 @@ function getGroup(name: string): RadioButtonGroup {
  * States: same as Button (`up`, `down`, `disabled`, `upAndSelected`, `downAndSelected`, `disabledAndSelected`).
  */
 export class RadioButton extends ToggleButton {
-	private _groupName: string = '';
-	private _group: RadioButtonGroup | undefined;
+	// ── Instance fields ───────────────────────────────────────────────────
+
+	private _groupName = '';
+	private _group?: RadioButtonGroup;
 	private _value: string | number = '';
 
-	constructor() {
+	// ── Constructor ───────────────────────────────────────────────────────
+
+	public constructor() {
 		super();
 	}
 
-	get group(): RadioButtonGroup | undefined {
+	// ── Getters / Setters ─────────────────────────────────────────────────
+
+	public get group(): RadioButtonGroup | undefined {
 		return this._group;
 	}
 
-	set group(value: RadioButtonGroup | undefined) {
+	public set group(value: RadioButtonGroup | undefined) {
 		if (this._group === value) return;
 		if (this._group) {
 			this._group.removeInstance(this);
@@ -135,31 +146,30 @@ export class RadioButton extends ToggleButton {
 		}
 	}
 
-	get groupName(): string {
+	public get groupName(): string {
 		return this._groupName;
 	}
 
-	set groupName(value: string) {
+	public set groupName(value: string) {
 		if (this._groupName === value) return;
 		this._groupName = value;
 		this.group = value ? getGroup(value) : undefined;
 	}
 
-	get value(): string | number {
+	public get value(): string | number {
 		return this._value;
 	}
 
-	set value(val: string | number) {
+	public set value(val: string | number) {
 		if (this._value === val) return;
 		this._value = val;
 	}
 
-	// When a RadioButton is selected, notify the group for mutual exclusion
-	override get selected(): boolean {
+	public override get selected(): boolean {
 		return super.selected;
 	}
 
-	override set selected(value: boolean) {
+	public override set selected(value: boolean) {
 		if (this.selected === value) return;
 		super.selected = value;
 		if (value && this._group) {

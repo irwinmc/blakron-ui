@@ -8,31 +8,25 @@ import type { Skin } from '../components/Skin.js';
  * and removes it when the state is deactivated.
  */
 export class AddItems implements IOverride {
-	/**
-	 * The id of the item in the skin to add.
-	 */
-	target: string;
-	/**
-	 * The id of the container in the skin to add the item to.
-	 */
-	destination: string;
-	/**
-	 * The index at which to insert the item. -1 means append.
-	 */
-	position: number;
-	/**
-	 * The property name on the destination that holds the child list.
-	 */
-	propertyName: string;
+	// ── Instance fields ───────────────────────────────────────────────────
 
-	constructor(target: string, destination: string, position = -1, propertyName = '') {
+	public target: string;
+	public destination: string;
+	public position: number;
+	public propertyName: string;
+
+	// ── Constructor ───────────────────────────────────────────────────────
+
+	public constructor(target: string, destination: string, position = -1, propertyName = '') {
 		this.target = target;
 		this.destination = destination;
 		this.position = position;
 		this.propertyName = propertyName;
 	}
 
-	apply(_host: Component, skin: Skin): void {
+	// ── Public methods ────────────────────────────────────────────────────
+
+	public apply(_host: Component, skin: Skin): void {
 		const item = skin.getPart(this.target);
 		const dest = skin.getPart(this.destination);
 		if (!(item instanceof DisplayObject) || !(dest instanceof DisplayObjectContainer)) return;
@@ -44,7 +38,7 @@ export class AddItems implements IOverride {
 		}
 	}
 
-	remove(_host: Component, skin: Skin): void {
+	public remove(_host: Component, skin: Skin): void {
 		const item = skin.getPart(this.target);
 		const dest = skin.getPart(this.destination);
 		if (!(item instanceof DisplayObject) || !(dest instanceof DisplayObjectContainer)) return;

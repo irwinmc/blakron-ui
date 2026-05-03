@@ -6,7 +6,9 @@ import type { IAssetAdapter } from './IAssetAdapter.js';
  * resolves them to Texture instances.
  */
 export class DefaultAssetAdapter implements IAssetAdapter {
-	getAsset(source: string, callback: (content: Texture | undefined, source: string) => void): void {
+	// ── Public methods ────────────────────────────────────────────────────
+
+	public getAsset(source: string, callback: (content: Texture | undefined, source: string) => void): void {
 		const loader = new ImageLoader();
 		loader.addEventListener(Event.COMPLETE, (): void => {
 			if (!loader.data) {

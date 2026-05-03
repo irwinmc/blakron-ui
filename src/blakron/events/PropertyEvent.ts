@@ -1,15 +1,23 @@
 import { Event, type IEventDispatcher } from '@blakron/core';
 
 export class PropertyEvent extends Event {
-	static readonly PROPERTY_CHANGE = 'propertyChange';
+	// ── Static fields ─────────────────────────────────────────────────────
 
-	property = '';
+	public static readonly PROPERTY_CHANGE = 'propertyChange';
 
-	constructor(type: string, bubbles = false, cancelable = false) {
+	// ── Instance fields ───────────────────────────────────────────────────
+
+	public property = '';
+
+	// ── Constructor ───────────────────────────────────────────────────────
+
+	public constructor(type: string, bubbles = false, cancelable = false) {
 		super(type, bubbles, cancelable);
 	}
 
-	static dispatchPropertyEvent(target: IEventDispatcher, property: string): boolean {
+	// ── Public methods ────────────────────────────────────────────────────
+
+	public static dispatchPropertyEvent(target: IEventDispatcher, property: string): boolean {
 		if (!target.hasEventListener(PropertyEvent.PROPERTY_CHANGE)) return true;
 		const e = new PropertyEvent(PropertyEvent.PROPERTY_CHANGE);
 		e.property = property;

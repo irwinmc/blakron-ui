@@ -9,17 +9,19 @@ import { Event } from '@blakron/core';
  * Egret-compatible: eui.ScrollerThrowEvent
  */
 export class ScrollerThrowEvent extends Event {
-	/** Dispatched when a horizontal throw begins. */
-	static readonly THROW_H = 'throwH';
-	/** Dispatched when a vertical throw begins. */
-	static readonly THROW_V = 'throwV';
+	// ── Static fields ─────────────────────────────────────────────────────
 
-	/** Current scroll position when the throw starts. */
-	currentPos = 0;
-	/** Target scroll position the throw animation will reach. */
-	toPos = 0;
+	public static readonly THROW_H = 'throwH';
+	public static readonly THROW_V = 'throwV';
 
-	constructor(type: string, bubbles = false, cancelable = false) {
+	// ── Instance fields ───────────────────────────────────────────────────
+
+	public currentPos = 0;
+	public toPos = 0;
+
+	// ── Constructor ───────────────────────────────────────────────────────
+
+	public constructor(type: string, bubbles = false, cancelable = false) {
 		super(type, bubbles, cancelable);
 	}
 }

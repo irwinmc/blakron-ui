@@ -8,6 +8,8 @@ import { PropertyEvent } from '../events/PropertyEvent.js';
  * Base class for future Slider / ScrollBar-with-value components.
  */
 export class Range extends Component {
+	// ── Instance fields ───────────────────────────────────────────────────
+
 	private _maximum = 100;
 	private _maxChanged = false;
 	private _minimum = 0;
@@ -19,12 +21,13 @@ export class Range extends Component {
 	private _snapIntervalChanged = false;
 	private _explicitSnapInterval = false;
 
-	// ── maximum ─────────────────────────────────────────────────────────
+	// ── Getters / Setters ─────────────────────────────────────────────────
 
-	get maximum(): number {
+	public get maximum(): number {
 		return this._maximum;
 	}
-	set maximum(value: number) {
+
+	public set maximum(value: number) {
 		value = +value || 0;
 		if (this._maximum === value) return;
 		this._maximum = value;
@@ -33,12 +36,11 @@ export class Range extends Component {
 		this.invalidateDisplayList();
 	}
 
-	// ── minimum ─────────────────────────────────────────────────────────
-
-	get minimum(): number {
+	public get minimum(): number {
 		return this._minimum;
 	}
-	set minimum(value: number) {
+
+	public set minimum(value: number) {
 		value = +value || 0;
 		if (this._minimum === value) return;
 		this._minimum = value;
@@ -47,30 +49,20 @@ export class Range extends Component {
 		this.invalidateDisplayList();
 	}
 
-	// ── value ───────────────────────────────────────────────────────────
-
-	get value(): number {
+	public get value(): number {
 		return this._valueChanged ? this._changedValue : this._value;
 	}
-	set value(newValue: number) {
+
+	public set value(newValue: number) {
 		newValue = +newValue || 0;
 		this.setValuePending(newValue);
 	}
 
-	protected setValuePending(newValue: number): boolean {
-		if (newValue === this.value) return false;
-		this._changedValue = newValue;
-		this._valueChanged = true;
-		this.invalidateProperties();
-		return true;
-	}
-
-	// ── snapInterval ────────────────────────────────────────────────────
-
-	get snapInterval(): number {
+	public get snapInterval(): number {
 		return this._snapInterval;
 	}
-	set snapInterval(value: number) {
+
+	public set snapInterval(value: number) {
 		this._explicitSnapInterval = true;
 		value = +value || 0;
 		if (value === this._snapInterval) return;
@@ -84,12 +76,11 @@ export class Range extends Component {
 		this.invalidateProperties();
 	}
 
-	// ── commitProperties ────────────────────────────────────────────────
+	// ── Override methods ──────────────────────────────────────────────────
 
-	override commitProperties(): void {
+	public override commitProperties(): void {
 		super.commitProperties();
 
-		// Ensure minimum <= maximum
 		if (this._minimum > this._maximum) {
 			if (!this._maxChanged) {
 				this._minimum = this._maximum;
@@ -108,7 +99,20 @@ export class Range extends Component {
 		}
 	}
 
-	// ── nearestValidValue ───────────────────────────────────────────────
+	public override updateDisplayList(w: number, h: number): void {
+		super.updateDisplayList(w, h);
+		this.updateSkinDisplayList();
+	}
+
+	// ── Protected methods ─────────────────────────────────────────────────
+
+	protected setValuePending(newValue: number): boolean {
+		if (newValue === this.value) return false;
+		this._changedValue = newValue;
+		this._valueChanged = true;
+		this.invalidateProperties();
+		return true;
+	}
 
 	/**
 	 * Returns the closest valid value to `value` that is between minimum and maximum
@@ -137,8 +141,6 @@ export class Range extends Component {
 		return validValue / scale + this._minimum;
 	}
 
-	// ── setValue (final) ────────────────────────────────────────────────
-
 	protected setValue(value: number): void {
 		if (this._value === value) return;
 		if (this._maximum > this._minimum) {
@@ -149,13 +151,6 @@ export class Range extends Component {
 		this._valueChanged = false;
 		this.invalidateDisplayList();
 		PropertyEvent.dispatchPropertyEvent(this, 'value');
-	}
-
-	// ── updateDisplayList ───────────────────────────────────────────────
-
-	override updateDisplayList(w: number, h: number): void {
-		super.updateDisplayList(w, h);
-		this.updateSkinDisplayList();
 	}
 
 	/**

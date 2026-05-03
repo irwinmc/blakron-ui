@@ -17,27 +17,22 @@ type ValidatorClient = QueueClient;
  *   3. validateDisplayList — shallowest first
  */
 export class Validator extends EventDispatcher {
-	private _targetLevel = Infinity;
+	// ── Instance fields ───────────────────────────────────────────────────
 
-	// ── Properties queue ──────────────────────────────────────────────────
+	private _targetLevel = Infinity;
 	private _propsFlag = false;
 	private _clientPropsFlag = false;
 	private _propsQueue = new DepthQueue();
-
-	// ── Size queue ────────────────────────────────────────────────────────
 	private _sizeFlag = false;
 	private _clientSizeFlag = false;
 	private _sizeQueue = new DepthQueue();
-
-	// ── Display list queue ────────────────────────────────────────────────
 	private _displayFlag = false;
 	private _displayQueue = new DepthQueue();
-
 	private _scheduled = false;
 
-	// ── Public API ────────────────────────────────────────────────────────
+	// ── Public methods ────────────────────────────────────────────────────
 
-	invalidateProperties(client: ValidatorClient): void {
+	public invalidateProperties(client: ValidatorClient): void {
 		if (!this._propsFlag) {
 			this._propsFlag = true;
 			this._schedule();
@@ -46,7 +41,7 @@ export class Validator extends EventDispatcher {
 		this._propsQueue.insert(client);
 	}
 
-	invalidateSize(client: ValidatorClient): void {
+	public invalidateSize(client: ValidatorClient): void {
 		if (!this._sizeFlag) {
 			this._sizeFlag = true;
 			this._schedule();
@@ -55,7 +50,7 @@ export class Validator extends EventDispatcher {
 		this._sizeQueue.insert(client);
 	}
 
-	invalidateDisplayList(client: ValidatorClient): void {
+	public invalidateDisplayList(client: ValidatorClient): void {
 		if (!this._displayFlag) {
 			this._displayFlag = true;
 			this._schedule();
@@ -66,7 +61,7 @@ export class Validator extends EventDispatcher {
 	/**
 	 * Force immediate validation of all components at or below `target`'s depth.
 	 */
-	validateClient(target: ValidatorClient): void {
+	public validateClient(target: ValidatorClient): void {
 		const oldLevel = this._targetLevel;
 		if (this._targetLevel === Infinity) this._targetLevel = target.nestLevel;
 
@@ -129,12 +124,11 @@ export class Validator extends EventDispatcher {
 		if (oldLevel === Infinity) this._targetLevel = Infinity;
 	}
 
-	// ── Private helpers ───────────────────────────────────────────────────
+	// ── Private methods ───────────────────────────────────────────────────
 
 	private _schedule(): void {
 		if (this._scheduled) return;
 		this._scheduled = true;
-		// Use requestAnimationFrame when available (browser), fall back to setTimeout.
 		const tick =
 			typeof requestAnimationFrame !== 'undefined'
 				? (cb: () => void) => requestAnimationFrame(cb)
@@ -149,7 +143,7 @@ export class Validator extends EventDispatcher {
 		if (this._displayFlag) this._validateDisplayList();
 
 		if (this._propsFlag || this._sizeFlag || this._displayFlag) {
-			this._schedule(); // still dirty — reschedule
+			this._schedule();
 		}
 	}
 
@@ -184,11 +178,15 @@ export class Validator extends EventDispatcher {
 // ── Internal depth-sorted queue ───────────────────────────────────────────────
 
 class DepthQueue {
+	// ── Instance fields ───────────────────────────────────────────────────
+
 	private _bins: Map<number, DepthBin> = new Map();
 	private _min = 0;
 	private _max = -1;
 
-	insert(client: QueueClient): void {
+	// ── Public methods ────────────────────────────────────────────────────
+
+	public insert(client: QueueClient): void {
 		const depth = client.nestLevel;
 		if (this._max < this._min) {
 			this._min = this._max = depth;
@@ -207,7 +205,7 @@ class DepthQueue {
 	/**
 	 * Pop deepest (for size validation — children before parents).
 	 */
-	pop(): QueueClient | undefined {
+	public pop(): QueueClient | undefined {
 		let max = this._max;
 		const min = this._min;
 		while (min <= max) {
@@ -229,7 +227,7 @@ class DepthQueue {
 	/**
 	 * Shift shallowest (for properties / display list — parents before children).
 	 */
-	shift(): QueueClient | undefined {
+	public shift(): QueueClient | undefined {
 		let min = this._min;
 		const max = this._max;
 		while (min <= max) {
@@ -248,7 +246,7 @@ class DepthQueue {
 		return undefined;
 	}
 
-	removeLargestChild(target: QueueClient): QueueClient | undefined {
+	public removeLargestChild(target: QueueClient): QueueClient | undefined {
 		let max = this._max;
 		const min = target.nestLevel;
 		while (min <= max) {
@@ -272,7 +270,7 @@ class DepthQueue {
 		return undefined;
 	}
 
-	removeSmallestChild(target: QueueClient): QueueClient | undefined {
+	public removeSmallestChild(target: QueueClient): QueueClient | undefined {
 		let min = target.nestLevel;
 		const max = this._max;
 		while (min <= max) {
@@ -296,24 +294,29 @@ class DepthQueue {
 		return undefined;
 	}
 
-	isEmpty(): boolean {
+	public isEmpty(): boolean {
 		return this._min > this._max;
 	}
 }
 
 class DepthBin {
-	private _map = new Set<number>();
-	items: QueueClient[] = [];
-	length = 0;
+	// ── Instance fields ───────────────────────────────────────────────────
 
-	insert(client: QueueClient): void {
+	public items: QueueClient[] = [];
+	public length = 0;
+
+	private _map = new Set<number>();
+
+	// ── Public methods ────────────────────────────────────────────────────
+
+	public insert(client: QueueClient): void {
 		if (this._map.has(client.hashCode)) return;
 		this._map.add(client.hashCode);
 		this.items.push(client);
 		this.length++;
 	}
 
-	pop(): QueueClient | undefined {
+	public pop(): QueueClient | undefined {
 		const client = this.items.pop();
 		if (client) {
 			this.length--;
@@ -322,11 +325,11 @@ class DepthBin {
 		return client;
 	}
 
-	has(client: QueueClient): boolean {
+	public has(client: QueueClient): boolean {
 		return this._map.has(client.hashCode);
 	}
 
-	remove(client: QueueClient): void {
+	public remove(client: QueueClient): void {
 		const idx = this.items.indexOf(client);
 		if (idx >= 0) {
 			this.items.splice(idx, 1);
@@ -338,7 +341,7 @@ class DepthBin {
 	/**
 	 * Find a direct or indirect child of `ancestor` in this bin.
 	 */
-	findDescendant(ancestor: QueueClient): QueueClient | undefined {
+	public findDescendant(ancestor: QueueClient): QueueClient | undefined {
 		if (!(ancestor instanceof DisplayObjectContainer)) return undefined;
 		for (const item of this.items) {
 			if (ancestor.contains(item)) return item;

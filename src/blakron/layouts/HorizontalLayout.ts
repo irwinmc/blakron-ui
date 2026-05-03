@@ -26,7 +26,13 @@ interface ChildInfo {
  * - Virtual layout
  */
 export class HorizontalLayout extends LinearLayoutBase {
-	// ── Measure ─────────────────────────────────────────────────────────
+	// ── Override methods ──────────────────────────────────────────────────
+
+	public override elementAdded(index: number): void {
+		if (!this._useVirtualLayout) return;
+		super.elementAdded(index);
+		this.elementSizeTable.splice(index, 0, this.typicalWidth);
+	}
 
 	protected override measureReal(): void {
 		const target = this.target!;
@@ -70,8 +76,6 @@ export class HorizontalLayout extends LinearLayoutBase {
 		const vPadding = this._paddingTop + this._paddingBottom;
 		target.setMeasuredSize(measuredWidth + hPadding, measuredHeight + vPadding);
 	}
-
-	// ── Real layout ─────────────────────────────────────────────────────
 
 	protected override updateDisplayListReal(width: number, height: number): void {
 		const target = this.target!;
@@ -232,8 +236,6 @@ export class HorizontalLayout extends LinearLayoutBase {
 		target.setContentSize(maxX + paddingR, maxY + paddingB);
 	}
 
-	// ── Virtual layout ──────────────────────────────────────────────────
-
 	protected override updateDisplayListVirtual(width: number, height: number): void {
 		const target = this.target!;
 		if (this.indexInViewCalculated) this.indexInViewCalculated = false;
@@ -250,7 +252,6 @@ export class HorizontalLayout extends LinearLayoutBase {
 			return;
 		}
 
-		// Release renderers outside the visible range back to the pool
 		target.setVirtualElementIndicesInView(this.startIndex, this.endIndex);
 
 		const endIdx = this.endIndex;
@@ -285,7 +286,6 @@ export class HorizontalLayout extends LinearLayoutBase {
 		const elementSizeTable = this.elementSizeTable;
 
 		for (let i = this.startIndex; i <= endIdx; i++) {
-			// Use getVirtualElementAt to create/reuse renderers on demand
 			const el = asVirtualLayoutElement(target, i);
 			if (!el || !el.includeInLayout) continue;
 
@@ -324,8 +324,6 @@ export class HorizontalLayout extends LinearLayoutBase {
 			target.invalidateSize();
 		}
 	}
-
-	// ── Position / size helpers ─────────────────────────────────────────
 
 	protected override getStartPosition(index: number): number {
 		if (!this._useVirtualLayout && this.target) {
@@ -377,12 +375,6 @@ export class HorizontalLayout extends LinearLayoutBase {
 		return totalSize;
 	}
 
-	override elementAdded(index: number): void {
-		if (!this._useVirtualLayout) return;
-		super.elementAdded(index);
-		this.elementSizeTable.splice(index, 0, this.typicalWidth);
-	}
-
 	protected override getIndexInView(): boolean {
 		const target = this.target;
 		if (!target || target.numElements === 0) {
@@ -423,7 +415,6 @@ export class HorizontalLayout extends LinearLayoutBase {
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
-/** Safely get a child as IUIComponent if it implements the interface. */
 function asLayoutElement(target: ILayoutTarget, index: number): IUIComponent | undefined {
 	const child = target.getChildAt(index);
 	if (!child) return undefined;

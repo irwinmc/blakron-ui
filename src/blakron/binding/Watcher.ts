@@ -10,7 +10,30 @@ import { PropertyEvent } from '../events/PropertyEvent.js';
  * constructor directly.
  */
 export class Watcher {
-	// ── Static factory ──────────────────────────────────────────────────
+	// ── Instance fields ───────────────────────────────────────────────────
+
+	private _host?: IEventDispatcher;
+	private readonly _property: string;
+	private _handler?: (value: unknown) => void;
+	private _thisObject: unknown;
+	private readonly _next?: Watcher;
+	private _isExecuting = false;
+
+	// ── Constructor ───────────────────────────────────────────────────────
+
+	public constructor(
+		property: string,
+		handler: ((value: unknown) => void) | undefined,
+		thisObject: unknown,
+		next: Watcher | undefined,
+	) {
+		this._property = property;
+		this._handler = handler;
+		this._thisObject = thisObject;
+		this._next = next;
+	}
+
+	// ── Public methods ────────────────────────────────────────────────────
 
 	/**
 	 * Creates and starts a Watcher for a property chain.
@@ -26,116 +49,79 @@ export class Watcher {
 	 * @param chain  Property names forming the chain, e.g. `['a','b','c']`.
 	 * @param handler Called with the new leaf value whenever the chain changes.
 	 * @param thisObject  `this` context for the handler.
-	 * @returns The head Watcher, or `null` if `chain` is empty.
+	 * @returns The head Watcher, or `undefined` if `chain` is empty.
 	 */
-	static watch(
-		host: IEventDispatcher | null,
+	public static watch(
+		host: IEventDispatcher | undefined,
 		chain: string[],
-		handler: ((value: unknown) => void) | null,
+		handler: ((value: unknown) => void) | undefined,
 		thisObject: unknown,
-	): Watcher | null {
-		if (chain.length === 0) return null;
+	): Watcher | undefined {
+		if (chain.length === 0) return undefined;
 		const property = chain[0];
 		const remaining = chain.slice(1);
-		const next = remaining.length > 0 ? Watcher.watch(null, remaining, handler, thisObject) : null;
+		const next = remaining.length > 0 ? Watcher.watch(undefined, remaining, handler, thisObject) : undefined;
 		const watcher = new Watcher(property, handler, thisObject, next);
 		watcher.reset(host);
 		return watcher;
 	}
 
-	// ── Instance fields ─────────────────────────────────────────────────
-
-	private host: IEventDispatcher | null = null;
-	private readonly property: string;
-	private handler: ((value: unknown) => void) | null;
-	private thisObject: unknown;
-	private readonly next: Watcher | null;
-	private isExecuting = false;
-
-	// ── Constructor (use watch() instead) ───────────────────────────────
-
-	constructor(
-		property: string,
-		handler: ((value: unknown) => void) | null,
-		thisObject: unknown,
-		next: Watcher | null,
-	) {
-		this.property = property;
-		this.handler = handler;
-		this.thisObject = thisObject;
-		this.next = next;
+	public getValue(): unknown {
+		if (this._next) return this._next.getValue();
+		return this._getHostPropertyValue();
 	}
 
-	// ── getValue ────────────────────────────────────────────────────────
-
-	/** Returns the current value of the watched chain (or `undefined`). */
-	getValue(): unknown {
-		if (this.next) return this.next.getValue();
-		return this.getHostPropertyValue();
+	public setHandler(handler: (value: unknown) => void, thisObject: unknown): void {
+		this._handler = handler;
+		this._thisObject = thisObject;
+		if (this._next) this._next.setHandler(handler, thisObject);
 	}
-
-	// ── setHandler ──────────────────────────────────────────────────────
-
-	/** Replaces the handler function propagated through the chain. */
-	setHandler(handler: (value: unknown) => void, thisObject: unknown): void {
-		this.handler = handler;
-		this.thisObject = thisObject;
-		if (this.next) this.next.setHandler(handler, thisObject);
-	}
-
-	// ── reset ───────────────────────────────────────────────────────────
 
 	/**
 	 * Re-points this watcher at a new host.
-	 * Pass `null` to detach from the current host.
+	 * Pass `undefined` to detach from the current host.
 	 */
-	reset(newHost: IEventDispatcher | null): void {
-		// Detach from old host
-		if (this.host) {
-			this.host.removeEventListener(PropertyEvent.PROPERTY_CHANGE, this._onPropertyChange);
+	public reset(newHost: IEventDispatcher | undefined): void {
+		if (this._host) {
+			this._host.removeEventListener(PropertyEvent.PROPERTY_CHANGE, this._onPropertyChange);
 		}
 
-		this.host = newHost;
+		this._host = newHost;
 
-		// Attach to new host
 		if (newHost) {
 			newHost.addEventListener(PropertyEvent.PROPERTY_CHANGE, this._onPropertyChange);
 		}
 
-		// Cascade: the next watcher observes the value of *this* property
-		if (this.next) {
-			this.next.reset(this.getHostPropertyValue() as IEventDispatcher | null);
+		if (this._next) {
+			this._next.reset(this._getHostPropertyValue() as IEventDispatcher | undefined);
 		}
 	}
 
-	// ── unwatch ─────────────────────────────────────────────────────────
-
-	/** Detaches this watcher and nullifies its handler. */
-	unwatch(): void {
-		this.reset(null);
-		this.handler = null;
-		if (this.next) this.next.handler = null;
+	public unwatch(): void {
+		this.reset(undefined);
+		this._handler = undefined;
+		if (this._next) this._next._handler = undefined;
 	}
 
-	// ── Privates ────────────────────────────────────────────────────────
+	// ── Private methods ───────────────────────────────────────────────────
 
-	private getHostPropertyValue(): unknown {
-		return this.host ? (this.host as unknown as Record<string, unknown>)[this.property] : undefined;
+	private _getHostPropertyValue(): unknown {
+		return this._host ? (this._host as unknown as Record<string, unknown>)[this._property] : undefined;
 	}
 
 	private _onPropertyChange = (e: Event): void => {
 		const pe = e as PropertyEvent;
-		if (pe.property !== this.property || this.isExecuting) return;
+		if (pe.property !== this._property || this._isExecuting) return;
 		try {
-			this.isExecuting = true;
-			if (this.next) {
-				this.next.reset(this.getHostPropertyValue() as IEventDispatcher | null);
+			this._isExecuting = true;
+			if (this._next) {
+				this._next.reset(this._getHostPropertyValue() as IEventDispatcher | undefined);
 			}
-			if (this.handler) {
-				this.handler.call(this.thisObject, this.getValue());
+			if (this._handler) {
+				this._handler.call(this._thisObject, this.getValue());
 			}
 		} finally {
-			this.isExecuting = false;
+			this._isExecuting = false;
 		}
 	};
 }

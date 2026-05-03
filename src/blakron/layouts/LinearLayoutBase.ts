@@ -1,5 +1,4 @@
 import { LayoutBase } from './LayoutBase.js';
-import type { ILayoutTarget } from './ILayoutTarget.js';
 import type { IUIComponent } from '../core/IUIComponent.js';
 
 /**
@@ -19,155 +18,113 @@ interface ChildInfo {
  * virtual layout caching, and percent-size distribution.
  */
 export abstract class LinearLayoutBase extends LayoutBase {
-	// ── Alignment ───────────────────────────────────────────────────────
+	// ── Instance fields ───────────────────────────────────────────────────
 
-	protected _horizontalAlign: string = 'left';
-
-	get horizontalAlign(): string {
-		return this._horizontalAlign;
-	}
-	set horizontalAlign(value: string) {
-		if (this._horizontalAlign === value) return;
-		this._horizontalAlign = value;
-		if (this.target) this.target.invalidateDisplayList();
-	}
-
-	protected _verticalAlign: string = 'top';
-
-	get verticalAlign(): string {
-		return this._verticalAlign;
-	}
-	set verticalAlign(value: string) {
-		if (this._verticalAlign === value) return;
-		this._verticalAlign = value;
-		if (this.target) this.target.invalidateDisplayList();
-	}
-
-	// ── Gap ─────────────────────────────────────────────────────────────
-
+	protected _horizontalAlign = 'left';
+	protected _verticalAlign = 'top';
 	protected _gap = 6;
-
-	get gap(): number {
-		return this._gap;
-	}
-	set gap(value: number) {
-		value = +value || 0;
-		if (this._gap === value) return;
-		this._gap = value;
-		this.invalidateTargetLayout();
-	}
-
-	// ── Padding ─────────────────────────────────────────────────────────
-
 	protected _paddingLeft = 0;
 	protected _paddingRight = 0;
 	protected _paddingTop = 0;
 	protected _paddingBottom = 0;
-
-	get paddingLeft(): number {
-		return this._paddingLeft;
-	}
-	set paddingLeft(value: number) {
-		value = +value || 0;
-		if (this._paddingLeft === value) return;
-		this._paddingLeft = value;
-		this.invalidateTargetLayout();
-	}
-
-	get paddingRight(): number {
-		return this._paddingRight;
-	}
-	set paddingRight(value: number) {
-		value = +value || 0;
-		if (this._paddingRight === value) return;
-		this._paddingRight = value;
-		this.invalidateTargetLayout();
-	}
-
-	get paddingTop(): number {
-		return this._paddingTop;
-	}
-	set paddingTop(value: number) {
-		value = +value || 0;
-		if (this._paddingTop === value) return;
-		this._paddingTop = value;
-		this.invalidateTargetLayout();
-	}
-
-	get paddingBottom(): number {
-		return this._paddingBottom;
-	}
-	set paddingBottom(value: number) {
-		value = +value || 0;
-		if (this._paddingBottom === value) return;
-		this._paddingBottom = value;
-		this.invalidateTargetLayout();
-	}
-
-	// ── Invalidation helper ─────────────────────────────────────────────
-
-	protected invalidateTargetLayout(): void {
-		const target = this.target;
-		if (target) {
-			target.invalidateSize();
-			target.invalidateDisplayList();
-		}
-	}
-
-	// ── Virtual layout support ──────────────────────────────────────────
-
 	protected elementSizeTable: number[] = [];
 	protected maxElementSize = 0;
 	protected startIndex = -1;
 	protected endIndex = -1;
 	protected indexInViewCalculated = false;
 
-	override clearVirtualLayoutCache(): void {
+	// ── Getters / Setters ─────────────────────────────────────────────────
+
+	public get horizontalAlign(): string {
+		return this._horizontalAlign;
+	}
+
+	public set horizontalAlign(value: string) {
+		if (this._horizontalAlign === value) return;
+		this._horizontalAlign = value;
+		if (this.target) this.target.invalidateDisplayList();
+	}
+
+	public get verticalAlign(): string {
+		return this._verticalAlign;
+	}
+
+	public set verticalAlign(value: string) {
+		if (this._verticalAlign === value) return;
+		this._verticalAlign = value;
+		if (this.target) this.target.invalidateDisplayList();
+	}
+
+	public get gap(): number {
+		return this._gap;
+	}
+
+	public set gap(value: number) {
+		value = +value || 0;
+		if (this._gap === value) return;
+		this._gap = value;
+		this._invalidateTargetLayout();
+	}
+
+	public get paddingLeft(): number {
+		return this._paddingLeft;
+	}
+
+	public set paddingLeft(value: number) {
+		value = +value || 0;
+		if (this._paddingLeft === value) return;
+		this._paddingLeft = value;
+		this._invalidateTargetLayout();
+	}
+
+	public get paddingRight(): number {
+		return this._paddingRight;
+	}
+
+	public set paddingRight(value: number) {
+		value = +value || 0;
+		if (this._paddingRight === value) return;
+		this._paddingRight = value;
+		this._invalidateTargetLayout();
+	}
+
+	public get paddingTop(): number {
+		return this._paddingTop;
+	}
+
+	public set paddingTop(value: number) {
+		value = +value || 0;
+		if (this._paddingTop === value) return;
+		this._paddingTop = value;
+		this._invalidateTargetLayout();
+	}
+
+	public get paddingBottom(): number {
+		return this._paddingBottom;
+	}
+
+	public set paddingBottom(value: number) {
+		value = +value || 0;
+		if (this._paddingBottom === value) return;
+		this._paddingBottom = value;
+		this._invalidateTargetLayout();
+	}
+
+	// ── Override methods ──────────────────────────────────────────────────
+
+	public override clearVirtualLayoutCache(): void {
 		if (!this._useVirtualLayout) return;
 		this.elementSizeTable = [];
 		this.maxElementSize = 0;
 	}
 
-	override elementRemoved(index: number): void {
+	public override elementRemoved(index: number): void {
 		if (!this._useVirtualLayout) return;
 		super.elementRemoved(index);
 		this.elementSizeTable.splice(index, 1);
 	}
 
-	/** Get the starting position of the element at the given index. */
-	protected getStartPosition(_index: number): number {
-		return 0;
-	}
-
-	/** Get the size of the element at the given index. */
-	protected getElementSize(_index: number): number {
-		return 0;
-	}
-
-	/** Get the total size of all cached elements. */
-	protected getElementTotalSize(): number {
-		return 0;
-	}
-
-	/**
-	 * Binary search to find the element index at a given position.
-	 */
-	protected findIndexAt(x: number, i0: number, i1: number): number {
-		const index = ((i0 + i1) * 0.5) | 0;
-		const elementX = this.getStartPosition(index);
-		const elementWidth = this.getElementSize(index);
-		if (x >= elementX && x < elementX + elementWidth + this._gap) return index;
-		else if (i0 === i1) return -1;
-		else if (x < elementX) return this.findIndexAt(x, i0, Math.max(i0, index - 1));
-		else return this.findIndexAt(x, Math.min(index + 1, i1), i1);
-	}
-
-	/** Check if the visible index range has changed. */
-	protected getIndexInView(): boolean {
-		return false;
-	}
-
-	override scrollPositionChanged(): void {
+	public override scrollPositionChanged(): void {
 		super.scrollPositionChanged();
 		if (this._useVirtualLayout) {
 			const changed = this.getIndexInView();
@@ -178,9 +135,7 @@ export abstract class LinearLayoutBase extends LayoutBase {
 		}
 	}
 
-	// ── Measure / updateDisplayList dispatch ────────────────────────────
-
-	override measure(): void {
+	public override measure(): void {
 		if (!this.target) return;
 		if (this._useVirtualLayout) {
 			this.measureVirtual();
@@ -189,7 +144,7 @@ export abstract class LinearLayoutBase extends LayoutBase {
 		}
 	}
 
-	override updateDisplayList(width: number, height: number): void {
+	public override updateDisplayList(width: number, height: number): void {
 		const target = this.target;
 		if (!target) return;
 
@@ -208,6 +163,8 @@ export abstract class LinearLayoutBase extends LayoutBase {
 		}
 	}
 
+	// ── Protected methods ─────────────────────────────────────────────────
+
 	protected measureReal(): void {
 		// override in subclass
 	}
@@ -224,7 +181,34 @@ export abstract class LinearLayoutBase extends LayoutBase {
 		// override in subclass
 	}
 
-	// ── Percent-size distribution ───────────────────────────────────────
+	protected getStartPosition(_index: number): number {
+		return 0;
+	}
+
+	protected getElementSize(_index: number): number {
+		return 0;
+	}
+
+	protected getElementTotalSize(): number {
+		return 0;
+	}
+
+	/**
+	 * Binary search to find the element index at a given position.
+	 */
+	protected findIndexAt(x: number, i0: number, i1: number): number {
+		const index = ((i0 + i1) * 0.5) | 0;
+		const elementX = this.getStartPosition(index);
+		const elementWidth = this.getElementSize(index);
+		if (x >= elementX && x < elementX + elementWidth + this._gap) return index;
+		else if (i0 === i1) return -1;
+		else if (x < elementX) return this.findIndexAt(x, i0, Math.max(i0, index - 1));
+		else return this.findIndexAt(x, Math.min(index + 1, i1), i1);
+	}
+
+	protected getIndexInView(): boolean {
+		return false;
+	}
 
 	/**
 	 * Distribute available space among percent-sized children,
@@ -285,5 +269,15 @@ export abstract class LinearLayoutBase extends LayoutBase {
 				}
 			}
 		} while (!done);
+	}
+
+	// ── Private methods ───────────────────────────────────────────────────
+
+	private _invalidateTargetLayout(): void {
+		const target = this.target;
+		if (target) {
+			target.invalidateSize();
+			target.invalidateDisplayList();
+		}
 	}
 }

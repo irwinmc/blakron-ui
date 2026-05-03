@@ -21,15 +21,15 @@ type SkinName = string | (new () => Skin) | Skin | undefined;
  * @defaultProperty dataProvider
  */
 export class DataGroup extends Group {
-	// ── Internal state ──────────────────────────────────────────────────
+	// ── Instance fields ───────────────────────────────────────────────────────
 
-	private _dataProvider: ICollection | undefined;
+	private _dataProvider?: ICollection;
 	private _dataProviderChanged = false;
 
-	private _itemRenderer: (new () => ItemRenderer) | undefined;
+	private _itemRenderer?: new () => ItemRenderer;
 	private _itemRendererChanged = false;
 
-	private _itemRendererFunction: ((item: unknown) => (new () => ItemRenderer) | undefined) | undefined;
+	private _itemRendererFunction?: (item: unknown) => (new () => ItemRenderer) | undefined;
 
 	private _itemRendererSkinName: SkinName;
 	private _itemRendererSkinNameChanged = false;
@@ -40,21 +40,22 @@ export class DataGroup extends Group {
 	private readonly _rendererToClass = new Map<ItemRenderer, new () => ItemRenderer>();
 	private readonly _freeRenderers = new Map<new () => ItemRenderer, ItemRenderer[]>();
 	private _renderersBeingUpdated = false;
-	protected _indexToRenderer: (ItemRenderer | undefined)[] = [];
+	private _indexToRenderer: (ItemRenderer | undefined)[] = [];
 	private _createNewRendererFlag = false;
-	private _typicalLayoutRect: Rectangle | undefined;
-	private _typicalItem: unknown = undefined;
+	private _typicalLayoutRect?: Rectangle;
+	private _typicalItem: unknown;
 	private _typicalItemChanged = false;
 	private _cleanFreeRenderer = false;
 
-	// ── dataProvider ────────────────────────────────────────────────────
+	// ── Getters / Setters ─────────────────────────────────────────────────────
 
-	get dataProvider(): ICollection | undefined {
+	public get dataProvider(): ICollection | undefined {
 		return this._dataProvider;
 	}
-	set dataProvider(value: ICollection | undefined) {
+
+	public set dataProvider(value: ICollection | undefined) {
 		if (this._dataProvider === value) return;
-		this.removeDataProviderListener();
+		this._removeDataProviderListener();
 		this._dataProvider = value;
 		this._dataProviderChanged = true;
 		this._cleanFreeRenderer = true;
@@ -63,87 +64,91 @@ export class DataGroup extends Group {
 		this.invalidateDisplayList();
 	}
 
-	private removeDataProviderListener(): void {
-		if (this._dataProvider) {
-			this._dataProvider.removeEventListener(CollectionEvent.COLLECTION_CHANGE, this._onCollectionChange);
-		}
-	}
-
-	// ── itemRenderer ────────────────────────────────────────────────────
-
-	get itemRenderer(): (new () => ItemRenderer) | undefined {
+	public get itemRenderer(): (new () => ItemRenderer) | undefined {
 		return this._itemRenderer;
 	}
-	set itemRenderer(value: (new () => ItemRenderer) | undefined) {
+
+	public set itemRenderer(value: (new () => ItemRenderer) | undefined) {
 		if (this._itemRenderer === value) return;
 		this._itemRenderer = value;
 		this._itemRendererChanged = true;
 		this._typicalItemChanged = true;
 		this._cleanFreeRenderer = true;
-		this.removeDataProviderListener();
+		this._removeDataProviderListener();
 		this.invalidateProperties();
 	}
 
-	// ── itemRendererFunction ────────────────────────────────────────────
-
-	get itemRendererFunction(): ((item: unknown) => (new () => ItemRenderer) | undefined) | undefined {
+	public get itemRendererFunction(): ((item: unknown) => (new () => ItemRenderer) | undefined) | undefined {
 		return this._itemRendererFunction;
 	}
-	set itemRendererFunction(value: ((item: unknown) => (new () => ItemRenderer) | undefined) | undefined) {
+
+	public set itemRendererFunction(value: ((item: unknown) => (new () => ItemRenderer) | undefined) | undefined) {
 		if (this._itemRendererFunction === value) return;
 		this._itemRendererFunction = value;
 		this._itemRendererChanged = true;
 		this._typicalItemChanged = true;
-		this.removeDataProviderListener();
+		this._removeDataProviderListener();
 		this.invalidateProperties();
 	}
 
-	// ── itemRendererSkinName ────────────────────────────────────────────
-
-	get itemRendererSkinName(): SkinName {
+	public get itemRendererSkinName(): SkinName {
 		return this._itemRendererSkinName;
 	}
-	set itemRendererSkinName(value: SkinName) {
+
+	public set itemRendererSkinName(value: SkinName) {
 		if (this._itemRendererSkinName === value) return;
 		this._itemRendererSkinName = value;
 		this._itemRendererSkinNameChanged = true;
 		this.invalidateProperties();
 	}
 
-	// ── useVirtualLayout ────────────────────────────────────────────────
-
-	get useVirtualLayout(): boolean {
+	public get useVirtualLayout(): boolean {
 		const layout = this.layout;
 		if (layout) return layout.useVirtualLayout;
 		return this._useVirtualLayout;
 	}
-	set useVirtualLayout(value: boolean) {
+
+	public set useVirtualLayout(value: boolean) {
 		if (this._useVirtualLayout === value) return;
 		this._useVirtualLayout = value;
 		const layout = this.layout;
 		if (layout) layout.useVirtualLayout = value;
 	}
 
-	// ── numElements override ────────────────────────────────────────────
+	// ── Public methods ────────────────────────────────────────────────────────
 
-	override get numElements(): number {
+	/**
+	 * Update a renderer's itemIndex and data. Called by the layout system.
+	 */
+	public updateRenderer(renderer: ItemRenderer, itemIndex: number, data: unknown): ItemRenderer {
+		this._renderersBeingUpdated = true;
+		renderer.itemIndex = itemIndex;
+		if (renderer.parent === this) {
+			this.setChildIndex(renderer, itemIndex);
+		}
+		renderer.data = data;
+		this._renderersBeingUpdated = false;
+		return renderer;
+	}
+
+	// ── Override methods ──────────────────────────────────────────────────────
+
+	public override get numElements(): number {
 		if (!this._dataProvider) return 0;
 		return this._dataProvider.length;
 	}
 
-	// ── Element access ──────────────────────────────────────────────────
-
-	override getElementAt(index: number): DisplayObject | undefined {
+	public override getElementAt(index: number): DisplayObject | undefined {
 		return this._indexToRenderer[index] ?? undefined;
 	}
 
-	override getVirtualElementAt(index: number): DisplayObject | undefined {
+	public override getVirtualElementAt(index: number): DisplayObject | undefined {
 		index = index | 0;
 		if (!this._dataProvider || index < 0 || index >= this._dataProvider.length) return undefined;
 		let renderer = this._indexToRenderer[index];
 		if (!renderer) {
 			const item = this._dataProvider.getItemAt(index);
-			renderer = this.createVirtualRenderer(item);
+			renderer = this._createVirtualRenderer(item);
 			this._indexToRenderer[index] = renderer;
 			this.updateRenderer(renderer, index, item);
 			if (this._createNewRendererFlag) {
@@ -155,39 +160,36 @@ export class DataGroup extends Group {
 		return renderer;
 	}
 
-	override setVirtualElementIndicesInView(startIndex: number, endIndex: number): void {
+	public override setVirtualElementIndicesInView(startIndex: number, endIndex: number): void {
 		const layout = this.layout;
 		if (!layout?.useVirtualLayout) return;
 		const map = this._indexToRenderer;
 		for (let i = 0; i < map.length; i++) {
 			if (map[i] && (i < startIndex || i > endIndex)) {
-				this.freeRendererByIndex(i);
+				this._freeRendererByIndex(i);
 			}
 		}
 	}
 
-	// ── createChildren ──────────────────────────────────────────────────
-
-	override createChildren(): void {
+	public override createChildren(): void {
 		if (!this.layout) {
 			const vl = new VerticalLayout();
 			vl.gap = 0;
 			vl.horizontalAlign = JustifyAlign.CONTENT_JUSTIFY;
-			// Sync layout's useVirtualLayout with the value set before createChildren ran
-			if (this._useVirtualLayout) vl.useVirtualLayout = true;
+			if (this._useVirtualLayout) {
+				vl.useVirtualLayout = true;
+			}
 			this.layout = vl;
 		}
 		super.createChildren();
 	}
 
-	// ── commitProperties ────────────────────────────────────────────────
-
-	override commitProperties(): void {
+	public override commitProperties(): void {
 		if (this._itemRendererChanged || this._dataProviderChanged || this._useVirtualLayoutChanged) {
-			this.removeAllRenderers();
+			this._removeAllRenderers();
 			const layout = this.layout;
 			if (layout) layout.clearVirtualLayoutCache();
-			this.setTypicalLayoutRect(undefined);
+			this._setTypicalLayoutRect(undefined);
 			this._useVirtualLayoutChanged = false;
 			this._itemRendererChanged = false;
 
@@ -195,15 +197,12 @@ export class DataGroup extends Group {
 				this._dataProvider.addEventListener(CollectionEvent.COLLECTION_CHANGE, this._onCollectionChange);
 			}
 
-			// Use _useVirtualLayout as fallback when layout hasn't been created yet
-			// (commitProperties may run before createChildren if dataProvider/itemRenderer
-			// are set before the component is added to the stage).
 			const useVirtual = layout ? layout.useVirtualLayout : this._useVirtualLayout;
 			if (useVirtual) {
 				this.invalidateSize();
 				this.invalidateDisplayList();
 			} else {
-				this.createRenderers();
+				this._createRenderers();
 			}
 
 			if (this._dataProviderChanged) {
@@ -219,26 +218,24 @@ export class DataGroup extends Group {
 			this._typicalItemChanged = false;
 			if (this._dataProvider && this._dataProvider.length > 0) {
 				this._typicalItem = this._dataProvider.getItemAt(0);
-				this.measureRendererSize();
+				this._measureRendererSize();
 			}
 		}
 
 		if (this._itemRendererSkinNameChanged) {
 			this._itemRendererSkinNameChanged = false;
-			this.applyItemRendererSkinName();
+			this._applyItemRendererSkinName();
 		}
 	}
 
-	// ── measure / updateDisplayList ─────────────────────────────────────
-
-	override measure(): void {
-		if (this.layout?.useVirtualLayout) this.ensureTypicalLayoutElement();
+	public override measure(): void {
+		if (this.layout?.useVirtualLayout) this._ensureTypicalLayoutElement();
 		super.measure();
 	}
 
-	override updateDisplayList(unscaledWidth: number, unscaledHeight: number): void {
+	public override updateDisplayList(unscaledWidth: number, unscaledHeight: number): void {
 		const useVirtual = this.layout?.useVirtualLayout;
-		if (useVirtual) this.ensureTypicalLayoutElement();
+		if (useVirtual) this._ensureTypicalLayoutElement();
 		super.updateDisplayList(unscaledWidth, unscaledHeight);
 		if (useVirtual && this._typicalLayoutRect) {
 			const r0 = this._indexToRenderer[0];
@@ -252,57 +249,7 @@ export class DataGroup extends Group {
 		}
 	}
 
-	// ── Collection change ───────────────────────────────────────────────
-
-	private _onCollectionChange = (e: Event): void => {
-		this.onCollectionChange(e as CollectionEvent);
-	};
-
-	protected onCollectionChange(event: CollectionEvent): void {
-		switch (event.kind) {
-			case CollectionEventKind.ADD:
-				this.itemAddedHandler(event.items, event.location);
-				break;
-			case CollectionEventKind.REMOVE:
-				this.itemRemovedHandler(event.items, event.location);
-				break;
-			case CollectionEventKind.UPDATE:
-			case CollectionEventKind.REPLACE:
-				this.itemUpdatedHandler(event.items[0], event.location);
-				break;
-			case CollectionEventKind.RESET:
-			case CollectionEventKind.REFRESH: {
-				if (this.layout?.useVirtualLayout) {
-					for (let i = this._indexToRenderer.length - 1; i >= 0; i--) {
-						if (this._indexToRenderer[i]) this.freeRendererByIndex(i);
-					}
-				}
-				this._dataProviderChanged = true;
-				this.invalidateProperties();
-				break;
-			}
-		}
-		this.invalidateSize();
-		this.invalidateDisplayList();
-	}
-
-	private itemAddedHandler(items: unknown[], index: number): void {
-		for (let i = 0; i < items.length; i++) this.itemAdded(items[i], index + i);
-		this.resetRenderersIndices();
-	}
-
-	private itemRemovedHandler(items: unknown[], location: number): void {
-		for (let i = items.length - 1; i >= 0; i--) this.itemRemoved(items[i], location + i);
-		this.resetRenderersIndices();
-	}
-
-	private itemUpdatedHandler(item: unknown, location: number): void {
-		if (this._renderersBeingUpdated) return;
-		const renderer = this._indexToRenderer[location];
-		if (renderer) this.updateRenderer(renderer, location, item);
-	}
-
-	// ── Item add / remove ───────────────────────────────────────────────
+	// ── Protected methods (subclass hooks) ────────────────────────────────────
 
 	protected itemAdded(item: unknown, index: number): void {
 		this.layout?.elementAdded(index);
@@ -310,7 +257,7 @@ export class DataGroup extends Group {
 			this._indexToRenderer.splice(index, 0, undefined);
 			return;
 		}
-		const renderer = this.createVirtualRenderer(item);
+		const renderer = this._createVirtualRenderer(item);
 		this._indexToRenderer.splice(index, 0, renderer);
 		if (renderer) {
 			this.updateRenderer(renderer, index, item);
@@ -324,10 +271,12 @@ export class DataGroup extends Group {
 	protected itemRemoved(item: unknown, index: number): void {
 		this.layout?.elementRemoved(index);
 		const oldRenderer = this._indexToRenderer[index];
-		if (this._indexToRenderer.length > index) this._indexToRenderer.splice(index, 1);
+		if (this._indexToRenderer.length > index) {
+			this._indexToRenderer.splice(index, 1);
+		}
 		if (oldRenderer) {
 			if (this.layout?.useVirtualLayout) {
-				this.doFreeRenderer(oldRenderer);
+				this._doFreeRenderer(oldRenderer);
 			} else {
 				this.rendererRemoved(oldRenderer, index, item);
 				this.removeChild(oldRenderer);
@@ -335,10 +284,84 @@ export class DataGroup extends Group {
 		}
 	}
 
-	// ── Renderer creation / pooling ─────────────────────────────────────
+	protected onCollectionChange(event: CollectionEvent): void {
+		switch (event.kind) {
+			case CollectionEventKind.ADD:
+				this._itemAddedHandler(event.items, event.location);
+				break;
+			case CollectionEventKind.REMOVE:
+				this._itemRemovedHandler(event.items, event.location);
+				break;
+			case CollectionEventKind.UPDATE:
+			case CollectionEventKind.REPLACE:
+				this._itemUpdatedHandler(event.items[0], event.location);
+				break;
+			case CollectionEventKind.RESET:
+			case CollectionEventKind.REFRESH: {
+				if (this.layout?.useVirtualLayout) {
+					for (let i = this._indexToRenderer.length - 1; i >= 0; i--) {
+						if (this._indexToRenderer[i]) this._freeRendererByIndex(i);
+					}
+				}
+				this._dataProviderChanged = true;
+				this.invalidateProperties();
+				break;
+			}
+			default:
+				break;
+		}
+		this.invalidateSize();
+		this.invalidateDisplayList();
+	}
 
-	private createVirtualRenderer(item: unknown): ItemRenderer {
-		const rendererClass = this.itemToRendererClass(item);
+	protected rendererAdded(_renderer: ItemRenderer, _index: number, _item: unknown): void {}
+
+	protected rendererRemoved(_renderer: ItemRenderer, _index: number, _item: unknown): void {}
+
+	/**
+	 * Get the renderer at the given index, if one exists.
+	 * Used by subclasses (e.g. ListBase) to update renderer state.
+	 */
+	protected getRendererAt(index: number): ItemRenderer | undefined {
+		return this._indexToRenderer[index];
+	}
+
+	// ── Private methods ───────────────────────────────────────────────────────
+
+	private _removeDataProviderListener(): void {
+		if (this._dataProvider) {
+			this._dataProvider.removeEventListener(CollectionEvent.COLLECTION_CHANGE, this._onCollectionChange);
+		}
+	}
+
+	private _onCollectionChange = (e: Event): void => {
+		this.onCollectionChange(e as CollectionEvent);
+	};
+
+	private _itemAddedHandler(items: unknown[], index: number): void {
+		for (let i = 0; i < items.length; i++) {
+			this.itemAdded(items[i], index + i);
+		}
+		this._resetRenderersIndices();
+	}
+
+	private _itemRemovedHandler(items: unknown[], location: number): void {
+		for (let i = items.length - 1; i >= 0; i--) {
+			this.itemRemoved(items[i], location + i);
+		}
+		this._resetRenderersIndices();
+	}
+
+	private _itemUpdatedHandler(item: unknown, location: number): void {
+		if (this._renderersBeingUpdated) return;
+		const renderer = this._indexToRenderer[location];
+		if (renderer) {
+			this.updateRenderer(renderer, location, item);
+		}
+	}
+
+	private _createVirtualRenderer(item: unknown): ItemRenderer {
+		const rendererClass = this._itemToRendererClass(item);
 		const pool = this._freeRenderers.get(rendererClass);
 		if (pool && pool.length > 0) {
 			const renderer = pool.pop()!;
@@ -347,18 +370,20 @@ export class DataGroup extends Group {
 			return renderer;
 		}
 		this._createNewRendererFlag = true;
-		return this.createOneRenderer(rendererClass);
+		return this._createOneRenderer(rendererClass);
 	}
 
-	private createOneRenderer(rendererClass: new () => ItemRenderer): ItemRenderer {
+	private _createOneRenderer(rendererClass: new () => ItemRenderer): ItemRenderer {
 		const renderer = new rendererClass();
 		this._rendererToClass.set(renderer, rendererClass);
-		if (this._itemRendererSkinName) this.setItemRenderSkinName(renderer, this._itemRendererSkinName);
+		if (this._itemRendererSkinName) {
+			this._setItemRendererSkinName(renderer, this._itemRendererSkinName);
+		}
 		this.addChild(renderer);
 		return renderer;
 	}
 
-	private doFreeRenderer(renderer: ItemRenderer): void {
+	private _doFreeRenderer(renderer: ItemRenderer): void {
 		const cls = this._rendererToClass.get(renderer);
 		if (!cls) return;
 		let pool = this._freeRenderers.get(cls);
@@ -370,54 +395,38 @@ export class DataGroup extends Group {
 		renderer.visible = false;
 	}
 
-	private freeRendererByIndex(index: number): void {
+	private _freeRendererByIndex(index: number): void {
 		const renderer = this._indexToRenderer[index];
 		if (renderer) {
 			delete this._indexToRenderer[index];
-			this.doFreeRenderer(renderer);
+			this._doFreeRenderer(renderer);
 		}
 	}
 
-	// ── Renderer lifecycle ──────────────────────────────────────────────
-
-	updateRenderer(renderer: ItemRenderer, itemIndex: number, data: unknown): ItemRenderer {
-		this._renderersBeingUpdated = true;
-		renderer.itemIndex = itemIndex;
-		if (renderer.parent === this) {
-			this.setChildIndex(renderer, itemIndex);
-		}
-		renderer.data = data;
-		this._renderersBeingUpdated = false;
-		return renderer;
-	}
-
-	protected rendererAdded(_renderer: ItemRenderer, _index: number, _item: unknown): void {}
-	protected rendererRemoved(_renderer: ItemRenderer, _index: number, _item: unknown): void {}
-
-	// ── Private helpers ─────────────────────────────────────────────────
-
-	private itemToRendererClass(item: unknown): new () => ItemRenderer {
+	private _itemToRendererClass(item: unknown): new () => ItemRenderer {
 		let cls: (new () => ItemRenderer) | undefined;
-		if (this._itemRendererFunction) cls = this._itemRendererFunction(item);
+		if (this._itemRendererFunction) {
+			cls = this._itemRendererFunction(item);
+		}
 		if (!cls) cls = this._itemRenderer;
 		if (!cls) cls = ItemRenderer;
 		return cls;
 	}
 
-	private createRenderers(): void {
+	private _createRenderers(): void {
 		if (!this._dataProvider) return;
 		const len = this._dataProvider.length;
 		for (let i = 0; i < len; i++) {
 			const item = this._dataProvider.getItemAt(i);
-			const cls = this.itemToRendererClass(item);
-			const renderer = this.createOneRenderer(cls);
+			const cls = this._itemToRendererClass(item);
+			const renderer = this._createOneRenderer(cls);
 			this._indexToRenderer[i] = renderer;
 			this.updateRenderer(renderer, i, item);
 			this.rendererAdded(renderer, i, item);
 		}
 	}
 
-	private removeAllRenderers(): void {
+	private _removeAllRenderers(): void {
 		for (let i = 0; i < this._indexToRenderer.length; i++) {
 			const renderer = this._indexToRenderer[i];
 			if (renderer) {
@@ -439,7 +448,7 @@ export class DataGroup extends Group {
 		}
 	}
 
-	private resetRenderersIndices(): void {
+	private _resetRenderersIndices(): void {
 		const map = this._indexToRenderer;
 		if (map.length === 0) return;
 		for (let i = 0; i < map.length; i++) {
@@ -447,59 +456,66 @@ export class DataGroup extends Group {
 		}
 	}
 
-	// ── Virtual layout typical size ─────────────────────────────────────
-
-	private ensureTypicalLayoutElement(): void {
+	private _ensureTypicalLayoutElement(): void {
 		if (this._typicalLayoutRect) return;
 		if (this._dataProvider && this._dataProvider.length > 0) {
 			this._typicalItem = this._dataProvider.getItemAt(0);
-			this.measureRendererSize();
+			this._measureRendererSize();
 		}
 	}
 
-	private measureRendererSize(): void {
+	private _measureRendererSize(): void {
 		if (this._typicalItem === undefined) {
-			this.setTypicalLayoutRect(undefined);
+			this._setTypicalLayoutRect(undefined);
 			return;
 		}
-		const renderer = this.createVirtualRenderer(this._typicalItem);
+		const renderer = this._createVirtualRenderer(this._typicalItem);
 		this.updateRenderer(renderer, 0, this._typicalItem);
 		renderer.validateNow();
 		const b = new Rectangle();
 		renderer.getPreferredBounds(b);
 		const rect = new Rectangle(0, 0, b.width, b.height);
 		if (this.layout?.useVirtualLayout) {
-			if (this._createNewRendererFlag) this.rendererAdded(renderer, 0, this._typicalItem);
-			this.doFreeRenderer(renderer);
+			if (this._createNewRendererFlag) {
+				this.rendererAdded(renderer, 0, this._typicalItem);
+			}
+			this._doFreeRenderer(renderer);
 		} else {
 			this.removeChild(renderer);
 		}
-		this.setTypicalLayoutRect(rect);
+		this._setTypicalLayoutRect(rect);
 		this._createNewRendererFlag = false;
 	}
 
-	private setTypicalLayoutRect(rect: Rectangle | undefined): void {
+	private _setTypicalLayoutRect(rect: Rectangle | undefined): void {
 		this._typicalLayoutRect = rect;
 		if (this.layout) {
-			if (rect) this.layout.setTypicalSize(rect.width, rect.height);
-			else this.layout.setTypicalSize(0, 0);
+			if (rect) {
+				this.layout.setTypicalSize(rect.width, rect.height);
+			} else {
+				this.layout.setTypicalSize(0, 0);
+			}
 		}
 	}
 
-	private setItemRenderSkinName(renderer: ItemRenderer, skinName: SkinName): void {
+	private _setItemRendererSkinName(renderer: ItemRenderer, skinName: SkinName): void {
 		if (!renderer.skinNameExplicitlySet) {
 			renderer.skinName = skinName;
 			renderer.skinNameExplicitlySet = false;
 		}
 	}
 
-	private applyItemRendererSkinName(): void {
+	private _applyItemRendererSkinName(): void {
 		const skinName = this._itemRendererSkinName;
 		for (const renderer of this._indexToRenderer) {
-			if (renderer) this.setItemRenderSkinName(renderer, skinName);
+			if (renderer) {
+				this._setItemRendererSkinName(renderer, skinName);
+			}
 		}
 		for (const pool of this._freeRenderers.values()) {
-			for (const renderer of pool) this.setItemRenderSkinName(renderer, skinName);
+			for (const renderer of pool) {
+				this._setItemRendererSkinName(renderer, skinName);
+			}
 		}
 	}
 }

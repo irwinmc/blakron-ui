@@ -10,28 +10,30 @@ import { PropertyEvent } from '../events/PropertyEvent.js';
  * Subclasses (e.g. List) add touch interaction.
  */
 export class ListBase extends DataGroup {
-	// ── selectedIndex ───────────────────────────────────────────────────
+	// ── Instance fields ───────────────────────────────────────────────────
 
 	private _selectedIndex = -1;
 	private _selectedIndexChanged = false;
 
-	get selectedIndex(): number {
+	// ── Getters / Setters ─────────────────────────────────────────────────
+
+	public get selectedIndex(): number {
 		return this._selectedIndex;
 	}
-	set selectedIndex(value: number) {
+
+	public set selectedIndex(value: number) {
 		if (this._selectedIndex === value) return;
 		this._selectedIndex = value;
 		this._selectedIndexChanged = true;
 		this.invalidateProperties();
 	}
 
-	// ── selectedItem ────────────────────────────────────────────────────
-
-	get selectedItem(): unknown {
+	public get selectedItem(): unknown {
 		if (this._selectedIndex < 0 || !this.dataProvider) return undefined;
 		return this.dataProvider.getItemAt(this._selectedIndex);
 	}
-	set selectedItem(value: unknown) {
+
+	public set selectedItem(value: unknown) {
 		if (!this.dataProvider) {
 			this.selectedIndex = -1;
 			return;
@@ -39,9 +41,9 @@ export class ListBase extends DataGroup {
 		this.selectedIndex = this.dataProvider.getItemIndex(value);
 	}
 
-	// ── commitProperties ────────────────────────────────────────────────
+	// ── Override methods ──────────────────────────────────────────────────
 
-	override commitProperties(): void {
+	public override commitProperties(): void {
 		if (this._selectedIndexChanged) {
 			this._selectedIndexChanged = false;
 			this.commitSelection();
@@ -49,27 +51,6 @@ export class ListBase extends DataGroup {
 		super.commitProperties();
 	}
 
-	// ── Selection ───────────────────────────────────────────────────────
-
-	protected commitSelection(): void {
-		const maxIndex = this.dataProvider ? this.dataProvider.length - 1 : -1;
-		if (this._selectedIndex < -1) this._selectedIndex = -1;
-		if (this._selectedIndex > maxIndex) this._selectedIndex = maxIndex;
-
-		PropertyEvent.dispatchPropertyEvent(this, 'selectedIndex');
-		this.itemSelected(this._selectedIndex, true);
-	}
-
-	/**
-	 * Called when an item is selected or deselected.
-	 * Override to update renderer visual state.
-	 */
-	protected itemSelected(index: number, selected: boolean): void {
-		const renderer = this._indexToRenderer[index];
-		if (renderer) renderer.selected = selected;
-	}
-
-	/** Adjust selection after the data provider changes. */
 	protected override onCollectionChange(event: CollectionEvent): void {
 		const kind = event.kind;
 		const location = event.location ?? -1;
@@ -110,5 +91,25 @@ export class ListBase extends DataGroup {
 		}
 
 		super.onCollectionChange(event);
+	}
+
+	// ── Protected methods ─────────────────────────────────────────────────
+
+	protected commitSelection(): void {
+		const maxIndex = this.dataProvider ? this.dataProvider.length - 1 : -1;
+		if (this._selectedIndex < -1) this._selectedIndex = -1;
+		if (this._selectedIndex > maxIndex) this._selectedIndex = maxIndex;
+
+		PropertyEvent.dispatchPropertyEvent(this, 'selectedIndex');
+		this.itemSelected(this._selectedIndex, true);
+	}
+
+	/**
+	 * Called when an item is selected or deselected.
+	 * Override to update renderer visual state.
+	 */
+	protected itemSelected(index: number, selected: boolean): void {
+		const renderer = this.getRendererAt(index);
+		if (renderer) renderer.selected = selected;
 	}
 }

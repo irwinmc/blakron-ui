@@ -47,7 +47,6 @@ function isDeltaIdentity(m: Matrix): boolean {
  * Keeps UIState decoupled from any specific DisplayObject subclass.
  */
 export interface IUIOwner extends DisplayObject {
-	// Lifecycle callbacks — UIState calls these on the owner
 	createChildren(): void;
 	childrenCreated(): void;
 	commitProperties(): void;
@@ -63,11 +62,15 @@ export interface IUIOwner extends DisplayObject {
  * hierarchy clean and avoids prototype manipulation.
  */
 export class UIState {
+	// ── Instance fields ───────────────────────────────────────────────────
+
 	private _v: Record<number, number | boolean>;
 	private _includeInLayout = true;
 	private _owner: IUIOwner;
 
-	constructor(owner: IUIOwner) {
+	// ── Constructor ───────────────────────────────────────────────────────
+
+	public constructor(owner: IUIOwner) {
 		this._owner = owner;
 		this._v = {
 			[K.left]: NaN,
@@ -103,9 +106,166 @@ export class UIState {
 		};
 	}
 
-	// ── Stage attachment ──────────────────────────────────────────────────
+	// ── Getters / Setters ─────────────────────────────────────────────────
 
-	onAddToStage(): void {
+	public get includeInLayout(): boolean {
+		return this._includeInLayout;
+	}
+
+	public set includeInLayout(value: boolean) {
+		value = !!value;
+		if (this._includeInLayout === value) return;
+		this._includeInLayout = value;
+		this._invalidateParentLayout();
+	}
+
+	public get left(): number | string {
+		return this._v[K.left] as number;
+	}
+
+	public set left(value: number | string) {
+		const v = typeof value === 'number' || !value ? +value : String(value).trim();
+		if (this._v[K.left] === v) return;
+		this._v[K.left] = v as number;
+		this._invalidateParentLayout();
+	}
+
+	public get right(): number | string {
+		return this._v[K.right] as number;
+	}
+
+	public set right(value: number | string) {
+		const v = typeof value === 'number' || !value ? +value : String(value).trim();
+		if (this._v[K.right] === v) return;
+		this._v[K.right] = v as number;
+		this._invalidateParentLayout();
+	}
+
+	public get top(): number | string {
+		return this._v[K.top] as number;
+	}
+
+	public set top(value: number | string) {
+		const v = typeof value === 'number' || !value ? +value : String(value).trim();
+		if (this._v[K.top] === v) return;
+		this._v[K.top] = v as number;
+		this._invalidateParentLayout();
+	}
+
+	public get bottom(): number | string {
+		return this._v[K.bottom] as number;
+	}
+
+	public set bottom(value: number | string) {
+		const v = typeof value === 'number' || !value ? +value : String(value).trim();
+		if (this._v[K.bottom] === v) return;
+		this._v[K.bottom] = v as number;
+		this._invalidateParentLayout();
+	}
+
+	public get horizontalCenter(): number | string {
+		return this._v[K.horizontalCenter] as number;
+	}
+
+	public set horizontalCenter(value: number | string) {
+		const v = typeof value === 'number' || !value ? +value : String(value).trim();
+		if (this._v[K.horizontalCenter] === v) return;
+		this._v[K.horizontalCenter] = v as number;
+		this._invalidateParentLayout();
+	}
+
+	public get verticalCenter(): number | string {
+		return this._v[K.verticalCenter] as number;
+	}
+
+	public set verticalCenter(value: number | string) {
+		const v = typeof value === 'number' || !value ? +value : String(value).trim();
+		if (this._v[K.verticalCenter] === v) return;
+		this._v[K.verticalCenter] = v as number;
+		this._invalidateParentLayout();
+	}
+
+	public get percentWidth(): number {
+		return this._v[K.percentWidth] as number;
+	}
+
+	public set percentWidth(value: number) {
+		value = +value;
+		if (this._v[K.percentWidth] === value) return;
+		this._v[K.percentWidth] = value;
+		this._invalidateParentLayout();
+	}
+
+	public get percentHeight(): number {
+		return this._v[K.percentHeight] as number;
+	}
+
+	public set percentHeight(value: number) {
+		value = +value;
+		if (this._v[K.percentHeight] === value) return;
+		this._v[K.percentHeight] = value;
+		this._invalidateParentLayout();
+	}
+
+	public get explicitWidth(): number {
+		return this._owner.explicitWidth;
+	}
+
+	public get explicitHeight(): number {
+		return this._owner.explicitHeight;
+	}
+
+	public get minWidth(): number {
+		return this._v[K.minWidth] as number;
+	}
+
+	public set minWidth(value: number) {
+		value = +value || 0;
+		if (value < 0 || this._v[K.minWidth] === value) return;
+		this._v[K.minWidth] = value;
+		this.invalidateSize();
+		this._invalidateParentLayout();
+	}
+
+	public get maxWidth(): number {
+		return this._v[K.maxWidth] as number;
+	}
+
+	public set maxWidth(value: number) {
+		value = +value || 0;
+		if (value < 0 || this._v[K.maxWidth] === value) return;
+		this._v[K.maxWidth] = value;
+		this.invalidateSize();
+		this._invalidateParentLayout();
+	}
+
+	public get minHeight(): number {
+		return this._v[K.minHeight] as number;
+	}
+
+	public set minHeight(value: number) {
+		value = +value || 0;
+		if (value < 0 || this._v[K.minHeight] === value) return;
+		this._v[K.minHeight] = value;
+		this.invalidateSize();
+		this._invalidateParentLayout();
+	}
+
+	public get maxHeight(): number {
+		return this._v[K.maxHeight] as number;
+	}
+
+	public set maxHeight(value: number) {
+		value = +value || 0;
+		if (value < 0 || this._v[K.maxHeight] === value) return;
+		this._v[K.maxHeight] = value;
+		this.invalidateSize();
+		this._invalidateParentLayout();
+	}
+
+	// ── Public methods ────────────────────────────────────────────────────
+
+	public onAddToStage(): void {
 		this._checkInvalidateFlag();
 		const v = this._v;
 		if (!v[K.initialized]) {
@@ -116,17 +276,7 @@ export class UIState {
 		}
 	}
 
-	private _checkInvalidateFlag(): void {
-		const v = this._v;
-		const owner = this._owner as IUIOwner & IUIComponent;
-		if (v[K.invalidatePropertiesFlag]) validator.invalidateProperties(owner);
-		if (v[K.invalidateSizeFlag]) validator.invalidateSize(owner);
-		if (v[K.invalidateDisplayListFlag]) validator.invalidateDisplayList(owner);
-	}
-
-	// ── commitProperties callback ─────────────────────────────────────────
-
-	onCommitProperties(): void {
+	public onCommitProperties(): void {
 		const v = this._v;
 		const owner = this._owner;
 		if (v[K.oldWidth] !== v[K.width] || v[K.oldHeight] !== v[K.height]) {
@@ -141,118 +291,12 @@ export class UIState {
 		}
 	}
 
-	// ── includeInLayout ───────────────────────────────────────────────────
-
-	get includeInLayout(): boolean {
-		return this._includeInLayout;
-	}
-	set includeInLayout(value: boolean) {
-		value = !!value;
-		if (this._includeInLayout === value) return;
-		this._includeInLayout = value;
-		this._invalidateParentLayout();
-	}
-
-	// ── Anchor constraints ────────────────────────────────────────────────
-
-	get left(): number | string {
-		return this._v[K.left] as number;
-	}
-	set left(value: number | string) {
-		const v = typeof value === 'number' || !value ? +value : String(value).trim();
-		if (this._v[K.left] === v) return;
-		this._v[K.left] = v as number;
-		this._invalidateParentLayout();
-	}
-
-	get right(): number | string {
-		return this._v[K.right] as number;
-	}
-	set right(value: number | string) {
-		const v = typeof value === 'number' || !value ? +value : String(value).trim();
-		if (this._v[K.right] === v) return;
-		this._v[K.right] = v as number;
-		this._invalidateParentLayout();
-	}
-
-	get top(): number | string {
-		return this._v[K.top] as number;
-	}
-	set top(value: number | string) {
-		const v = typeof value === 'number' || !value ? +value : String(value).trim();
-		if (this._v[K.top] === v) return;
-		this._v[K.top] = v as number;
-		this._invalidateParentLayout();
-	}
-
-	get bottom(): number | string {
-		return this._v[K.bottom] as number;
-	}
-	set bottom(value: number | string) {
-		const v = typeof value === 'number' || !value ? +value : String(value).trim();
-		if (this._v[K.bottom] === v) return;
-		this._v[K.bottom] = v as number;
-		this._invalidateParentLayout();
-	}
-
-	get horizontalCenter(): number | string {
-		return this._v[K.horizontalCenter] as number;
-	}
-	set horizontalCenter(value: number | string) {
-		const v = typeof value === 'number' || !value ? +value : String(value).trim();
-		if (this._v[K.horizontalCenter] === v) return;
-		this._v[K.horizontalCenter] = v as number;
-		this._invalidateParentLayout();
-	}
-
-	get verticalCenter(): number | string {
-		return this._v[K.verticalCenter] as number;
-	}
-	set verticalCenter(value: number | string) {
-		const v = typeof value === 'number' || !value ? +value : String(value).trim();
-		if (this._v[K.verticalCenter] === v) return;
-		this._v[K.verticalCenter] = v as number;
-		this._invalidateParentLayout();
-	}
-
-	// ── Percentage sizing ─────────────────────────────────────────────────
-
-	get percentWidth(): number {
-		return this._v[K.percentWidth] as number;
-	}
-	set percentWidth(value: number) {
-		value = +value;
-		if (this._v[K.percentWidth] === value) return;
-		this._v[K.percentWidth] = value;
-		this._invalidateParentLayout();
-	}
-
-	get percentHeight(): number {
-		return this._v[K.percentHeight] as number;
-	}
-	set percentHeight(value: number) {
-		value = +value;
-		if (this._v[K.percentHeight] === value) return;
-		this._v[K.percentHeight] = value;
-		this._invalidateParentLayout();
-	}
-
-	// ── Explicit / measured sizes ─────────────────────────────────────────
-	// explicitWidth/Height live on the owner (DisplayObject), not in _v.
-	// UIState reads them directly from the owner.
-
-	get explicitWidth(): number {
-		return this._owner.explicitWidth;
-	}
-	get explicitHeight(): number {
-		return this._owner.explicitHeight;
-	}
-
-	getWidth(): number {
+	public getWidth(): number {
 		this._validateSizeNow();
 		return this._v[K.width] as number;
 	}
-	setWidth(value: number): void {
+
+	public setWidth(value: number): void {
 		value = +value;
 		const v = this._v;
 		if (value < 0 || (v[K.width] === value && this._owner.explicitWidth === value)) return;
@@ -263,11 +307,12 @@ export class UIState {
 		this._invalidateParentLayout();
 	}
 
-	getHeight(): number {
+	public getHeight(): number {
 		this._validateSizeNow();
 		return this._v[K.height] as number;
 	}
-	setHeight(value: number): void {
+
+	public setHeight(value: number): void {
 		value = +value;
 		const v = this._v;
 		if (value < 0 || (v[K.height] === value && this._owner.explicitHeight === value)) return;
@@ -278,58 +323,12 @@ export class UIState {
 		this._invalidateParentLayout();
 	}
 
-	get minWidth(): number {
-		return this._v[K.minWidth] as number;
-	}
-	set minWidth(value: number) {
-		value = +value || 0;
-		if (value < 0 || this._v[K.minWidth] === value) return;
-		this._v[K.minWidth] = value;
-		this.invalidateSize();
-		this._invalidateParentLayout();
-	}
-
-	get maxWidth(): number {
-		return this._v[K.maxWidth] as number;
-	}
-	set maxWidth(value: number) {
-		value = +value || 0;
-		if (value < 0 || this._v[K.maxWidth] === value) return;
-		this._v[K.maxWidth] = value;
-		this.invalidateSize();
-		this._invalidateParentLayout();
-	}
-
-	get minHeight(): number {
-		return this._v[K.minHeight] as number;
-	}
-	set minHeight(value: number) {
-		value = +value || 0;
-		if (value < 0 || this._v[K.minHeight] === value) return;
-		this._v[K.minHeight] = value;
-		this.invalidateSize();
-		this._invalidateParentLayout();
-	}
-
-	get maxHeight(): number {
-		return this._v[K.maxHeight] as number;
-	}
-	set maxHeight(value: number) {
-		value = +value || 0;
-		if (value < 0 || this._v[K.maxHeight] === value) return;
-		this._v[K.maxHeight] = value;
-		this.invalidateSize();
-		this._invalidateParentLayout();
-	}
-
-	// ── Invalidation cycle ────────────────────────────────────────────────
-
-	setMeasuredSize(width: number, height: number): void {
+	public setMeasuredSize(width: number, height: number): void {
 		this._v[K.measuredWidth] = Math.ceil(+width || 0);
 		this._v[K.measuredHeight] = Math.ceil(+height || 0);
 	}
 
-	invalidateProperties(): void {
+	public invalidateProperties(): void {
 		const v = this._v;
 		if (!v[K.invalidatePropertiesFlag]) {
 			v[K.invalidatePropertiesFlag] = true;
@@ -337,7 +336,7 @@ export class UIState {
 		}
 	}
 
-	validateProperties(): void {
+	public validateProperties(): void {
 		const v = this._v;
 		if (v[K.invalidatePropertiesFlag]) {
 			this._owner.commitProperties();
@@ -345,7 +344,7 @@ export class UIState {
 		}
 	}
 
-	invalidateSize(): void {
+	public invalidateSize(): void {
 		const v = this._v;
 		if (!v[K.invalidateSizeFlag]) {
 			v[K.invalidateSizeFlag] = true;
@@ -353,7 +352,7 @@ export class UIState {
 		}
 	}
 
-	validateSize(recursive = false): void {
+	public validateSize(recursive = false): void {
 		if (recursive && this._owner instanceof DisplayObjectContainer) {
 			for (let i = 0; i < this._owner.numChildren; i++) {
 				const child = this._owner.getChildAt(i);
@@ -370,7 +369,7 @@ export class UIState {
 		}
 	}
 
-	invalidateDisplayList(): void {
+	public invalidateDisplayList(): void {
 		const v = this._v;
 		if (!v[K.invalidateDisplayListFlag]) {
 			v[K.invalidateDisplayListFlag] = true;
@@ -378,7 +377,7 @@ export class UIState {
 		}
 	}
 
-	validateDisplayList(): void {
+	public validateDisplayList(): void {
 		const v = this._v;
 		if (v[K.invalidateDisplayListFlag]) {
 			this._updateFinalSize();
@@ -387,13 +386,11 @@ export class UIState {
 		}
 	}
 
-	validateNow(): void {
+	public validateNow(): void {
 		if (this._owner.stage) validator.validateClient(this._owner as IUIOwner & IUIComponent);
 	}
 
-	// ── Layout bounds ─────────────────────────────────────────────────────
-
-	setLayoutBoundsSize(layoutWidth: number, layoutHeight: number): void {
+	public setLayoutBoundsSize(layoutWidth: number, layoutHeight: number): void {
 		layoutWidth = +layoutWidth;
 		layoutHeight = +layoutHeight;
 		if (layoutWidth < 0 || layoutHeight < 0) return;
@@ -441,7 +438,7 @@ export class UIState {
 		this._setActualSize(fit.w, fit.h);
 	}
 
-	setLayoutBoundsPosition(x: number, y: number): void {
+	public setLayoutBoundsPosition(x: number, y: number): void {
 		const owner = this._owner;
 		const m = owner.matrix;
 		if (!isDeltaIdentity(m) || owner.anchorOffsetX !== 0 || owner.anchorOffsetY !== 0) {
@@ -459,7 +456,7 @@ export class UIState {
 		}
 	}
 
-	getLayoutBounds(bounds: Rectangle): void {
+	public getLayoutBounds(bounds: Rectangle): void {
 		const v = this._v;
 		const w = (v[K.layoutWidthExplicitlySet] as boolean)
 			? (v[K.width] as number)
@@ -474,11 +471,26 @@ export class UIState {
 		this._applyMatrix(bounds, w, h);
 	}
 
-	getPreferredBounds(bounds: Rectangle): void {
+	public getPreferredBounds(bounds: Rectangle): void {
 		this._applyMatrix(bounds, this._preferredUWidth(), this._preferredUHeight());
 	}
 
-	// ── Private helpers ───────────────────────────────────────────────────
+	public _invalidateParentLayout(): void {
+		const parent = this._owner.parent;
+		if (!parent || !this._includeInLayout || !isUIComponent(parent)) return;
+		parent.invalidateSize();
+		parent.invalidateDisplayList();
+	}
+
+	// ── Private methods ───────────────────────────────────────────────────
+
+	private _checkInvalidateFlag(): void {
+		const v = this._v;
+		const owner = this._owner as IUIOwner & IUIComponent;
+		if (v[K.invalidatePropertiesFlag]) validator.invalidateProperties(owner);
+		if (v[K.invalidateSizeFlag]) validator.invalidateSize(owner);
+		if (v[K.invalidateDisplayListFlag]) validator.invalidateDisplayList(owner);
+	}
 
 	private _preferredUWidth(): number {
 		return isNaN(this._owner.explicitWidth) ? (this._v[K.measuredWidth] as number) : this._owner.explicitWidth;
@@ -549,13 +561,6 @@ export class UIState {
 		return false;
 	}
 
-	_invalidateParentLayout(): void {
-		const parent = this._owner.parent;
-		if (!parent || !this._includeInLayout || !isUIComponent(parent)) return;
-		parent.invalidateSize();
-		parent.invalidateDisplayList();
-	}
-
 	private _applyMatrix(bounds: Rectangle, w: number, h: number): void {
 		bounds.setTo(0, 0, w, h);
 		const m = this._anchorMatrix();
@@ -597,9 +602,9 @@ export function isUIComponent(obj: unknown): obj is IUIComponent {
 // ── fitBounds helper ──────────────────────────────────────────────────────────
 
 function fitBounds(
-	layoutW: number,
-	layoutH: number,
-	matrix: Matrix,
+	_layoutW: number,
+	_layoutH: number,
+	_matrix: Matrix,
 	explicitW: number,
 	explicitH: number,
 	preferredW: number,

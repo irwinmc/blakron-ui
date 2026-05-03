@@ -3,10 +3,8 @@ import { Animation } from './Animation.js';
 
 // ── Constants ──────────────────────────────────────────────────────────
 
-/** Max number of historical velocity samples to keep. */
 const MAX_VELOCITY_COUNT = 4;
 
-/** Ease-out cubic for throw-to-boundary animations. */
 function easeOut(ratio: number): number {
 	const inv = ratio - 1.0;
 	return inv * inv * inv + 1;
@@ -24,20 +22,14 @@ function easeOut(ratio: number): number {
  * 3. Call `finish(currentScroll, maxScroll)` on touch-end.
  */
 export class TouchScroll {
+	// ── Instance fields ───────────────────────────────────────────────────
+
+	public scrollFactor = 1.0;
+	public bounces = true;
+
 	private _updateFunction: (scrollPos: number) => void;
 	private _endFunction: () => void;
 	private _animation: Animation;
-
-	// ── Scroll factor (adjustable throw speed) ──────────────────────────
-
-	/** Adjustable throw speed multiplier. 0 disables throw animation. */
-	scrollFactor = 1.0;
-
-	/** Whether the content bounces when dragged past the edge. */
-	bounces = true;
-
-	// ── Internal state ──────────────────────────────────────────────────
-
 	private _previousTime = 0;
 	private _velocity = 0;
 	private _previousVelocity: number[] = [];
@@ -48,45 +40,42 @@ export class TouchScroll {
 	private _offsetPoint = 0;
 	private _started = false;
 
-	constructor(updateFunction: (scrollPos: number) => void, endFunction: () => void) {
+	// ── Constructor ───────────────────────────────────────────────────────
+
+	public constructor(updateFunction: (scrollPos: number) => void, endFunction: () => void) {
 		this._updateFunction = updateFunction;
 		this._endFunction = endFunction;
-		this._animation = new Animation(this.onScrollingUpdate, this);
+		this._animation = new Animation(this._onScrollingUpdate, this);
 		this._animation.easerFunction = easeOut;
 	}
 
-	/** Whether the throw animation is currently playing. */
-	isPlaying(): boolean {
+	// ── Public methods ────────────────────────────────────────────────────
+
+	public isPlaying(): boolean {
 		return this._animation.isPlaying;
 	}
 
-	/** Stop any in-progress throw animation. */
-	stop(): void {
+	public stop(): void {
 		this._animation.stop();
-		ticker.stopTick(this.onTick, this);
+		ticker.stopTick(this._onTick, this);
 		this._started = false;
 	}
 
-	/** Whether `start()` has been called (and `finish()` not yet called). */
-	isStarted(): boolean {
+	public isStarted(): boolean {
 		return this._started;
 	}
 
-	// ── Touch lifecycle ─────────────────────────────────────────────────
-
-	/** Begin tracking touch movement. */
-	start(touchPoint: number): void {
+	public start(touchPoint: number): void {
 		this._started = true;
 		this._velocity = 0;
 		this._previousVelocity.length = 0;
 		this._previousTime = getTimer();
 		this._previousPosition = this._currentPosition = touchPoint;
 		this._offsetPoint = touchPoint;
-		ticker.startTick(this.onTick, this);
+		ticker.startTick(this._onTick, this);
 	}
 
-	/** Update current touch position and apply to scroll. */
-	update(touchPoint: number, maxScrollValue: number, scrollValue: number): void {
+	public update(touchPoint: number, maxScrollValue: number, scrollValue: number): void {
 		maxScrollValue = Math.max(maxScrollValue, 0);
 		this._currentPosition = touchPoint;
 		this._maxScrollPos = maxScrollValue;
@@ -114,23 +103,21 @@ export class TouchScroll {
 		this._updateFunction(scrollPos);
 	}
 
-	/** Finish tracking and compute throw target. */
-	finish(currentScrollPos: number, maxScrollPos: number): void {
-		ticker.stopTick(this.onTick, this);
+	public finish(currentScrollPos: number, maxScrollPos: number): void {
+		ticker.stopTick(this._onTick, this);
 		this._started = false;
 
-		// No throw animation — just snap back to bounds if out of range.
 		if (currentScrollPos < 0 || currentScrollPos > maxScrollPos) {
 			const posTo = Math.max(0, Math.min(maxScrollPos, currentScrollPos));
-			this.throwTo(posTo, 300);
+			this._throwTo(posTo, 300);
 		} else {
 			this._endFunction();
 		}
 	}
 
-	// ── Tick callback (velocity tracking) ───────────────────────────────
+	// ── Private methods ───────────────────────────────────────────────────
 
-	private onTick = (timeStamp: number): boolean => {
+	private _onTick = (timeStamp: number): boolean => {
 		const timeOffset = timeStamp - this._previousTime;
 		if (timeOffset > 10) {
 			const pv = this._previousVelocity;
@@ -145,9 +132,7 @@ export class TouchScroll {
 		return true;
 	};
 
-	// ── Throw animation helpers ─────────────────────────────────────────
-
-	private throwTo(posTo: number, duration = 300): void {
+	private _throwTo(posTo: number, duration = 300): void {
 		const hsp = this._currentScrollPos;
 		if (Math.abs(hsp - posTo) < 0.5) {
 			this._endFunction();
@@ -160,7 +145,7 @@ export class TouchScroll {
 		anim.play();
 	}
 
-	private onScrollingUpdate(animation: Animation): void {
+	private _onScrollingUpdate(animation: Animation): void {
 		this._currentScrollPos = animation.currentValue;
 		this._updateFunction(animation.currentValue);
 	}

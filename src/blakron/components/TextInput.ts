@@ -16,12 +16,10 @@ import type { IDisplayText } from '../core/IDisplayText.js';
  * Egret-compatible: eui.TextInput
  */
 export class TextInput extends Component implements IDisplayText {
-	// ── Skin parts ────────────────────────────────────────────────────────────
+	// ── Instance fields ───────────────────────────────────────────────────
 
-	textDisplay?: EditableText;
-	promptDisplay?: Label;
-
-	// ── Cached values (applied when skin parts are added) ─────────────────────
+	public textDisplay?: EditableText;
+	public promptDisplay?: Label;
 
 	private _prompt = '';
 	private _text = '';
@@ -31,75 +29,65 @@ export class TextInput extends Component implements IDisplayText {
 	private _restrict = '';
 	private _isFocused = false;
 
-	// ── prompt ────────────────────────────────────────────────────────────────
+	// ── Getters / Setters ─────────────────────────────────────────────────
 
-	get prompt(): string {
+	public get prompt(): string {
 		return this.promptDisplay ? this.promptDisplay.text : this._prompt;
 	}
 
-	set prompt(value: string) {
+	public set prompt(value: string) {
 		this._prompt = value;
 		if (this.promptDisplay) this.promptDisplay.text = value;
 		this.invalidateState();
 	}
 
-	// ── text ──────────────────────────────────────────────────────────────────
-
-	get text(): string {
+	public get text(): string {
 		return this.textDisplay ? this.textDisplay.text : this._text;
 	}
 
-	set text(value: string) {
+	public set text(value: string) {
 		this._text = value;
 		if (this.textDisplay) this.textDisplay.text = value;
 		this.invalidateState();
 	}
 
-	// ── textColor ─────────────────────────────────────────────────────────────
-
-	get textColor(): number {
+	public get textColor(): number {
 		return this.textDisplay ? this.textDisplay.textColor : (this._textColor ?? 0xffffff);
 	}
 
-	set textColor(value: number) {
+	public set textColor(value: number) {
 		this._textColor = value;
 		if (this.textDisplay) this.textDisplay.textColor = value;
 	}
 
-	// ── displayAsPassword ─────────────────────────────────────────────────────
-
-	get displayAsPassword(): boolean {
+	public get displayAsPassword(): boolean {
 		return this.textDisplay ? this.textDisplay.displayAsPassword : this._displayAsPassword;
 	}
 
-	set displayAsPassword(value: boolean) {
+	public set displayAsPassword(value: boolean) {
 		this._displayAsPassword = value;
 		if (this.textDisplay) this.textDisplay.displayAsPassword = value;
 	}
 
-	// ── maxChars ──────────────────────────────────────────────────────────────
-
-	get maxChars(): number {
+	public get maxChars(): number {
 		return this.textDisplay ? this.textDisplay.maxChars : this._maxChars;
 	}
 
-	set maxChars(value: number) {
+	public set maxChars(value: number) {
 		this._maxChars = value;
 		if (this.textDisplay) this.textDisplay.maxChars = value;
 	}
 
-	// ── restrict ──────────────────────────────────────────────────────────────
-
-	get restrict(): string {
+	public get restrict(): string {
 		return this.textDisplay ? (this.textDisplay.restrict ?? '') : this._restrict;
 	}
 
-	set restrict(value: string) {
+	public set restrict(value: string) {
 		this._restrict = value;
 		if (this.textDisplay) this.textDisplay.restrict = value;
 	}
 
-	// ── State ─────────────────────────────────────────────────────────────────
+	// ── Override methods ──────────────────────────────────────────────────
 
 	protected override getCurrentState(): string {
 		const hasPrompt = !!this._prompt && !this._isFocused && !this.text;
@@ -108,8 +96,6 @@ export class TextInput extends Component implements IDisplayText {
 		}
 		return hasPrompt && this.skin?.hasState('normalWithPrompt') ? 'normalWithPrompt' : 'normal';
 	}
-
-	// ── Skin part lifecycle ───────────────────────────────────────────────────
 
 	protected override partAdded(partName: string, instance: unknown): void {
 		super.partAdded(partName, instance);
@@ -146,7 +132,7 @@ export class TextInput extends Component implements IDisplayText {
 		}
 	}
 
-	// ── Private ───────────────────────────────────────────────────────────────
+	// ── Private methods ───────────────────────────────────────────────────
 
 	private _onFocusIn = (): void => {
 		this._isFocused = true;

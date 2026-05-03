@@ -13,35 +13,37 @@ import { isUIComponent } from '../core/UIState.js';
  * States: none (container component).
  */
 export class ViewStack extends Group {
-	private _selectedIndex = -1;
-	private _selectedChild: DisplayObject | undefined;
+	// ── Instance fields ───────────────────────────────────────────────────
 
-	constructor() {
+	private _selectedIndex = -1;
+	private _selectedChild?: DisplayObject;
+
+	// ── Constructor ───────────────────────────────────────────────────────
+
+	public constructor() {
 		super();
 	}
 
-	// ── Selected Index ──────────────────────────────────────────────────
+	// ── Getters / Setters ─────────────────────────────────────────────────
 
-	get selectedIndex(): number {
+	public get selectedIndex(): number {
 		return this._selectedIndex;
 	}
 
-	set selectedIndex(value: number) {
+	public set selectedIndex(value: number) {
 		value = +value | 0;
 		if (this._selectedIndex === value) return;
-		this.commitSelection(value);
+		this._commitSelection(value);
 		this.dispatchEventWith(Event.CHANGE);
 	}
 
-	// ── Selected Child ──────────────────────────────────────────────────
-
-	get selectedChild(): DisplayObject | undefined {
+	public get selectedChild(): DisplayObject | undefined {
 		const index = this.selectedIndex;
 		if (index >= 0 && index < this.numChildren) return this.getChildAt(index);
 		return undefined;
 	}
 
-	set selectedChild(value: DisplayObject | undefined) {
+	public set selectedChild(value: DisplayObject | undefined) {
 		if (!value) {
 			this.selectedIndex = -1;
 			return;
@@ -52,21 +54,74 @@ export class ViewStack extends Group {
 		}
 	}
 
-	// ── Selection commit ────────────────────────────────────────────────
+	// ── Override methods ──────────────────────────────────────────────────
 
-	private commitSelection(newIndex: number): void {
+	public override updateDisplayList(unscaledWidth: number, unscaledHeight: number): void {
+		super.updateDisplayList(unscaledWidth, unscaledHeight);
+
+		if (this._selectedChild) {
+			this._selectedChild.width = unscaledWidth;
+			this._selectedChild.height = unscaledHeight;
+		}
+	}
+
+	public override measure(): void {
+		if (this._selectedChild) {
+			this.setMeasuredSize(this._selectedChild.width, this._selectedChild.height);
+		} else {
+			this.setMeasuredSize(0, 0);
+		}
+	}
+
+	public override childAdded(child: unknown, index: number): void {
+		super.childAdded(child, index);
+		const displayChild = child as DisplayObject;
+		this._showOrHide(displayChild, false);
+		if (this._selectedIndex === -1) {
+			this._commitSelection(index);
+		} else if (index <= this._selectedIndex) {
+			this._selectedIndex++;
+		}
+	}
+
+	public override childRemoved(child: unknown, index: number): void {
+		super.childRemoved(child, index);
+		const displayChild = child as DisplayObject;
+		this._showOrHide(displayChild, true);
+
+		if (index === this._selectedIndex) {
+			if (this.numChildren > 0) {
+				this._commitSelection(0);
+			} else {
+				this._selectedChild = undefined;
+				this._selectedIndex = -1;
+			}
+		} else if (index < this._selectedIndex) {
+			this._selectedIndex--;
+		} else {
+			if (this._selectedChild === child) {
+				this._selectedChild = undefined;
+			}
+		}
+		this.invalidateSize();
+		this.invalidateDisplayList();
+	}
+
+	// ── Private methods ───────────────────────────────────────────────────
+
+	private _commitSelection(newIndex: number): void {
 		if (newIndex >= 0 && newIndex < this.numChildren) {
 			this._selectedIndex = newIndex;
 			if (this._selectedChild) {
-				this.showOrHide(this._selectedChild, false);
+				this._showOrHide(this._selectedChild, false);
 			}
 			this._selectedChild = this.getChildAt(newIndex);
 			if (this._selectedChild) {
-				this.showOrHide(this._selectedChild, true);
+				this._showOrHide(this._selectedChild, true);
 			}
 		} else {
 			if (this._selectedChild) {
-				this.showOrHide(this._selectedChild, false);
+				this._showOrHide(this._selectedChild, false);
 			}
 			this._selectedChild = undefined;
 			this._selectedIndex = -1;
@@ -75,76 +130,10 @@ export class ViewStack extends Group {
 		this.invalidateDisplayList();
 	}
 
-	/**
-	 * Show or hide a child, also managing `includeInLayout`.
-	 */
-	private showOrHide(child: DisplayObject, visible: boolean): void {
+	private _showOrHide(child: DisplayObject, visible: boolean): void {
 		child.visible = visible;
 		if (isUIComponent(child)) {
 			child.includeInLayout = visible;
 		}
-	}
-
-	// ── Rendering ───────────────────────────────────────────────────────
-
-	override updateDisplayList(unscaledWidth: number, unscaledHeight: number): void {
-		super.updateDisplayList(unscaledWidth, unscaledHeight);
-
-		// Size the selected child to fill the ViewStack
-		if (this._selectedChild) {
-			this._selectedChild.width = unscaledWidth;
-			this._selectedChild.height = unscaledHeight;
-		}
-	}
-
-	// ── Measurement ─────────────────────────────────────────────────────
-
-	override measure(): void {
-		if (this._selectedChild) {
-			this.setMeasuredSize(this._selectedChild.width, this._selectedChild.height);
-		} else {
-			this.setMeasuredSize(0, 0);
-		}
-	}
-
-	// ── Child management ────────────────────────────────────────────────
-
-	override childAdded(child: unknown, index: number): void {
-		super.childAdded(child, index);
-		const displayChild = child as DisplayObject;
-		// Hide the new child by default
-		this.showOrHide(displayChild, false);
-		// Auto-select first child, or adjust index
-		if (this._selectedIndex === -1) {
-			this.commitSelection(index);
-		} else if (index <= this._selectedIndex) {
-			this._selectedIndex++;
-		}
-	}
-
-	override childRemoved(child: unknown, index: number): void {
-		super.childRemoved(child, index);
-		const displayChild = child as DisplayObject;
-		this.showOrHide(displayChild, true); // restore visibility
-
-		if (index === this._selectedIndex) {
-			// Currently selected child removed
-			if (this.numChildren > 0) {
-				this.commitSelection(0);
-			} else {
-				this._selectedChild = undefined;
-				this._selectedIndex = -1;
-			}
-		} else if (index < this._selectedIndex) {
-			this._selectedIndex--;
-		} else {
-			// Removed child is after the selected one, no index change needed
-			// but we should clean up reference
-			if (this._selectedChild === child) {
-				this._selectedChild = undefined;
-			}
-		}
-		this.invalidateSize();
-		this.invalidateDisplayList();
 	}
 }

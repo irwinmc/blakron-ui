@@ -12,13 +12,14 @@ import { ItemTapEvent } from '../events/ItemTapEvent.js';
  * @defaultProperty dataProvider
  */
 export class List extends ListBase {
-	/** Per-renderer tap handler, stored so we can remove it in rendererRemoved. */
+	// ── Instance fields ───────────────────────────────────────────────────
+
 	private readonly _rendererHandlers = new Map<ItemRenderer, (e: Event) => void>();
 
-	// ── Renderer lifecycle ──────────────────────────────────────────────
+	// ── Override methods ──────────────────────────────────────────────────
 
 	protected override rendererAdded(renderer: ItemRenderer, _index: number, _item: unknown): void {
-		const handler = (e: Event): void => {
+		const handler = (_e: Event): void => {
 			const idx = renderer.itemIndex;
 			if (idx >= 0) this.selectedIndex = idx;
 			ItemTapEvent.dispatchItemTapEvent(this, renderer.data, idx, renderer);

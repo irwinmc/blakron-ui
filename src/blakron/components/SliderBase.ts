@@ -1,7 +1,6 @@
 import { TouchEvent, Point } from '@blakron/core';
 import { Range } from './Range.js';
 import { Direction } from '../core/Direction.js';
-import { PropertyEvent } from '../events/PropertyEvent.js';
 
 /**
  * SliderBase — abstract base for slider components.
@@ -16,25 +15,24 @@ import { PropertyEvent } from '../events/PropertyEvent.js';
  * @defaultProperty value
  */
 export class SliderBase extends Range {
-	// ── Internal state ──────────────────────────────────────────────────
+	// ── Instance fields ───────────────────────────────────────────────────
 
-	private _direction: string = Direction.LTR;
+	private _direction = Direction.LTR;
 	private _directionChanged = false;
-
-	private _thumb: TouchEvent['currentTarget'] | undefined;
-	private _track: TouchEvent['currentTarget'] | undefined;
-
+	private _thumb?: TouchEvent['currentTarget'];
+	private _track?: TouchEvent['currentTarget'];
 	private _pendingValue = 0;
 	private _isDragging = false;
 	private _touchOffsetX = 0;
 	private _touchOffsetY = 0;
 
-	// ── direction ───────────────────────────────────────────────────────
+	// ── Getters / Setters ─────────────────────────────────────────────────
 
-	get direction(): string {
+	public get direction(): string {
 		return this._direction;
 	}
-	set direction(value: string) {
+
+	public set direction(value: string) {
 		if (this._direction === value) return;
 		this._direction = value;
 		this._directionChanged = true;
@@ -43,82 +41,112 @@ export class SliderBase extends Range {
 		this.invalidateDisplayList();
 	}
 
-	// ── Skin parts ──────────────────────────────────────────────────────
-
-	/** The draggable thumb. */
-	get thumb(): TouchEvent['currentTarget'] | undefined {
+	public get thumb(): TouchEvent['currentTarget'] | undefined {
 		return this._thumb;
 	}
-	set thumb(value: TouchEvent['currentTarget'] | undefined) {
+
+	public set thumb(value: TouchEvent['currentTarget'] | undefined) {
 		if (this._thumb === value) return;
-		this.removeThumbListeners();
+		this._removeThumbListeners();
 		this._thumb = value;
-		this.addThumbListeners();
+		this._addThumbListeners();
 	}
 
-	/** The track area. Clicking it jumps the value. */
-	get track(): TouchEvent['currentTarget'] | undefined {
+	public get track(): TouchEvent['currentTarget'] | undefined {
 		return this._track;
 	}
-	set track(value: TouchEvent['currentTarget'] | undefined) {
+
+	public set track(value: TouchEvent['currentTarget'] | undefined) {
 		if (this._track === value) return;
-		this.removeTrackListeners();
+		this._removeTrackListeners();
 		this._track = value;
-		this.addTrackListeners();
+		this._addTrackListeners();
 	}
 
-	// ── commitProperties ────────────────────────────────────────────────
+	// ── Override methods ──────────────────────────────────────────────────
 
-	override commitProperties(): void {
+	public override commitProperties(): void {
 		if (this._directionChanged) {
 			this._directionChanged = false;
 		}
 		super.commitProperties();
 	}
 
-	override measure(): void {
+	public override measure(): void {
 		super.measure();
 	}
 
-	// ── Touch handlers ──────────────────────────────────────────────────
-
-	private addThumbListeners(): void {
+	protected override updateSkinDisplayList(): void {
+		super.updateSkinDisplayList();
 		if (!this._thumb) return;
-		const t = this._thumb as unknown as { addEventListener: Function };
+
+		const thumbObj = this._thumb as unknown as { x: number; y: number; width: number; height: number };
+		if (!thumbObj) return;
+
+		const range = this.maximum - this.minimum;
+		const ratio = range > 0 ? (this.value - this.minimum) / range : 0;
+
+		if (this._direction === Direction.LTR) {
+			thumbObj.x = ratio * (this.width - thumbObj.width);
+		} else if (this._direction === Direction.RTL) {
+			thumbObj.x = (1 - ratio) * (this.width - thumbObj.width);
+		} else if (this._direction === Direction.TTB) {
+			thumbObj.y = ratio * (this.height - thumbObj.height);
+		} else {
+			thumbObj.y = (1 - ratio) * (this.height - thumbObj.height);
+		}
+	}
+
+	// ── Private methods ───────────────────────────────────────────────────
+
+	private _addThumbListeners(): void {
+		if (!this._thumb) return;
+		const t = this._thumb as unknown as {
+			addEventListener: (type: string, listener: (e: TouchEvent) => void) => void;
+		};
 		t.addEventListener(TouchEvent.TOUCH_BEGIN, this._onThumbDown);
 	}
 
-	private removeThumbListeners(): void {
+	private _removeThumbListeners(): void {
 		if (!this._thumb) return;
-		const t = this._thumb as unknown as { removeEventListener: Function };
+		const t = this._thumb as unknown as {
+			removeEventListener: (type: string, listener: (e: TouchEvent) => void) => void;
+		};
 		t.removeEventListener(TouchEvent.TOUCH_BEGIN, this._onThumbDown);
 	}
 
-	private addTrackListeners(): void {
+	private _addTrackListeners(): void {
 		if (!this._track) return;
-		const t = this._track as unknown as { addEventListener: Function };
+		const t = this._track as unknown as {
+			addEventListener: (type: string, listener: (e: TouchEvent) => void) => void;
+		};
 		t.addEventListener(TouchEvent.TOUCH_BEGIN, this._onTrackDown);
 	}
 
-	private removeTrackListeners(): void {
+	private _removeTrackListeners(): void {
 		if (!this._track) return;
-		const t = this._track as unknown as { removeEventListener: Function };
+		const t = this._track as unknown as {
+			removeEventListener: (type: string, listener: (e: TouchEvent) => void) => void;
+		};
 		t.removeEventListener(TouchEvent.TOUCH_BEGIN, this._onTrackDown);
 	}
-
-	// ── Thumb drag ──────────────────────────────────────────────────────
 
 	private _onThumbDown = (e: TouchEvent): void => {
 		e.stopPropagation();
 		this._isDragging = true;
-		const stage = (this as unknown as { stage: { addEventListener: Function; removeEventListener: Function } })
-			.stage;
+		const stage = (
+			this as unknown as {
+				stage: {
+					addEventListener: (type: string, listener: (e: TouchEvent) => void) => void;
+					removeEventListener: (type: string, listener: (e: TouchEvent) => void) => void;
+				};
+			}
+		).stage;
 		if (stage) {
 			stage.addEventListener(TouchEvent.TOUCH_MOVE, this._onThumbMove);
 			stage.addEventListener(TouchEvent.TOUCH_END, this._onThumbUp);
 		}
 
-		// Calculate offset from thumb center to touch point
 		const thumbObj = this._thumb as unknown as { width: number; height: number; x: number; y: number };
 		if (thumbObj) {
 			this._touchOffsetX = e.stageX - thumbObj.x - thumbObj.width / 2;
@@ -128,44 +156,43 @@ export class SliderBase extends Range {
 
 	private _onThumbMove = (e: TouchEvent): void => {
 		if (!this._isDragging) return;
-		this.updateValueFromPosition(e.stageX, e.stageY);
+		this._updateValueFromPosition(e.stageX, e.stageY);
 	};
 
 	private _onThumbUp = (_e: TouchEvent): void => {
 		this._isDragging = false;
-		const stage = (this as unknown as { stage: { addEventListener: Function; removeEventListener: Function } })
-			.stage;
+		const stage = (
+			this as unknown as {
+				stage: {
+					addEventListener: (type: string, listener: (e: TouchEvent) => void) => void;
+					removeEventListener: (type: string, listener: (e: TouchEvent) => void) => void;
+				};
+			}
+		).stage;
 		if (stage) {
 			stage.removeEventListener(TouchEvent.TOUCH_MOVE, this._onThumbMove);
 			stage.removeEventListener(TouchEvent.TOUCH_END, this._onThumbUp);
 		}
 	};
 
-	// ── Track click ─────────────────────────────────────────────────────
-
 	private _onTrackDown = (e: TouchEvent): void => {
 		e.stopPropagation();
-		this.updateValueFromPosition(e.stageX, e.stageY);
+		this._updateValueFromPosition(e.stageX, e.stageY);
 	};
 
-	// ── Position → value ────────────────────────────────────────────────
-
-	private updateValueFromPosition(stageX: number, stageY: number): void {
+	private _updateValueFromPosition(stageX: number, stageY: number): void {
 		const trackObj = this._track as unknown as {
 			width: number;
 			height: number;
 			x: number;
 			y: number;
-			getPreferredBounds?: (r: { x: number; y: number; width: number; height: number }) => void;
 		};
 		if (!trackObj) return;
 
 		let range: number;
 		let position: number;
 
-		// Get track bounds in local coordinates
 		const pt = new Point();
-		// Convert stage coords to our local coords
 		const thisPt = (this as unknown as { globalToLocal: (x: number, y: number, r?: Point) => Point }).globalToLocal(
 			stageX,
 			stageY,
@@ -191,28 +218,5 @@ export class SliderBase extends Range {
 
 		const newValue = this.minimum + ratio * (this.maximum - this.minimum);
 		this.setValuePending(newValue);
-	}
-
-	// ── updateSkinDisplayList ───────────────────────────────────────────
-
-	protected override updateSkinDisplayList(): void {
-		super.updateSkinDisplayList();
-		if (!this._thumb) return;
-
-		const thumbObj = this._thumb as unknown as { x: number; y: number; width: number; height: number };
-		if (!thumbObj) return;
-
-		const range = this.maximum - this.minimum;
-		const ratio = range > 0 ? (this.value - this.minimum) / range : 0;
-
-		if (this._direction === Direction.LTR) {
-			thumbObj.x = ratio * (this.width - thumbObj.width);
-		} else if (this._direction === Direction.RTL) {
-			thumbObj.x = (1 - ratio) * (this.width - thumbObj.width);
-		} else if (this._direction === Direction.TTB) {
-			thumbObj.y = ratio * (this.height - thumbObj.height);
-		} else {
-			thumbObj.y = (1 - ratio) * (this.height - thumbObj.height);
-		}
 	}
 }

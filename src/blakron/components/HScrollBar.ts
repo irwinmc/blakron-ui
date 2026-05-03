@@ -9,7 +9,9 @@ import { PropertyEvent } from '../events/PropertyEvent.js';
  * horizontal scroll position (`scrollH`) relative to content width.
  */
 export class HScrollBar extends ScrollBarBase {
-	override updateDisplayList(unscaledWidth: number, unscaledHeight: number): void {
+	// ── Override methods ──────────────────────────────────────────────────
+
+	public override updateDisplayList(unscaledWidth: number, unscaledHeight: number): void {
 		super.updateDisplayList(unscaledWidth, unscaledHeight);
 		const thumb = this.thumb;
 		const viewport = this.viewport;

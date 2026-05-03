@@ -13,19 +13,27 @@ export const CollectionEventKind = {
 export type CollectionEventKind = (typeof CollectionEventKind)[keyof typeof CollectionEventKind];
 
 export class CollectionEvent extends Event {
-	static readonly COLLECTION_CHANGE = 'collectionChange';
+	// ── Static fields ─────────────────────────────────────────────────────
 
-	kind: CollectionEventKind = CollectionEventKind.ADD;
-	items: unknown[] = [];
-	oldItems: unknown[] = [];
-	location = -1;
-	oldLocation = -1;
+	public static readonly COLLECTION_CHANGE = 'collectionChange';
 
-	constructor(type: string, bubbles = false, cancelable = false) {
+	// ── Instance fields ───────────────────────────────────────────────────
+
+	public kind: CollectionEventKind = CollectionEventKind.ADD;
+	public items: unknown[] = [];
+	public oldItems: unknown[] = [];
+	public location = -1;
+	public oldLocation = -1;
+
+	// ── Constructor ───────────────────────────────────────────────────────
+
+	public constructor(type: string, bubbles = false, cancelable = false) {
 		super(type, bubbles, cancelable);
 	}
 
-	static dispatchCollectionEvent(
+	// ── Public methods ────────────────────────────────────────────────────
+
+	public static dispatchCollectionEvent(
 		target: IEventDispatcher,
 		kind: CollectionEventKind,
 		location = -1,

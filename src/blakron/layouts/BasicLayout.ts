@@ -9,15 +9,19 @@ import type { IUIComponent } from '../core/IUIComponent.js';
  * and percentWidth/percentHeight constraints.
  */
 export class BasicLayout extends LayoutBase {
-	// BasicLayout does not support virtual layout
-	override get useVirtualLayout(): boolean {
+	// ── Getters / Setters ─────────────────────────────────────────────────
+
+	public override get useVirtualLayout(): boolean {
 		return false;
 	}
-	override set useVirtualLayout(_v: boolean) {
+
+	public override set useVirtualLayout(_v: boolean) {
 		/* no-op */
 	}
 
-	override measure(): void {
+	// ── Override methods ──────────────────────────────────────────────────
+
+	public override measure(): void {
 		const target = this.target;
 		if (!target) return;
 
@@ -68,7 +72,7 @@ export class BasicLayout extends LayoutBase {
 		target.setMeasuredSize(width, height);
 	}
 
-	override updateDisplayList(unscaledWidth: number, unscaledHeight: number): void {
+	public override updateDisplayList(unscaledWidth: number, unscaledHeight: number): void {
 		const target = this.target;
 		if (!target) return;
 

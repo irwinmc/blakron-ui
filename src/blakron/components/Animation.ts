@@ -5,6 +5,8 @@ import { ticker, getTimer } from '@blakron/core';
  * Driven by the core ticker (rAF).
  */
 export class Animation {
+	// ── Instance fields ───────────────────────────────────────────────────
+
 	private _updateFunction: (animation: Animation) => void;
 	private _thisObject: unknown;
 	private _easerFunction: ((fraction: number) => number) | undefined = f => -(Math.cos(Math.PI * f) - 1) * 0.5;
@@ -14,76 +16,89 @@ export class Animation {
 	private _from = 0;
 	private _to = 0;
 	private _startTime = 0;
-	private _endFunction: ((animation: Animation) => void) | undefined;
+	private _endFunction?: (animation: Animation) => void;
 
-	constructor(updateFunction: (animation: Animation) => void, thisObject: unknown) {
+	// ── Constructor ───────────────────────────────────────────────────────
+
+	public constructor(updateFunction: (animation: Animation) => void, thisObject: unknown) {
 		this._updateFunction = updateFunction;
 		this._thisObject = thisObject;
 	}
 
-	get isPlaying(): boolean {
+	// ── Getters / Setters ─────────────────────────────────────────────────
+
+	public get isPlaying(): boolean {
 		return this._isPlaying;
 	}
 
-	get duration(): number {
+	public get duration(): number {
 		return this._duration;
 	}
-	set duration(value: number) {
+
+	public set duration(value: number) {
 		this._duration = value;
 	}
 
-	get currentValue(): number {
+	public get currentValue(): number {
 		return this._currentValue;
 	}
 
-	get from(): number {
+	public get from(): number {
 		return this._from;
 	}
-	set from(value: number) {
+
+	public set from(value: number) {
 		this._from = value;
 	}
 
-	get to(): number {
+	public get to(): number {
 		return this._to;
 	}
-	set to(value: number) {
+
+	public set to(value: number) {
 		this._to = value;
 	}
 
-	get endFunction(): ((animation: Animation) => void) | undefined {
+	public get endFunction(): ((animation: Animation) => void) | undefined {
 		return this._endFunction;
 	}
-	set endFunction(value: ((animation: Animation) => void) | undefined) {
+
+	public set endFunction(value: ((animation: Animation) => void) | undefined) {
 		this._endFunction = value;
 	}
 
-	get easerFunction(): ((fraction: number) => number) | undefined {
+	public get easerFunction(): ((fraction: number) => number) | undefined {
 		return this._easerFunction;
 	}
-	set easerFunction(value: ((fraction: number) => number) | undefined) {
+
+	public set easerFunction(value: ((fraction: number) => number) | undefined) {
 		this._easerFunction = value;
 	}
 
-	play(): void {
+	// ── Public methods ────────────────────────────────────────────────────
+
+	public play(): void {
 		this.stop();
-		this.start();
+		this._start();
 	}
 
-	stop(): void {
+	public stop(): void {
 		this._isPlaying = false;
 		this._startTime = 0;
-		ticker.stopTick(this.doInterval, this);
+		ticker.stopTick(this._doInterval, this);
 	}
 
-	private start(): void {
+	// ── Private methods ───────────────────────────────────────────────────
+
+	private _start(): void {
 		this._isPlaying = false;
 		this._currentValue = 0;
 		this._startTime = getTimer();
-		this.doInterval(this._startTime);
-		ticker.startTick(this.doInterval, this);
+		this._doInterval(this._startTime);
+		ticker.startTick(this._doInterval, this);
 	}
 
-	private doInterval = (currentTime: number): boolean => {
+	private _doInterval = (currentTime: number): boolean => {
 		const runningTime = currentTime - this._startTime;
 		if (!this._isPlaying) {
 			this._isPlaying = true;

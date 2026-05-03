@@ -1,4 +1,4 @@
-import { TextField, TextFieldType, Event, TouchEvent } from '@blakron/core';
+import { TextField, TextFieldType, Event } from '@blakron/core';
 import type { IDisplayText } from '../core/IDisplayText.js';
 
 /**
@@ -8,6 +8,8 @@ import type { IDisplayText } from '../core/IDisplayText.js';
  * Egret-compatible: eui.EditableText
  */
 export class EditableText extends TextField implements IDisplayText {
+	// ── Instance fields ───────────────────────────────────────────────────
+
 	private _prompt = '';
 	private _promptColor = 0x999999;
 	private _userTextColor = 0xffffff;
@@ -15,20 +17,22 @@ export class EditableText extends TextField implements IDisplayText {
 	private _isFocused = false;
 	private _asPassword = false;
 
-	constructor() {
+	// ── Constructor ───────────────────────────────────────────────────────
+
+	public constructor() {
 		super();
 		this.type = TextFieldType.INPUT;
 		this.addEventListener(Event.FOCUS_IN, this._onFocusIn);
 		this.addEventListener(Event.FOCUS_OUT, this._onFocusOut);
 	}
 
-	// ── prompt ────────────────────────────────────────────────────────────────
+	// ── Getters / Setters ─────────────────────────────────────────────────
 
-	get prompt(): string {
+	public get prompt(): string {
 		return this._prompt;
 	}
 
-	set prompt(value: string) {
+	public set prompt(value: string) {
 		if (this._prompt === value) return;
 		this._prompt = value;
 		if (!this._isFocused && (!this.text || this.text === this._prompt)) {
@@ -36,25 +40,23 @@ export class EditableText extends TextField implements IDisplayText {
 		}
 	}
 
-	get promptColor(): number {
+	public get promptColor(): number {
 		return this._promptColor;
 	}
 
-	set promptColor(value: number) {
+	public set promptColor(value: number) {
 		this._promptColor = value;
 		if (this._isShowingPrompt) {
 			this.textColor = value;
 		}
 	}
 
-	// ── text override ─────────────────────────────────────────────────────────
-
-	override get text(): string {
+	public override get text(): string {
 		const t = super.text;
 		return this._isShowingPrompt ? '' : t;
 	}
 
-	override set text(value: string) {
+	public override set text(value: string) {
 		if (this._isShowingPrompt && value === this._prompt) return;
 		this._isShowingPrompt = false;
 		this.textColor = this._userTextColor;
@@ -65,33 +67,29 @@ export class EditableText extends TextField implements IDisplayText {
 		}
 	}
 
-	// ── textColor override ────────────────────────────────────────────────────
-
-	override get textColor(): number {
+	public override get textColor(): number {
 		return super.textColor;
 	}
 
-	override set textColor(value: number) {
+	public override set textColor(value: number) {
 		if (!this._isShowingPrompt) {
 			this._userTextColor = value;
 		}
 		super.textColor = value;
 	}
 
-	// ── displayAsPassword override ────────────────────────────────────────────
-
-	override get displayAsPassword(): boolean {
+	public override get displayAsPassword(): boolean {
 		return super.displayAsPassword;
 	}
 
-	override set displayAsPassword(value: boolean) {
+	public override set displayAsPassword(value: boolean) {
 		this._asPassword = value;
 		if (!this._isShowingPrompt) {
 			super.displayAsPassword = value;
 		}
 	}
 
-	// ── Private ───────────────────────────────────────────────────────────────
+	// ── Private methods ───────────────────────────────────────────────────
 
 	private _showPrompt(): void {
 		if (!this._prompt) return;

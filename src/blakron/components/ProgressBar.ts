@@ -1,6 +1,7 @@
 import { Component } from './Component.js';
 import { Event } from '@blakron/core';
 import { Direction } from '../core/Direction.js';
+import type { Label } from './Label.js';
 
 /**
  * ProgressBar component that visualizes the progress of a task over time.
@@ -11,51 +12,52 @@ import { Direction } from '../core/Direction.js';
  * States: none (non-interactive visual element).
  */
 export class ProgressBar extends Component {
+	// ── Instance fields ───────────────────────────────────────────────────
+
+	public thumb?: Component;
+	public labelDisplay?: Label;
+
 	private _minimum = 0;
 	private _maximum = 100;
 	private _value = 0;
-	private _direction: string = Direction.LTR;
-	private _labelFunction: ((value: number, maximum: number) => string) | undefined;
+	private _direction = Direction.LTR;
+	private _labelFunction?: (value: number, maximum: number) => string;
 
-	/** Skin part: the fill/stretch area (positioned by updateDisplayList). */
-	thumb?: Component;
+	// ── Constructor ───────────────────────────────────────────────────────
 
-	/** Skin part: label showing progress text. */
-	labelDisplay?: import('./Label.js').Label;
-
-	constructor() {
+	public constructor() {
 		super();
 	}
 
-	// ── Value range ─────────────────────────────────────────────────────
+	// ── Getters / Setters ─────────────────────────────────────────────────
 
-	get minimum(): number {
+	public get minimum(): number {
 		return this._minimum;
 	}
 
-	set minimum(value: number) {
+	public set minimum(value: number) {
 		if (this._minimum === value) return;
 		this._minimum = value;
 		if (this._value < value) this._value = value;
 		this.invalidateDisplayList();
 	}
 
-	get maximum(): number {
+	public get maximum(): number {
 		return this._maximum;
 	}
 
-	set maximum(value: number) {
+	public set maximum(value: number) {
 		if (this._maximum === value) return;
 		this._maximum = value;
 		if (this._value > value) this._value = value;
 		this.invalidateDisplayList();
 	}
 
-	get value(): number {
+	public get value(): number {
 		return this._value;
 	}
 
-	set value(val: number) {
+	public set value(val: number) {
 		val = Math.max(this._minimum, Math.min(this._maximum, val));
 		if (this._value === val) return;
 		this._value = val;
@@ -63,53 +65,35 @@ export class ProgressBar extends Component {
 		this.dispatchEventWith(Event.CHANGE);
 	}
 
-	// ── Direction ───────────────────────────────────────────────────────
-
-	get direction(): string {
+	public get direction(): string {
 		return this._direction;
 	}
 
-	set direction(value: string) {
+	public set direction(value: string) {
 		if (this._direction === value) return;
 		this._direction = value;
 		this.invalidateDisplayList();
 	}
 
-	// ── Label function ──────────────────────────────────────────────────
-
-	get labelFunction(): ((value: number, maximum: number) => string) | undefined {
+	public get labelFunction(): ((value: number, maximum: number) => string) | undefined {
 		return this._labelFunction;
 	}
 
-	set labelFunction(fn: ((value: number, maximum: number) => string) | undefined) {
+	public set labelFunction(fn: ((value: number, maximum: number) => string) | undefined) {
 		if (this._labelFunction === fn) return;
 		this._labelFunction = fn;
 		this.invalidateDisplayList();
 	}
 
-	/**
-	 * Converts the current value to display text.
-	 * Override this method to customize the label format.
-	 * The default format is `"value / maximum"`.
-	 */
-	protected valueToLabel(value: number, maximum: number): string {
-		if (this._labelFunction) {
-			return this._labelFunction(value, maximum);
-		}
-		return value + ' / ' + maximum;
-	}
-
-	// ── Computed ratio ──────────────────────────────────────────────────
-
-	get ratio(): number {
+	public get ratio(): number {
 		const range = this._maximum - this._minimum;
 		if (range <= 0) return 0;
 		return (this._value - this._minimum) / range;
 	}
 
-	// ── Rendering ───────────────────────────────────────────────────────
+	// ── Override methods ──────────────────────────────────────────────────
 
-	override updateDisplayList(unscaledWidth: number, unscaledHeight: number): void {
+	public override updateDisplayList(unscaledWidth: number, unscaledHeight: number): void {
 		super.updateDisplayList(unscaledWidth, unscaledHeight);
 
 		const thumb = this.thumb;
@@ -134,7 +118,7 @@ export class ProgressBar extends Component {
 					thumb.width = unscaledWidth;
 					thumb.height = unscaledHeight * r;
 					break;
-				default: // LTR
+				default:
 					thumb.x = 0;
 					thumb.y = 0;
 					thumb.width = unscaledWidth * r;
@@ -143,9 +127,22 @@ export class ProgressBar extends Component {
 			}
 		}
 
-		// Update label
 		if (this.labelDisplay) {
-			this.labelDisplay.text = this.valueToLabel(this._value, this._maximum);
+			this.labelDisplay.text = this._valueToLabel(this._value, this._maximum);
 		}
+	}
+
+	// ── Protected methods ─────────────────────────────────────────────────
+
+	/**
+	 * Converts the current value to display text.
+	 * Override this method to customize the label format.
+	 * The default format is `"value / maximum"`.
+	 */
+	protected _valueToLabel(value: number, maximum: number): string {
+		if (this._labelFunction) {
+			return this._labelFunction(value, maximum);
+		}
+		return value + ' / ' + maximum;
 	}
 }
