@@ -28,3 +28,5 @@ export { HSlider } from './HSlider.js';
 export { VSlider } from './VSlider.js';
 export { Panel } from './Panel.js';
 export { UILayer } from './UILayer.js';
+export { EditableText } from './EditableText.js';
+export { TextInput } from './TextInput.js';

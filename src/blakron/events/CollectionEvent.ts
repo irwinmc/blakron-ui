@@ -17,6 +17,7 @@ export class CollectionEvent extends Event {
 
 	kind: CollectionEventKind = CollectionEventKind.ADD;
 	items: unknown[] = [];
+	oldItems: unknown[] = [];
 	location = -1;
 	oldLocation = -1;
 
@@ -30,6 +31,7 @@ export class CollectionEvent extends Event {
 		location = -1,
 		oldLocation = -1,
 		items: unknown[] = [],
+		oldItems: unknown[] = [],
 	): boolean {
 		if (!target.hasEventListener(CollectionEvent.COLLECTION_CHANGE)) return true;
 		const e = new CollectionEvent(CollectionEvent.COLLECTION_CHANGE);
@@ -37,6 +39,7 @@ export class CollectionEvent extends Event {
 		e.location = location;
 		e.oldLocation = oldLocation;
 		e.items = items;
+		e.oldItems = oldItems;
 		return target.dispatchEvent(e);
 	}
 }

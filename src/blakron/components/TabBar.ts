@@ -42,7 +42,7 @@ export class TabBar extends ListBase {
 		const handler = (e: Event): void => {
 			const idx = renderer.itemIndex;
 			if (idx >= 0) this.selectedIndex = idx;
-			ItemTapEvent.dispatchItemTapEvent(this, renderer.data, idx);
+			ItemTapEvent.dispatchItemTapEvent(this, renderer.data, idx, renderer);
 		};
 		this._rendererHandlers.set(renderer, handler);
 		renderer.addEventListener(TouchEvent.TOUCH_TAP, handler);

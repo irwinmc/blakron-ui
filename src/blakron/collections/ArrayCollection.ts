@@ -122,6 +122,47 @@ export class ArrayCollection extends EventDispatcher implements ICollection {
 		this.dispatchCoEvent(CollectionEventKind.REFRESH);
 	}
 
+	/**
+	 * Sort the collection in place using a comparator function.
+	 * Dispatches REFRESH after sorting.
+	 */
+	sort(compareFunction: (a: unknown, b: unknown) => number): void {
+		this._source.sort(compareFunction);
+		this.dispatchCoEvent(CollectionEventKind.REFRESH);
+	}
+
+	/**
+	 * Sort the collection by a field name (Egret-compatible sortOn).
+	 * @param fieldName Property name to sort by.
+	 * @param options   Sort options: 0=ascending string, 4=descending, 16=numeric.
+	 */
+	sortOn(fieldName: string, options = 0): void {
+		const descending = (options & 4) !== 0;
+		const numeric = (options & 16) !== 0;
+		this._source.sort((a, b) => {
+			const va = (a as Record<string, unknown>)[fieldName];
+			const vb = (b as Record<string, unknown>)[fieldName];
+			let result: number;
+			if (numeric) {
+				result = (Number(va) || 0) - (Number(vb) || 0);
+			} else {
+				result = String(va ?? '').localeCompare(String(vb ?? ''));
+			}
+			return descending ? -result : result;
+		});
+		this.dispatchCoEvent(CollectionEventKind.REFRESH);
+	}
+
+	/**
+	 * Filter the collection in place, keeping only items that pass the test.
+	 * Dispatches REFRESH after filtering.
+	 * Note: items that are filtered out are removed from the source array.
+	 */
+	filterFunction(testFn: (item: unknown) => boolean): void {
+		this._source = this._source.filter(testFn);
+		this.dispatchCoEvent(CollectionEventKind.REFRESH);
+	}
+
 	// ── Internal ────────────────────────────────────────────────────────
 
 	private dispatchCoEvent(
@@ -131,6 +172,6 @@ export class ArrayCollection extends EventDispatcher implements ICollection {
 		items: unknown[] = [],
 		oldItems: unknown[] = [],
 	): void {
-		CollectionEvent.dispatchCollectionEvent(this, kind, location, oldLocation, items);
+		CollectionEvent.dispatchCollectionEvent(this, kind, location, oldLocation, items, oldItems);
 	}
 }
