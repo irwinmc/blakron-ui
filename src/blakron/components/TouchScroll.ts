@@ -6,24 +6,6 @@ import { Animation } from './Animation.js';
 /** Max number of historical velocity samples to keep. */
 const MAX_VELOCITY_COUNT = 4;
 
-/** Weight list for historical velocity samples. */
-const VELOCITY_WEIGHTS = [1, 1.33, 1.66, 2];
-
-/** Weight of the current (most recent) velocity sample. */
-const CURRENT_VELOCITY_WEIGHT = 2.33;
-
-/** Minimum velocity threshold to overcome floating-point noise. */
-const MINIMUM_VELOCITY = 0.02;
-
-/** Friction coefficient applied during auto-scroll (normal). */
-const FRICTION = 0.998;
-
-/** Extra friction when scroll position exceeds bounds. */
-const EXTRA_FRICTION = 0.95;
-
-/** Natural log of FRICTION (precomputed). */
-const FRICTION_LOG = Math.log(FRICTION);
-
 /** Ease-out cubic for throw-to-boundary animations. */
 function easeOut(ratio: number): number {
 	const inv = ratio - 1.0;
@@ -70,7 +52,6 @@ export class TouchScroll {
 		this._updateFunction = updateFunction;
 		this._endFunction = endFunction;
 		this._animation = new Animation(this.onScrollingUpdate, this);
-		this._animation.endFunction = this.finishScrolling;
 		this._animation.easerFunction = easeOut;
 	}
 
@@ -138,52 +119,12 @@ export class TouchScroll {
 		ticker.stopTick(this.onTick, this);
 		this._started = false;
 
-		let sum = this._velocity * CURRENT_VELOCITY_WEIGHT;
-		const pv = this._previousVelocity;
-		const len = pv.length;
-		let totalWeight = CURRENT_VELOCITY_WEIGHT;
-		for (let i = 0; i < len; i++) {
-			const weight = VELOCITY_WEIGHTS[i];
-			sum += pv[i] * weight;
-			totalWeight += weight;
-		}
-
-		const pixelsPerMS = sum / totalWeight;
-		const absPixelsPerMS = Math.abs(pixelsPerMS);
-		let duration = 0;
-		let posTo: number;
-
-		if (absPixelsPerMS > MINIMUM_VELOCITY) {
-			posTo = currentScrollPos + ((pixelsPerMS - MINIMUM_VELOCITY) / FRICTION_LOG) * 2 * this.scrollFactor;
-			if (posTo < 0 || posTo > maxScrollPos) {
-				posTo = currentScrollPos;
-				let v = pixelsPerMS;
-				while (Math.abs(v) > MINIMUM_VELOCITY) {
-					posTo -= v;
-					if (posTo < 0 || posTo > maxScrollPos) {
-						v *= FRICTION * EXTRA_FRICTION;
-					} else {
-						v *= FRICTION;
-					}
-					duration++;
-				}
-			} else {
-				duration = Math.log(MINIMUM_VELOCITY / absPixelsPerMS) / FRICTION_LOG;
-			}
+		// No throw animation — just snap back to bounds if out of range.
+		if (currentScrollPos < 0 || currentScrollPos > maxScrollPos) {
+			const posTo = Math.max(0, Math.min(maxScrollPos, currentScrollPos));
+			this.throwTo(posTo, 300);
 		} else {
-			posTo = currentScrollPos;
-		}
-
-		// Clamp to bounds when bounces is off
-		if (duration > 0 && !this.bounces) {
-			if (posTo < 0) posTo = 0;
-			else if (posTo > maxScrollPos) posTo = maxScrollPos;
-		}
-
-		if (duration > 0) {
-			this.throwTo(posTo, duration);
-		} else {
-			this.finishScrolling();
+			this._endFunction();
 		}
 	}
 
@@ -206,18 +147,9 @@ export class TouchScroll {
 
 	// ── Throw animation helpers ─────────────────────────────────────────
 
-	private finishScrolling = (_animation?: Animation): void => {
+	private throwTo(posTo: number, duration = 300): void {
 		const hsp = this._currentScrollPos;
-		const maxHsp = this._maxScrollPos;
-		let hspTo = hsp;
-		if (hsp < 0) hspTo = 0;
-		if (hsp > maxHsp) hspTo = maxHsp;
-		this.throwTo(hspTo, 300);
-	};
-
-	private throwTo(posTo: number, duration = 500): void {
-		const hsp = this._currentScrollPos;
-		if (hsp === posTo) {
+		if (Math.abs(hsp - posTo) < 0.5) {
 			this._endFunction();
 			return;
 		}

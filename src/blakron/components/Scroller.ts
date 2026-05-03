@@ -293,21 +293,12 @@ export class Scroller extends Component {
 
 	private onHScrollUpdate = (scrollPos: number): void => {
 		const vp = this._viewport;
-		if (!vp) return;
-		const b = Scroller._vpBounds;
-		vp.getLayoutBounds(b);
-		const maxH = Math.max(0, vp.contentWidth - b.width);
-		vp.scrollH = Math.max(0, Math.min(maxH, scrollPos));
+		if (vp) vp.scrollH = scrollPos;
 	};
 
 	private onVScrollUpdate = (scrollPos: number): void => {
 		const vp = this._viewport;
-		if (!vp) return;
-		// Clamp to valid range to prevent visual glitches from bounce overshoot
-		const b = Scroller._vpBounds;
-		vp.getLayoutBounds(b);
-		const maxV = Math.max(0, vp.contentHeight - b.height);
-		vp.scrollV = Math.max(0, Math.min(maxV, scrollPos));
+		if (vp) vp.scrollV = scrollPos;
 	};
 
 	private onHScrollEnd = (): void => {
