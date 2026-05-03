@@ -243,13 +243,17 @@ export class VerticalLayout extends LinearLayoutBase {
 		const paddingB = this._paddingBottom;
 		const paddingL = this._paddingLeft;
 		const gap = this._gap;
-		const numElements = target.numChildren;
+		// Use numElements (= dataProvider.length) not numChildren for virtual layout
+		const numElements = target.numElements;
 
 		if (this.startIndex === -1 || this.endIndex === -1) {
 			const contentHeight = this.getStartPosition(numElements) - gap + paddingB;
 			target.setContentSize(target.contentWidth || width, contentHeight);
 			return;
 		}
+
+		// Release renderers outside the visible range back to the pool
+		target.setVirtualElementIndicesInView(this.startIndex, this.endIndex);
 
 		const endIdx = this.endIndex;
 		const justify =
@@ -269,7 +273,7 @@ export class VerticalLayout extends LinearLayoutBase {
 
 		if (contentJustify) {
 			for (let index = this.startIndex; index <= endIdx; index++) {
-				const el = asLayoutElement(target, index);
+				const el = asVirtualLayoutElement(target, index);
 				if (!el || !el.includeInLayout) continue;
 				el.getPreferredBounds(tmpBounds);
 				maxElementWidth = Math.max(maxElementWidth, tmpBounds.width);
@@ -283,7 +287,8 @@ export class VerticalLayout extends LinearLayoutBase {
 		const elementSizeTable = this.elementSizeTable;
 
 		for (let i = this.startIndex; i <= endIdx; i++) {
-			const el = asLayoutElement(target, i);
+			// Use getVirtualElementAt to create/reuse renderers on demand
+			const el = asVirtualLayoutElement(target, i);
 			if (!el || !el.includeInLayout) continue;
 
 			el.getPreferredBounds(tmpBounds);
@@ -364,7 +369,7 @@ export class VerticalLayout extends LinearLayoutBase {
 		const typicalH = this.typicalHeight;
 		const gap = this._gap;
 		let totalSize = 0;
-		const length = this.target!.numChildren;
+		const length = this.target!.numElements;
 		for (let i = 0; i < length; i++) {
 			let h = this.elementSizeTable[i];
 			if (isNaN(h)) h = typicalH;
@@ -382,7 +387,7 @@ export class VerticalLayout extends LinearLayoutBase {
 
 	protected override getIndexInView(): boolean {
 		const target = this.target;
-		if (!target || target.numChildren === 0) {
+		if (!target || target.numElements === 0) {
 			this.startIndex = this.endIndex = -1;
 			return false;
 		}
@@ -391,7 +396,7 @@ export class VerticalLayout extends LinearLayoutBase {
 			return false;
 		}
 
-		const numElements = target.numChildren;
+		const numElements = target.numElements;
 		const lastSize = this.elementSizeTable[numElements - 1];
 		const contentHeight =
 			this.getStartPosition(numElements - 1) +
@@ -423,6 +428,18 @@ export class VerticalLayout extends LinearLayoutBase {
 /** Safely get a child as IUIComponent if it implements the interface. */
 function asLayoutElement(target: ILayoutTarget, index: number): IUIComponent | undefined {
 	const child = target.getChildAt(index);
+	if (!child) return undefined;
+	const el = child as unknown as IUIComponent;
+	if (typeof el.getPreferredBounds === 'function') return el;
+	return undefined;
+}
+
+/**
+ * Get a virtual element (creates/reuses renderer on demand) as IUIComponent.
+ * Used by updateDisplayListVirtual to only instantiate visible renderers.
+ */
+function asVirtualLayoutElement(target: ILayoutTarget, index: number): IUIComponent | undefined {
+	const child = target.getVirtualElementAt(index);
 	if (!child) return undefined;
 	const el = child as unknown as IUIComponent;
 	if (typeof el.getPreferredBounds === 'function') return el;

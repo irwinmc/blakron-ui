@@ -34,7 +34,7 @@ export class DataGroup extends Group {
 	private _itemRendererSkinName: SkinName;
 	private _itemRendererSkinNameChanged = false;
 
-	private _useVirtualLayout = true;
+	private _useVirtualLayout = false;
 	private _useVirtualLayoutChanged = false;
 
 	private readonly _rendererToClass = new Map<ItemRenderer, new () => ItemRenderer>();
@@ -173,6 +173,8 @@ export class DataGroup extends Group {
 			const vl = new VerticalLayout();
 			vl.gap = 0;
 			vl.horizontalAlign = JustifyAlign.CONTENT_JUSTIFY;
+			// Sync layout's useVirtualLayout with the value set before createChildren ran
+			if (this._useVirtualLayout) vl.useVirtualLayout = true;
 			this.layout = vl;
 		}
 		super.createChildren();
@@ -193,7 +195,11 @@ export class DataGroup extends Group {
 				this._dataProvider.addEventListener(CollectionEvent.COLLECTION_CHANGE, this._onCollectionChange);
 			}
 
-			if (layout?.useVirtualLayout) {
+			// Use _useVirtualLayout as fallback when layout hasn't been created yet
+			// (commitProperties may run before createChildren if dataProvider/itemRenderer
+			// are set before the component is added to the stage).
+			const useVirtual = layout ? layout.useVirtualLayout : this._useVirtualLayout;
+			if (useVirtual) {
 				this.invalidateSize();
 				this.invalidateDisplayList();
 			} else {
