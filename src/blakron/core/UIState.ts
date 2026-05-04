@@ -276,7 +276,11 @@ export class UIState {
 		} else {
 			// Re-entering the display list after removal — force a redraw so
 			// graphics commands are rebuilt in the WebGL instruction set.
+			// Use validateNow() to execute synchronously before the next render
+			// phase, avoiding the timing issue where structureDirty fires before
+			// the Validator has filled the graphics commands.
 			this.invalidateDisplayList();
+			if (this._owner.stage) validator.validateClient(this._owner as IUIOwner & IUIComponent);
 		}
 	}
 
