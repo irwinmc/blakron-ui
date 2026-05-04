@@ -273,6 +273,10 @@ export class UIState {
 			this._owner.createChildren();
 			this._owner.childrenCreated();
 			UIEvent.dispatchUIEvent(this._owner, UIEvent.CREATION_COMPLETE);
+		} else {
+			// Re-entering the display list after removal — force a redraw so
+			// graphics commands are rebuilt in the WebGL instruction set.
+			this.invalidateDisplayList();
 		}
 	}
 
