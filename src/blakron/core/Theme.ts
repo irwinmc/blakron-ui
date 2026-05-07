@@ -116,6 +116,7 @@ export class Theme extends EventDispatcher {
 		this._configURL = configURL;
 		this._initialized = !configURL;
 		this._adapter = adapter;
+		console.log(`[Theme] Created, configURL: ${configURL || '(none)'}`);
 		if (configURL) this._load(configURL);
 	}
 
@@ -150,10 +151,14 @@ export class Theme extends EventDispatcher {
 	// ── Private methods ───────────────────────────────────────────────────
 
 	private _load(url: string): void {
+		console.log(`[Theme] Loading: ${url}`);
 		const adapter = this._adapter ?? _defaultThemeAdapter;
 		adapter.getTheme(
 			url,
-			data => this._onConfigLoaded(data),
+			data => {
+				console.log(`[Theme] Fetched OK, data length: ${typeof data === 'string' ? data.length : 'object'}`);
+				this._onConfigLoaded(data);
+			},
 			err => {
 				console.error('[Theme] Failed to load theme:', url, err);
 			},
@@ -174,6 +179,8 @@ export class Theme extends EventDispatcher {
 		}
 
 		if (data.skins) {
+			const keys = Object.keys(data.skins);
+			console.log(`[Theme] Loaded ${keys.length} skin mapping(s)`);
 			for (const [key, val] of Object.entries(data.skins)) {
 				if (!this._skinMap[key]) this.mapSkin(key, val);
 			}
@@ -185,6 +192,8 @@ export class Theme extends EventDispatcher {
 		if (data.exmls && data.exmls.length > 0) {
 			const first = data.exmls[0] as Record<string, unknown>;
 			if (first['gjs']) {
+				let loaded = 0;
+				let failed = 0;
 				for (const exml of data.exmls) {
 					const item = exml as Record<string, unknown>;
 					const gjs = item['gjs'] as string;
@@ -198,11 +207,17 @@ export class Theme extends EventDispatcher {
 						const factory = fn(SKIN_DEPS);
 						if (typeof factory === 'function') {
 							(globalThis as Record<string, unknown>)[className] = factory;
+							loaded++;
+						} else {
+							console.warn(`[Theme] Skin factory not a function: ${className}`);
+							failed++;
 						}
 					} catch (e) {
 						console.error(`[Theme] Failed to load skin: ${className}`, e);
+						failed++;
 					}
 				}
+				console.log(`[Theme] Registered ${loaded} skin(s)${failed > 0 ? `, ${failed} failed` : ''}`);
 			}
 		}
 
@@ -211,6 +226,7 @@ export class Theme extends EventDispatcher {
 
 	private _onLoaded(): void {
 		this._initialized = true;
+		console.log(`[Theme] Initialized, ${this._delayList.length} component(s) waiting for skin`);
 		this._handleDelayList();
 		this.dispatchEventWith(Event.COMPLETE);
 	}
