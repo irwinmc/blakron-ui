@@ -183,7 +183,7 @@ export class Label extends Component implements IDisplayText {
 	}
 
 	public override measure(): void {
-		this._textField.width = isNaN(this.explicitWidth) ? 100000 : this.explicitWidth;
+		this._textField.width = isNaN(this.$explicitWidth) ? 100000 : this.$explicitWidth;
 		this.setMeasuredSize(this._textField.textWidth, this._textField.textHeight);
 	}
 

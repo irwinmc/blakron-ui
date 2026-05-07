@@ -249,7 +249,7 @@ export class TileLayout extends LayoutBase {
 		let measuredWidth = 0;
 		let measuredHeight = 0;
 
-		this._calculateRowAndColumn(target.explicitWidth, target.explicitHeight);
+		this._calculateRowAndColumn(target.$explicitWidth, target.$explicitHeight);
 
 		const columnCount = this._requestedColumnCount > 0 ? this._requestedColumnCount : this._columnCount;
 		const rowCount = this._requestedRowCount > 0 ? this._requestedRowCount : this._rowCount;
@@ -405,7 +405,7 @@ export class TileLayout extends LayoutBase {
 		this._maxElementHeight = maxH;
 	}
 
-	private _calculateRowAndColumn(explicitWidth: number, explicitHeight: number): void {
+	private _calculateRowAndColumn($explicitWidth: number, $explicitHeight: number): void {
 		const target = this.target!;
 		const hGap = isNaN(this._horizontalGap) ? 0 : this._horizontalGap;
 		const vGap = isNaN(this._verticalGap) ? 0 : this._verticalGap;
@@ -435,8 +435,8 @@ export class TileLayout extends LayoutBase {
 		if (itemHeight <= 0) itemHeight = 1;
 
 		const orientedByColumns = this._orientation === TileOrientation.COLUMNS;
-		const widthHasSet = !isNaN(explicitWidth);
-		const heightHasSet = !isNaN(explicitHeight);
+		const widthHasSet = !isNaN($explicitWidth);
+		const heightHasSet = !isNaN($explicitHeight);
 
 		if (this._requestedColumnCount > 0 || this._requestedRowCount > 0) {
 			if (this._requestedRowCount > 0) this._rowCount = Math.min(this._requestedRowCount, numElements);
@@ -449,11 +449,11 @@ export class TileLayout extends LayoutBase {
 				this._columnCount = Math.max(1, Math.round(side / itemWidth));
 			}
 		} else if (widthHasSet && (!heightHasSet || !orientedByColumns)) {
-			const targetWidth = Math.max(0, explicitWidth - this._paddingLeft - this._paddingRight);
+			const targetWidth = Math.max(0, $explicitWidth - this._paddingLeft - this._paddingRight);
 			this._columnCount = Math.floor((targetWidth + hGap) / itemWidth);
 			this._columnCount = Math.max(1, Math.min(this._columnCount, numElements));
 		} else {
-			const targetHeight = Math.max(0, explicitHeight - this._paddingTop - this._paddingBottom);
+			const targetHeight = Math.max(0, $explicitHeight - this._paddingTop - this._paddingBottom);
 			this._rowCount = Math.floor((targetHeight + vGap) / itemHeight);
 			this._rowCount = Math.max(1, Math.min(this._rowCount, numElements));
 		}

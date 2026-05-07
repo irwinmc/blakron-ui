@@ -22,7 +22,7 @@ interface ChildInfo {
  * Supports:
  * - `horizontalAlign`: left / center / right / justify / contentJustify
  * - `verticalAlign`: top / middle / bottom / justify
- * - `percentWidth` / `percentHeight` on children
+ * - `percentWidth` / `percentHeight` on $children
  * - Virtual layout (only visible elements are measured/laid out)
  */
 export class VerticalLayout extends LinearLayoutBase {

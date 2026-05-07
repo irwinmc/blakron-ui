@@ -1,11 +1,10 @@
 import { Rectangle } from '@blakron/core';
 import { LayoutBase } from './LayoutBase.js';
 import { isUIComponent } from '../core/UIComponent.js';
-import type { IUIComponent } from '../core/IUIComponent.js';
 
 /**
  * Absolute (constraint-based) layout.
- * Positions children using left/right/top/bottom/horizontalCenter/verticalCenter
+ * Positions $children using left/right/top/bottom/horizontalCenter/verticalCenter
  * and percentWidth/percentHeight constraints.
  */
 export class BasicLayout extends LayoutBase {

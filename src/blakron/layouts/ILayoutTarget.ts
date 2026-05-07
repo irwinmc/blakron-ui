@@ -10,8 +10,8 @@ export interface ILayoutTarget extends IUIComponent {
 	readonly numElements: number;
 	readonly contentWidth: number;
 	readonly contentHeight: number;
-	readonly explicitWidth: number;
-	readonly explicitHeight: number;
+	readonly $explicitWidth: number;
+	readonly $explicitHeight: number;
 	scrollH: number;
 	scrollV: number;
 	width: number;

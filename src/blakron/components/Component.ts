@@ -356,9 +356,9 @@ export class Component extends Sprite implements IUIComponent, ILayoutTarget, IU
 
 	// ── Override methods ──────────────────────────────────────────────────
 
-	public override onAddToStage(stage: unknown, nestLevel: number): void {
-		super.onAddToStage(stage as never, nestLevel);
-		this.ui.onAddToStage();
+	public override $onAddToStage(stage: unknown, $nestLevel: number): void {
+		super.$onAddToStage(stage as never, $nestLevel);
+		this.ui.$onAddToStage();
 	}
 
 	public override childAdded(_child: unknown, _index: number): void {

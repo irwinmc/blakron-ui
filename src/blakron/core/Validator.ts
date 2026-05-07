@@ -13,7 +13,7 @@ type ValidatorClient = QueueClient;
  *
  * Processing order:
  *   1. validateProperties  — shallowest first
- *   2. validateSize        — deepest first (children before parents)
+ *   2. validateSize        — deepest first ($children before parents)
  *   3. validateDisplayList — shallowest first
  */
 export class Validator extends EventDispatcher {
@@ -37,7 +37,7 @@ export class Validator extends EventDispatcher {
 			this._propsFlag = true;
 			this._schedule();
 		}
-		if (this._targetLevel <= client.nestLevel) this._clientPropsFlag = true;
+		if (this._targetLevel <= client.$nestLevel) this._clientPropsFlag = true;
 		this._propsQueue.insert(client);
 	}
 
@@ -46,7 +46,7 @@ export class Validator extends EventDispatcher {
 			this._sizeFlag = true;
 			this._schedule();
 		}
-		if (this._targetLevel <= client.nestLevel) this._clientSizeFlag = true;
+		if (this._targetLevel <= client.$nestLevel) this._clientSizeFlag = true;
 		this._sizeQueue.insert(client);
 	}
 
@@ -63,7 +63,7 @@ export class Validator extends EventDispatcher {
 	 */
 	public validateClient(target: ValidatorClient): void {
 		const oldLevel = this._targetLevel;
-		if (this._targetLevel === Infinity) this._targetLevel = target.nestLevel;
+		if (this._targetLevel === Infinity) this._targetLevel = target.$nestLevel;
 
 		let done = false;
 		while (!done) {
@@ -187,7 +187,7 @@ class DepthQueue {
 	// ── Public methods ────────────────────────────────────────────────────
 
 	public insert(client: QueueClient): void {
-		const depth = client.nestLevel;
+		const depth = client.$nestLevel;
 		if (this._max < this._min) {
 			this._min = this._max = depth;
 		} else {
@@ -203,7 +203,7 @@ class DepthQueue {
 	}
 
 	/**
-	 * Pop deepest (for size validation — children before parents).
+	 * Pop deepest (for size validation — $children before parents).
 	 */
 	public pop(): QueueClient | undefined {
 		let max = this._max;
@@ -225,7 +225,7 @@ class DepthQueue {
 	}
 
 	/**
-	 * Shift shallowest (for properties / display list — parents before children).
+	 * Shift shallowest (for properties / display list — parents before $children).
 	 */
 	public shift(): QueueClient | undefined {
 		let min = this._min;
@@ -248,11 +248,11 @@ class DepthQueue {
 
 	public removeLargestChild(target: QueueClient): QueueClient | undefined {
 		let max = this._max;
-		const min = target.nestLevel;
+		const min = target.$nestLevel;
 		while (min <= max) {
 			const bin = this._bins.get(max);
 			if (bin && bin.length > 0) {
-				if (max === target.nestLevel) {
+				if (max === target.$nestLevel) {
 					if (bin.has(target)) {
 						bin.remove(target);
 						return target;
@@ -271,12 +271,12 @@ class DepthQueue {
 	}
 
 	public removeSmallestChild(target: QueueClient): QueueClient | undefined {
-		let min = target.nestLevel;
+		let min = target.$nestLevel;
 		const max = this._max;
 		while (min <= max) {
 			const bin = this._bins.get(min);
 			if (bin && bin.length > 0) {
-				if (min === target.nestLevel) {
+				if (min === target.$nestLevel) {
 					if (bin.has(target)) {
 						bin.remove(target);
 						return target;

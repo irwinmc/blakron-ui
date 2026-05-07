@@ -361,16 +361,16 @@ export class Group extends Sprite implements IUIComponent, IViewport, ILayoutTar
 
 	// ── Override methods ──────────────────────────────────────────────────
 
-	public override onAddToStage(stage: unknown, nestLevel: number): void {
-		super.onAddToStage(stage as never, nestLevel);
-		this.ui.onAddToStage();
+	public override $onAddToStage(stage: unknown, $nestLevel: number): void {
+		super.$onAddToStage(stage as never, $nestLevel);
+		this.ui.$onAddToStage();
 	}
 
-	public override hitTest(stageX: number, stageY: number): DisplayObject | undefined {
+	public override $hitTest(stageX: number, stageY: number): DisplayObject | undefined {
 		if (!this.visible || (!this.touchEnabled && !this.touchChildren) || this.scaleX === 0 || this.scaleY === 0) {
 			return undefined;
 		}
-		const target = super.hitTest(stageX, stageY);
+		const target = super.$hitTest(stageX, stageY);
 		if (target || this._touchThrough) return target;
 		const point = this.globalToLocal(stageX, stageY, new Point());
 		const bounds = new Rectangle(0, 0, this.width, this.height);

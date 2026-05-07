@@ -48,8 +48,8 @@ export interface IUIComponent {
 	percentHeight: number;
 
 	// ── Explicit / measured sizes ─────────────────────────────────────────
-	readonly explicitWidth: number;
-	readonly explicitHeight: number;
+	readonly $explicitWidth: number;
+	readonly $explicitHeight: number;
 	minWidth: number;
 	maxWidth: number;
 	minHeight: number;

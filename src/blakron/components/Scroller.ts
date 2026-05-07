@@ -120,8 +120,8 @@ export class Scroller extends Component {
 		this._updateScrollBarVisibility();
 	}
 
-	public override onRemoveFromStage(): void {
-		super.onRemoveFromStage();
+	public override $onRemoveFromStage(): void {
+		super.$onRemoveFromStage();
 		this._removeStageTouchListeners();
 		this._hScroll.stop();
 		this._vScroll.stop();

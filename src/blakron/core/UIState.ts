@@ -14,8 +14,8 @@ const enum K {
 	verticalCenter,
 	percentWidth,
 	percentHeight,
-	explicitWidth,
-	explicitHeight,
+	$explicitWidth,
+	$explicitHeight,
 	width,
 	height,
 	minWidth,
@@ -81,8 +81,8 @@ export class UIState {
 			[K.verticalCenter]: NaN,
 			[K.percentWidth]: NaN,
 			[K.percentHeight]: NaN,
-			[K.explicitWidth]: NaN,
-			[K.explicitHeight]: NaN,
+			[K.$explicitWidth]: NaN,
+			[K.$explicitHeight]: NaN,
 			[K.width]: 0,
 			[K.height]: 0,
 			[K.minWidth]: 0,
@@ -207,12 +207,12 @@ export class UIState {
 		this._invalidateParentLayout();
 	}
 
-	public get explicitWidth(): number {
-		return this._owner.explicitWidth;
+	public get $explicitWidth(): number {
+		return this._owner.$explicitWidth;
 	}
 
-	public get explicitHeight(): number {
-		return this._owner.explicitHeight;
+	public get $explicitHeight(): number {
+		return this._owner.$explicitHeight;
 	}
 
 	public get minWidth(): number {
@@ -265,7 +265,7 @@ export class UIState {
 
 	// ── Public methods ────────────────────────────────────────────────────
 
-	public onAddToStage(): void {
+	public $onAddToStage(): void {
 		this._checkInvalidateFlag();
 		const v = this._v;
 		if (!v[K.initialized]) {
@@ -307,8 +307,8 @@ export class UIState {
 	public setWidth(value: number): void {
 		value = +value;
 		const v = this._v;
-		if (value < 0 || (v[K.width] === value && this._owner.explicitWidth === value)) return;
-		this._owner.explicitWidth = value;
+		if (value < 0 || (v[K.width] === value && this._owner.$explicitWidth === value)) return;
+		this._owner.$explicitWidth = value;
 		if (isNaN(value)) this.invalidateSize();
 		this.invalidateProperties();
 		this.invalidateDisplayList();
@@ -323,8 +323,8 @@ export class UIState {
 	public setHeight(value: number): void {
 		value = +value;
 		const v = this._v;
-		if (value < 0 || (v[K.height] === value && this._owner.explicitHeight === value)) return;
-		this._owner.explicitHeight = value;
+		if (value < 0 || (v[K.height] === value && this._owner.$explicitHeight === value)) return;
+		this._owner.$explicitHeight = value;
 		if (isNaN(value)) this.invalidateSize();
 		this.invalidateProperties();
 		this.invalidateDisplayList();
@@ -434,8 +434,8 @@ export class UIState {
 			layoutWidth,
 			layoutHeight,
 			m,
-			this._owner.explicitWidth,
-			this._owner.explicitHeight,
+			this._owner.$explicitWidth,
+			this._owner.$explicitHeight,
 			this._preferredUWidth(),
 			this._preferredUHeight(),
 			minW,
@@ -468,14 +468,14 @@ export class UIState {
 		const v = this._v;
 		const w = (v[K.layoutWidthExplicitlySet] as boolean)
 			? (v[K.width] as number)
-			: isNaN(this._owner.explicitWidth)
+			: isNaN(this._owner.$explicitWidth)
 				? (v[K.measuredWidth] as number)
-				: this._owner.explicitWidth;
+				: this._owner.$explicitWidth;
 		const h = (v[K.layoutHeightExplicitlySet] as boolean)
 			? (v[K.height] as number)
-			: isNaN(this._owner.explicitHeight)
+			: isNaN(this._owner.$explicitHeight)
 				? (v[K.measuredHeight] as number)
-				: this._owner.explicitHeight;
+				: this._owner.$explicitHeight;
 		this._applyMatrix(bounds, w, h);
 	}
 
@@ -501,11 +501,11 @@ export class UIState {
 	}
 
 	private _preferredUWidth(): number {
-		return isNaN(this._owner.explicitWidth) ? (this._v[K.measuredWidth] as number) : this._owner.explicitWidth;
+		return isNaN(this._owner.$explicitWidth) ? (this._v[K.measuredWidth] as number) : this._owner.$explicitWidth;
 	}
 
 	private _preferredUHeight(): number {
-		return isNaN(this._owner.explicitHeight) ? (this._v[K.measuredHeight] as number) : this._owner.explicitHeight;
+		return isNaN(this._owner.$explicitHeight) ? (this._v[K.measuredHeight] as number) : this._owner.$explicitHeight;
 	}
 
 	private _setActualSize(w: number, h: number): void {
@@ -534,21 +534,21 @@ export class UIState {
 		const v = this._v;
 		const w = (v[K.layoutWidthExplicitlySet] as boolean)
 			? (v[K.width] as number)
-			: isNaN(this._owner.explicitWidth)
+			: isNaN(this._owner.$explicitWidth)
 				? (v[K.measuredWidth] as number)
-				: this._owner.explicitWidth;
+				: this._owner.$explicitWidth;
 		const h = (v[K.layoutHeightExplicitlySet] as boolean)
 			? (v[K.height] as number)
-			: isNaN(this._owner.explicitHeight)
+			: isNaN(this._owner.$explicitHeight)
 				? (v[K.measuredHeight] as number)
-				: this._owner.explicitHeight;
+				: this._owner.$explicitHeight;
 		this._setActualSize(w, h);
 	}
 
 	private _measureSizes(): boolean {
 		const v = this._v;
 		if (!v[K.invalidateSizeFlag]) return false;
-		if (isNaN(this._owner.explicitWidth) || isNaN(this._owner.explicitHeight)) {
+		if (isNaN(this._owner.$explicitWidth) || isNaN(this._owner.$explicitHeight)) {
 			this._owner.measure();
 			v[K.measuredWidth] = Math.max(
 				Math.min(v[K.measuredWidth] as number, v[K.maxWidth] as number),

@@ -211,7 +211,7 @@ export abstract class LinearLayoutBase extends LayoutBase {
 	}
 
 	/**
-	 * Distribute available space among percent-sized children,
+	 * Distribute available space among percent-sized $children,
 	 * respecting min/max constraints.
 	 */
 	protected flexChildrenProportionally(
