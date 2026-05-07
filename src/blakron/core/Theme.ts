@@ -2,6 +2,85 @@ import { EventDispatcher, Event } from '@blakron/core';
 import type { IThemeAdapter } from './IThemeAdapter.js';
 import type { Component } from '../components/Component.js';
 
+// Import all classes that skin code may reference (injected as __deps at runtime)
+import { Skin } from '../components/Skin.js';
+import { Group } from '../components/Group.js';
+import { Rect } from '../components/Rect.js';
+import { Image } from '../components/Image.js';
+import { Label } from '../components/Label.js';
+import { Button } from '../components/Button.js';
+import { ToggleButton } from '../components/ToggleButton.js';
+import { CheckBox } from '../components/CheckBox.js';
+import { RadioButton } from '../components/RadioButton.js';
+import { ProgressBar } from '../components/ProgressBar.js';
+import { ViewStack } from '../components/ViewStack.js';
+import { HScrollBar } from '../components/HScrollBar.js';
+import { VScrollBar } from '../components/VScrollBar.js';
+import { Scroller } from '../components/Scroller.js';
+import { ItemRenderer } from '../components/ItemRenderer.js';
+import { DataGroup } from '../components/DataGroup.js';
+import { List } from '../components/List.js';
+import { TabBar } from '../components/TabBar.js';
+import { ToggleSwitch } from '../components/ToggleSwitch.js';
+import { HSlider } from '../components/HSlider.js';
+import { VSlider } from '../components/VSlider.js';
+import { Panel } from '../components/Panel.js';
+import { UILayer } from '../components/UILayer.js';
+import { EditableText } from '../components/EditableText.js';
+import { TextInput } from '../components/TextInput.js';
+import { ComboBox } from '../components/ComboBox.js';
+import { State } from '../states/State.js';
+import { AddItems } from '../states/AddItems.js';
+import { SetProperty } from '../states/SetProperty.js';
+import { SetStateProperty } from '../states/SetStateProperty.js';
+import { BasicLayout } from '../layouts/BasicLayout.js';
+import { HorizontalLayout } from '../layouts/HorizontalLayout.js';
+import { VerticalLayout } from '../layouts/VerticalLayout.js';
+import { TileLayout } from '../layouts/TileLayout.js';
+import { Binding } from '../binding/Binding.js';
+
+/**
+ * All classes available to skin gjs code at runtime.
+ * This object is passed as `__deps` when evaluating skin factory functions.
+ */
+const SKIN_DEPS: Record<string, unknown> = {
+	Skin,
+	Group,
+	Rect,
+	Image,
+	Label,
+	Button,
+	ToggleButton,
+	CheckBox,
+	RadioButton,
+	ProgressBar,
+	ViewStack,
+	HScrollBar,
+	VScrollBar,
+	Scroller,
+	ItemRenderer,
+	DataGroup,
+	List,
+	TabBar,
+	ToggleSwitch,
+	HSlider,
+	VSlider,
+	Panel,
+	UILayer,
+	EditableText,
+	TextInput,
+	ComboBox,
+	State,
+	AddItems,
+	SetProperty,
+	SetStateProperty,
+	BasicLayout,
+	HorizontalLayout,
+	VerticalLayout,
+	TileLayout,
+	Binding,
+};
+
 interface ThemeConfig {
 	skins?: Record<string, string>;
 	styles?: Record<string, unknown>;
@@ -101,6 +180,31 @@ export class Theme extends EventDispatcher {
 		}
 
 		if (data.styles) this._styles = data.styles;
+
+		// Load skin code from exmls entries (gjs policy)
+		if (data.exmls && data.exmls.length > 0) {
+			const first = data.exmls[0] as Record<string, unknown>;
+			if (first['gjs']) {
+				for (const exml of data.exmls) {
+					const item = exml as Record<string, unknown>;
+					const gjs = item['gjs'] as string;
+					const className = item['className'] as string;
+					const funcName = className.split('.').pop()!;
+					try {
+						// gjs code expects a `__deps` variable with all UI classes.
+						// It defines a factory function (e.g. createButtonSkin) and we
+						// append a return statement to retrieve it.
+						const fn = new Function('__deps', gjs + `\nreturn create${funcName};`);
+						const factory = fn(SKIN_DEPS);
+						if (typeof factory === 'function') {
+							(globalThis as Record<string, unknown>)[className] = factory;
+						}
+					} catch (e) {
+						console.error(`[Theme] Failed to load skin: ${className}`, e);
+					}
+				}
+			}
+		}
 
 		this._onLoaded();
 	}

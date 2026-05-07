@@ -259,6 +259,7 @@ export class Component extends Sprite implements IUIComponent, ILayoutTarget, IU
 	public _applySkinName(skinName: string): void {
 		this._skinName = skinName;
 		this._parseSkinName();
+		this.invalidateProperties();
 	}
 
 	/**
