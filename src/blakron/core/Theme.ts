@@ -116,6 +116,7 @@ export class Theme extends EventDispatcher {
 		this._configURL = configURL;
 		this._initialized = !configURL;
 		this._adapter = adapter;
+		setTheme(this);
 		console.log(`[Theme] Created, configURL: ${configURL || '(none)'}`);
 		if (configURL) this._load(configURL);
 	}
