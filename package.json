@@ -1,6 +1,6 @@
 {
 	"name": "@blakron/ui",
-	"version": "0.4.4",
+	"version": "0.4.5",
 	"description": "UI component framework for the Blakron game engine",
 	"author": "",
 	"license": "MIT",
@@ -18,12 +18,16 @@
 	"files": [
 		"dist/**/*"
 	],
+	"publishConfig": {
+		"access": "public"
+	},
 	"scripts": {
 		"build": "tsc --build",
 		"dev": "tsc --watch",
 		"clean": "rm -rf dist",
 		"test": "vitest run",
-		"test:watch": "vitest"
+		"test:watch": "vitest",
+		"prepublishOnly": "tsc --build"
 	},
 	"dependencies": {
 		"@blakron/core": "^0.6.0"
