@@ -2,7 +2,7 @@ import { Component } from './Component.js';
 import type { IViewport } from '../core/IViewport.js';
 import type { IUIComponent } from '../core/IUIComponent.js';
 import { PropertyEvent } from '../events/PropertyEvent.js';
-import { Event, type IEventDispatcher } from '@blakron/core';
+import { Event } from '@blakron/core';
 
 /**
  * Base class for scroll bars.
@@ -30,15 +30,13 @@ export class ScrollBarBase extends Component {
 		if (value === this._viewport) return;
 		const vp = this._viewport;
 		if (vp) {
-			const d = vp as unknown as IEventDispatcher;
-			d.removeEventListener(PropertyEvent.PROPERTY_CHANGE, this._onPropChange);
-			d.removeEventListener(Event.RESIZE, this._onResize);
+			vp.removeEventListener(PropertyEvent.PROPERTY_CHANGE, this._onPropChange);
+			vp.removeEventListener(Event.RESIZE, this._onResize);
 		}
 		this._viewport = value;
 		if (value) {
-			const d = value as unknown as IEventDispatcher;
-			d.addEventListener(PropertyEvent.PROPERTY_CHANGE, this._onPropChange);
-			d.addEventListener(Event.RESIZE, this._onResize);
+			value.addEventListener(PropertyEvent.PROPERTY_CHANGE, this._onPropChange);
+			value.addEventListener(Event.RESIZE, this._onResize);
 		}
 		this.invalidateDisplayList();
 	}

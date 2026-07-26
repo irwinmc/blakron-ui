@@ -1,5 +1,4 @@
 import { TouchEvent, Event, Rectangle } from '@blakron/core';
-import type { IEventDispatcher } from '@blakron/core';
 import { Component } from './Component.js';
 import type { IViewport } from '../core/IViewport.js';
 import { ScrollPolicy } from '../core/ScrollPolicy.js';
@@ -57,15 +56,13 @@ export class Scroller extends Component {
 		if (value === this._viewport) return;
 		const old = this._viewport;
 		if (old) {
-			const d = old as unknown as IEventDispatcher;
-			d.removeEventListener(PropertyEvent.PROPERTY_CHANGE, this._onViewportPropChange);
-			d.removeEventListener(TouchEvent.TOUCH_BEGIN, this._onTouchBegin);
+			old.removeEventListener(PropertyEvent.PROPERTY_CHANGE, this._onViewportPropChange);
+			old.removeEventListener(TouchEvent.TOUCH_BEGIN, this._onTouchBegin);
 		}
 		this._viewport = value;
 		if (value) {
-			const d = value as unknown as IEventDispatcher;
-			d.addEventListener(PropertyEvent.PROPERTY_CHANGE, this._onViewportPropChange);
-			d.addEventListener(TouchEvent.TOUCH_BEGIN, this._onTouchBegin);
+			value.addEventListener(PropertyEvent.PROPERTY_CHANGE, this._onViewportPropChange);
+			value.addEventListener(TouchEvent.TOUCH_BEGIN, this._onTouchBegin);
 			value.scrollEnabled = true;
 		}
 		this.invalidateDisplayList();

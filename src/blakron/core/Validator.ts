@@ -305,13 +305,13 @@ class DepthBin {
 	public items: QueueClient[] = [];
 	public length = 0;
 
-	private _map = new Set<number>();
+	private _map = new Set<QueueClient>();
 
 	// ── Public methods ────────────────────────────────────────────────────
 
 	public insert(client: QueueClient): void {
-		if (this._map.has(client.hashCode)) return;
-		this._map.add(client.hashCode);
+		if (this._map.has(client)) return;
+		this._map.add(client);
 		this.items.push(client);
 		this.length++;
 	}
@@ -320,13 +320,13 @@ class DepthBin {
 		const client = this.items.pop();
 		if (client) {
 			this.length--;
-			this._map.delete(client.hashCode);
+			this._map.delete(client);
 		}
 		return client;
 	}
 
 	public has(client: QueueClient): boolean {
-		return this._map.has(client.hashCode);
+		return this._map.has(client);
 	}
 
 	public remove(client: QueueClient): void {
@@ -334,7 +334,7 @@ class DepthBin {
 		if (idx >= 0) {
 			this.items.splice(idx, 1);
 			this.length--;
-			this._map.delete(client.hashCode);
+			this._map.delete(client);
 		}
 	}
 

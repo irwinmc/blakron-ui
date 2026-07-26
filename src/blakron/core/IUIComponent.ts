@@ -1,11 +1,11 @@
-import type { Rectangle } from '@blakron/core';
+import type { IEventDispatcher, Rectangle } from '@blakron/core';
 
 /**
  * Interface implemented by all UI components.
  * Defines the layout contract: constraint properties, invalidation cycle,
  * and bounds query methods used by layout classes.
  */
-export interface IUIComponent {
+export interface IUIComponent extends IEventDispatcher {
 	/**
 	 * Whether this component participates in parent layout. Default true.
 	 */

@@ -1,6 +1,10 @@
-import { EventDispatcher } from '@blakron/core';
+import { EventDispatcher, type EventMap } from '@blakron/core';
 import { CollectionEvent, CollectionEventKind } from '../events/CollectionEvent.js';
 import type { ICollection } from './ICollection.js';
+
+export interface ArrayCollectionEvents extends EventMap {
+	[CollectionEvent.COLLECTION_CHANGE]: CollectionEvent;
+}
 
 /**
  * A wrapper around a plain `unknown[]` that implements {@link ICollection}.
@@ -11,7 +15,7 @@ import type { ICollection } from './ICollection.js';
  *
  * @defaultProperty source
  */
-export class ArrayCollection extends EventDispatcher implements ICollection {
+export class ArrayCollection extends EventDispatcher<ArrayCollectionEvents> implements ICollection {
 	// ── Instance fields ───────────────────────────────────────────────────
 
 	private _source: unknown[];
