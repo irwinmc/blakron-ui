@@ -1,14 +1,18 @@
 # @blakron/ui
 
-UI component framework for the Blakron game engine. Migrated from Egret EUI, rewritten in modern TypeScript with clean class inheritance — no namespace hacks, no prototype manipulation.
+UI component framework for [@blakron/core](https://github.com/irwinmc/blakron-core). Migrated from Egret EUI, rewritten in modern TypeScript with clean class inheritance — no namespace hacks, no prototype manipulation.
+
+> **Stable (1.0.0).** Requires `@blakron/core@^1.0.3`. Targets ES2022 + evergreen browsers, same as core.
+
+For the full list of changes in this release, see [CHANGELOG.md](./CHANGELOG.md).
 
 ## Installation
 
 ```bash
-pnpm add @blakron/ui
+pnpm add @blakron/ui @blakron/core
 ```
 
-Requires `@blakron/core` as a peer dependency.
+`@blakron/ui` declares `@blakron/core` as a regular dependency, so it is installed automatically; listing it explicitly is recommended so you control the resolved core version.
 
 ## Quick Start
 
@@ -133,6 +137,7 @@ btn.skinName = MyButtonSkin;
 | `DataGroup`    | Renders a data collection using item renderers. Supports virtual layout for large datasets. |
 | `List`         | `DataGroup` with tap-to-select. Dispatches `ItemTapEvent.ITEM_TAP`.                         |
 | `TabBar`       | Horizontal tab strip driven by `dataProvider`. Dispatches `ItemTapEvent.ITEM_TAP`.          |
+| `ComboBox`     | Drop-down selector. Tapping toggles a `list` skin part; dispatches `Event.CHANGE` on selection. |
 | `ItemRenderer` | Base class for custom item renderers. Override `dataChanged()` to update visuals.           |
 
 ### Scroll Bars
@@ -234,7 +239,7 @@ class MyButtonSkin extends Skin {
 
 | Event                               | Dispatched by                   | Description                                          |
 | ----------------------------------- | ------------------------------- | ---------------------------------------------------- |
-| `Event.CHANGE`                      | `CheckBox`, `RadioButton`, etc. | Selection or value changed                           |
+| `Event.CHANGE`                      | `List`, `TabBar`, `ComboBox`, `CheckBox`, `RadioButton`, `Range` | Selection or value changed (user interaction only for List/TabBar) |
 | `ItemTapEvent.ITEM_TAP`             | `List`, `TabBar`                | Item tapped. Has `item`, `itemIndex`, `itemRenderer` |
 | `CollectionEvent.COLLECTION_CHANGE` | `ArrayCollection`               | Data added, removed, replaced, reset                 |
 | `UIEvent.CLOSING`                   | `Panel`                         | Close button tapped (cancelable)                     |

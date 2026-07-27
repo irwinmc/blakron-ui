@@ -1,8 +1,8 @@
 {
 	"name": "@blakron/ui",
-	"version": "0.4.8",
-	"description": "UI component framework for the Blakron game engine",
-	"author": "",
+	"version": "1.0.0",
+	"description": "EUI-compatible UI component framework for the Blakron game engine — skin-based components, layouts, data binding, view states",
+	"author": "Kelvin <kyia.x52@gmail.com>",
 	"license": "MIT",
 	"type": "module",
 	"main": "./dist/index.js",
@@ -11,8 +11,7 @@
 	"exports": {
 		".": {
 			"types": "./dist/index.d.ts",
-			"import": "./dist/index.js",
-			"require": "./dist/index.js"
+			"import": "./dist/index.js"
 		}
 	},
 	"files": [
@@ -27,7 +26,7 @@
 		"clean": "rm -rf dist",
 		"test": "vitest run",
 		"test:watch": "vitest",
-		"prepublishOnly": "tsc --build"
+		"prepublishOnly": "npm run clean && npm run build"
 	},
 	"dependencies": {
 		"@blakron/core": "^1.0.3"
@@ -41,8 +40,14 @@
 	"keywords": [
 		"blakron",
 		"ui",
+		"eui",
+		"skin",
 		"h5-game",
 		"typescript"
 	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/irwinmc/blakron-ui.git"
+	},
 	"packageManager": "pnpm@10.33.0"
 }
