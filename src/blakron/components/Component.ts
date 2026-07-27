@@ -1,4 +1,4 @@
-import { Sprite, Rectangle, Event, type DisplayObject } from '@blakron/core';
+import { Sprite, Rectangle, Event, type DisplayObject, type DisplayObjectEvents } from '@blakron/core';
 import { UIState, isUIComponent } from '../core/UIState.js';
 import type { IUIOwner } from '../core/UIState.js';
 import { BasicLayout } from '../layouts/BasicLayout.js';
@@ -6,6 +6,22 @@ import { getTheme } from '../core/Theme.js';
 import type { IUIComponent } from '../core/IUIComponent.js';
 import type { ILayoutTarget } from '../layouts/ILayoutTarget.js';
 import type { Skin } from './Skin.js';
+import { PropertyEvent } from '../events/PropertyEvent.js';
+import { UIEvent } from '../events/UIEvent.js';
+
+/**
+ * EventMap for Component and all its subclasses.
+ * Extends DisplayObjectEvents with the UI-layer event types that
+ * skinnable components dispatch.
+ */
+export interface ComponentEvents extends DisplayObjectEvents {
+	[PropertyEvent.PROPERTY_CHANGE]: PropertyEvent;
+	[UIEvent.CREATION_COMPLETE]: UIEvent;
+	[UIEvent.CHANGE_START]: UIEvent;
+	[UIEvent.CHANGE_END]: UIEvent;
+	[UIEvent.CLOSING]: UIEvent;
+	[UIEvent.MOVE]: UIEvent;
+}
 
 /**
  * Base class for all skinnable UI components.
@@ -370,6 +386,47 @@ export class Component extends Sprite implements IUIComponent, ILayoutTarget, IU
 	public override childRemoved(_child: unknown, _index: number): void {
 		this.invalidateSize();
 		this.invalidateDisplayList();
+	}
+
+	// Overload 1: type-safe path for events declared in ComponentEvents
+	public override addEventListener<K extends keyof ComponentEvents & string>(
+		type: K,
+		listener: (event: ComponentEvents[K]) => void,
+		useCapture?: boolean,
+		priority?: number,
+	): void;
+	// Overload 2: fallback for arbitrary type strings
+	public override addEventListener(
+		type: string,
+		listener: (event: Event) => void,
+		useCapture?: boolean,
+		priority?: number,
+	): void;
+	public override addEventListener(
+		type: string,
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		listener: (event: any) => void,
+		useCapture?: boolean,
+		priority?: number,
+	): void {
+		super.addEventListener(type, listener, useCapture, priority);
+	}
+
+	// Overload 1: type-safe path
+	public override removeEventListener<K extends keyof ComponentEvents & string>(
+		type: K,
+		listener: (event: ComponentEvents[K]) => void,
+		useCapture?: boolean,
+	): void;
+	// Overload 2: fallback
+	public override removeEventListener(type: string, listener: (event: Event) => void, useCapture?: boolean): void;
+	public override removeEventListener(
+		type: string,
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		listener: (event: any) => void,
+		useCapture?: boolean,
+	): void {
+		super.removeEventListener(type, listener, useCapture);
 	}
 
 	// ── IUIOwner lifecycle ────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-import { TouchEvent, Event } from '@blakron/core';
+import { TouchEvent, Event, DisplayObject } from '@blakron/core';
 import { Component } from './Component.js';
 import { List } from './List.js';
 import { Scroller } from './Scroller.js';
@@ -43,6 +43,7 @@ export class ComboBox extends Component implements IDisplayText {
 	public constructor() {
 		super();
 		this.touchChildren = true;
+		this.addEventListener(TouchEvent.TOUCH_TAP, this._onTriggerTap);
 	}
 
 	// ── Getters / Setters ─────────────────────────────────────────────────
@@ -80,12 +81,13 @@ export class ComboBox extends Component implements IDisplayText {
 
 	public set selectedItem(value: unknown) {
 		if (this._selectedItem === value) return;
-		this._selectedItem = value;
 		if (this._dataProvider) {
-			this._selectedIndex = this._dataProvider.getItemIndex(value);
+			this.selectedIndex = this._dataProvider.getItemIndex(value);
+		} else {
+			this._selectedItem = value;
+			this._updateLabel();
+			this.invalidateState();
 		}
-		this._updateLabel();
-		this.invalidateState();
 	}
 
 	/** Whether the drop-down list is currently visible. */
@@ -173,10 +175,6 @@ export class ComboBox extends Component implements IDisplayText {
 			this._updateLabel();
 		}
 
-		if (partName === 'button' && instance instanceof Component) {
-			instance.addEventListener(TouchEvent.TOUCH_TAP, this._onTriggerTap);
-		}
-
 		if (partName === 'list' && instance instanceof List) {
 			instance.dataProvider = this._dataProvider;
 			instance.addEventListener(Event.CHANGE, this._onListChange);
@@ -189,10 +187,6 @@ export class ComboBox extends Component implements IDisplayText {
 
 	public override partRemoved(partName: string, instance: unknown): void {
 		super.partRemoved(partName, instance);
-
-		if (partName === 'button' && instance instanceof Component) {
-			instance.removeEventListener(TouchEvent.TOUCH_TAP, this._onTriggerTap);
-		}
 
 		if (partName === 'list' && instance instanceof List) {
 			instance.removeEventListener(Event.CHANGE, this._onListChange);
@@ -255,7 +249,12 @@ export class ComboBox extends Component implements IDisplayText {
 		}
 	}
 
-	private _onTriggerTap = (_e: Event): void => {
+	private _onTriggerTap = (e: Event): void => {
+		// If the tap lands inside the open drop-down (e.g. on the list),
+		// let the list's selection handler deal with it instead of toggling.
+		if (this._isOpen && this.dropDown && e.target instanceof DisplayObject && this.dropDown.contains(e.target)) {
+			return;
+		}
 		this.isOpen = !this._isOpen;
 	};
 

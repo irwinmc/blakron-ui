@@ -1,0 +1,132 @@
+import { describe, it, expect } from 'vitest';
+import { TouchEvent, Event } from '@blakron/core';
+import { ComboBox } from '../src/blakron/components/ComboBox.js';
+import { Group } from '../src/blakron/components/Group.js';
+import { ArrayCollection } from '../src/blakron/collections/ArrayCollection.js';
+
+function makeComboBox(items: unknown[] = []): ComboBox {
+	const cb = new ComboBox();
+	cb.dataProvider = new ArrayCollection(items);
+	return cb;
+}
+
+function tap(target: ComboBox): void {
+	target.dispatchEvent(new TouchEvent(TouchEvent.TOUCH_TAP));
+}
+
+describe('ComboBox', () => {
+	describe('trigger tap', () => {
+		it('tapping the component toggles isOpen', () => {
+			const cb = makeComboBox(['a', 'b']);
+			expect(cb.isOpen).toBe(false);
+
+			tap(cb);
+			expect(cb.isOpen).toBe(true);
+
+			tap(cb);
+			expect(cb.isOpen).toBe(false);
+		});
+
+		it('does not throw when dropDown is present but tap target is the component itself', () => {
+			const cb = makeComboBox(['a', 'b']);
+			// A real drop-down will not contain the ComboBox itself, so a tap on
+			// the component body should still toggle. This guards the contains() path.
+			const dropDown = new Group();
+			(cb as unknown as { dropDown: Group }).dropDown = dropDown;
+
+			expect(() => tap(cb)).not.toThrow();
+			expect(cb.isOpen).toBe(true);
+		});
+	});
+
+	describe('open / close', () => {
+		it('open()/close() toggle isOpen and sync dropDown visibility', () => {
+			const cb = makeComboBox(['a', 'b']);
+			const dropDown = new Group();
+			(cb as unknown as { dropDown: Group }).dropDown = dropDown;
+
+			cb.open();
+			expect(cb.isOpen).toBe(true);
+			expect(dropDown.visible).toBe(true);
+
+			cb.close();
+			expect(cb.isOpen).toBe(false);
+			expect(dropDown.visible).toBe(false);
+		});
+	});
+
+	describe('selection', () => {
+		it('selectedIndex updates selectedItem and dispatches CHANGE', () => {
+			const cb = makeComboBox(['a', 'b', 'c']);
+			cb.validateProperties();
+
+			const changes: unknown[] = [];
+			cb.addEventListener(Event.CHANGE, () => changes.push(cb.selectedIndex));
+
+			cb.selectedIndex = 1;
+			cb.validateProperties();
+
+			expect(changes).toHaveLength(1);
+			expect(cb.selectedItem).toBe('b');
+		});
+
+		it('selectedItem setter routes through selectedIndex (dispatches CHANGE, stays consistent)', () => {
+			const cb = makeComboBox(['a', 'b', 'c']);
+			cb.validateProperties();
+
+			const changes: unknown[] = [];
+			cb.addEventListener(Event.CHANGE, () => changes.push(cb.selectedItem));
+
+			cb.selectedItem = 'c';
+			cb.validateProperties();
+
+			expect(changes).toHaveLength(1);
+			expect(changes[0]).toBe('c');
+			expect(cb.selectedIndex).toBe(2);
+		});
+
+		it('selectedItem not in dataProvider clears selection without throwing', () => {
+			const cb = makeComboBox(['a', 'b']);
+			cb.validateProperties();
+
+			cb.selectedIndex = 0;
+			cb.validateProperties();
+			expect(cb.selectedIndex).toBe(0);
+
+			// Setting an item not in the provider: getItemIndex returns -1.
+			cb.selectedItem = 'zzz';
+			cb.validateProperties();
+
+			expect(cb.selectedIndex).toBe(-1);
+		});
+
+		it('dispatches CHANGE when selectedIndex is set and reflects in text via itemToLabel', () => {
+			const cb = makeComboBox(['apple', 'banana']);
+			cb.validateProperties();
+
+			let fired = false;
+			cb.addEventListener(Event.CHANGE, () => (fired = true));
+
+			cb.selectedIndex = 1;
+			cb.validateProperties();
+
+			expect(fired).toBe(true);
+			// text getter falls back to itemToLabel when no labelDisplay skin part.
+			expect(cb.text).toBe('banana');
+		});
+	});
+
+	describe('itemToLabel', () => {
+		it('uses labelField, labelFunction, and primitives', () => {
+			const cb = new ComboBox();
+			cb.labelField = 'name';
+
+			expect(cb.itemToLabel('plain')).toBe('plain');
+			expect(cb.itemToLabel(42)).toBe('42');
+			expect(cb.itemToLabel({ name: 'Alice' })).toBe('Alice');
+
+			cb.labelFunction = item => `[${String(item)}]`;
+			expect(cb.itemToLabel('x')).toBe('[x]');
+		});
+	});
+});

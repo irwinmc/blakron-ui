@@ -1,7 +1,14 @@
-import { EventDispatcher, DisplayObject, Event } from '@blakron/core';
+import { EventDispatcher, DisplayObject, Event, type EventMap } from '@blakron/core';
 import { PropertyEvent } from '../events/PropertyEvent.js';
 import type { State } from '../states/State.js';
 import type { Component } from './Component.js';
+
+/**
+ * EventMap for Skin. Skins dispatch PropertyEvent when hostComponent changes.
+ */
+export interface SkinEvents extends EventMap {
+	[PropertyEvent.PROPERTY_CHANGE]: PropertyEvent;
+}
 
 /**
  * Base class for all UI skins.
@@ -14,7 +21,7 @@ import type { Component } from './Component.js';
  * The skin also owns the view-state list (`states`) and applies state
  * changes to its $children when `currentState` changes.
  */
-export class Skin extends EventDispatcher {
+export class Skin extends EventDispatcher<SkinEvents> {
 	// ── Instance fields ───────────────────────────────────────────────────
 
 	public skinParts: string[] = [];

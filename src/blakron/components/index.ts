@@ -1,5 +1,5 @@
-export { Component } from './Component.js';
-export { Group } from './Group.js';
+export { Component, type ComponentEvents } from './Component.js';
+export { Group, type GroupEvents } from './Group.js';
 export { Rect } from './Rect.js';
 export { Image } from './Image.js';
 export { Label } from './Label.js';
@@ -9,7 +9,7 @@ export { CheckBox } from './CheckBox.js';
 export { RadioButton, RadioButtonGroup } from './RadioButton.js';
 export { ProgressBar } from './ProgressBar.js';
 export { ViewStack } from './ViewStack.js';
-export { Skin } from './Skin.js';
+export { Skin, type SkinEvents } from './Skin.js';
 export { Animation } from './Animation.js';
 export { TouchScroll } from './TouchScroll.js';
 export { Range } from './Range.js';

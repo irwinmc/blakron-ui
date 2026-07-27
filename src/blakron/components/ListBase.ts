@@ -13,7 +13,9 @@ export class ListBase extends DataGroup {
 	// ── Instance fields ───────────────────────────────────────────────────
 
 	private _selectedIndex = -1;
+	private _previousSelectedIndex = -1;
 	private _selectedIndexChanged = false;
+	private _dispatchChangeAfterSelection = false;
 
 	// ── Getters / Setters ─────────────────────────────────────────────────
 
@@ -22,10 +24,7 @@ export class ListBase extends DataGroup {
 	}
 
 	public set selectedIndex(value: number) {
-		if (this._selectedIndex === value) return;
-		this._selectedIndex = value;
-		this._selectedIndexChanged = true;
-		this.invalidateProperties();
+		this.setSelectedIndex(value, false);
 	}
 
 	public get selectedItem(): unknown {
@@ -95,13 +94,35 @@ export class ListBase extends DataGroup {
 
 	// ── Protected methods ─────────────────────────────────────────────────
 
+	protected setSelectedIndex(value: number, dispatchChangeEvent = false): void {
+		if (this._selectedIndex === value) return;
+		if (dispatchChangeEvent) {
+			this._dispatchChangeAfterSelection = true;
+		}
+		this._previousSelectedIndex = this._selectedIndex;
+		this._selectedIndex = value;
+		this._selectedIndexChanged = true;
+		this.invalidateProperties();
+	}
+
 	protected commitSelection(): void {
 		const maxIndex = this.dataProvider ? this.dataProvider.length - 1 : -1;
 		if (this._selectedIndex < -1) this._selectedIndex = -1;
 		if (this._selectedIndex > maxIndex) this._selectedIndex = maxIndex;
 
+		if (this._previousSelectedIndex !== this._selectedIndex) {
+			this.itemSelected(this._previousSelectedIndex, false);
+		}
+		if (this._selectedIndex >= 0) {
+			this.itemSelected(this._selectedIndex, true);
+		}
+
+		if (this._dispatchChangeAfterSelection) {
+			this._dispatchChangeAfterSelection = false;
+			this.dispatchEventWith(Event.CHANGE);
+		}
 		PropertyEvent.dispatchPropertyEvent(this, 'selectedIndex');
-		this.itemSelected(this._selectedIndex, true);
+		PropertyEvent.dispatchPropertyEvent(this, 'selectedItem');
 	}
 
 	/**

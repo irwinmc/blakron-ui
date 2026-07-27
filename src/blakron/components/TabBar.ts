@@ -40,7 +40,7 @@ export class TabBar extends ListBase {
 	protected override rendererAdded(renderer: ItemRenderer, _index: number, _item: unknown): void {
 		const handler = (_e: Event): void => {
 			const idx = renderer.itemIndex;
-			if (idx >= 0) this.selectedIndex = idx;
+			if (idx >= 0) this.setSelectedIndex(idx, true);
 			ItemTapEvent.dispatchItemTapEvent(this, renderer.data, idx, renderer);
 		};
 		this._rendererHandlers.set(renderer, handler);

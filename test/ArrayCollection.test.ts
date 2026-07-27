@@ -23,7 +23,7 @@ describe('ArrayCollection', () => {
 		it('appends with addItem and dispatches ADD at the new index', () => {
 			const c = new ArrayCollection(['a']);
 			const events: Array<{ kind: CollectionEventKind; location: number; items: unknown[] }> = [];
-			c.addEventListener(CollectionEvent.COLLECTION_CHANGE, (e) => {
+			c.addEventListener(CollectionEvent.COLLECTION_CHANGE, e => {
 				events.push({ kind: e.kind, location: e.location, items: e.items });
 			});
 
@@ -58,7 +58,7 @@ describe('ArrayCollection', () => {
 		it('removes and returns the item, dispatching REMOVE', () => {
 			const c = new ArrayCollection(['a', 'b', 'c']);
 			const events: CollectionEventKind[] = [];
-			c.addEventListener(CollectionEvent.COLLECTION_CHANGE, (e) => events.push(e.kind));
+			c.addEventListener(CollectionEvent.COLLECTION_CHANGE, e => events.push(e.kind));
 
 			const removed = c.removeItemAt(1);
 
@@ -79,7 +79,7 @@ describe('ArrayCollection', () => {
 		it('swaps an item and returns the old one, dispatching REPLACE with both', () => {
 			const c = new ArrayCollection(['a', 'b']);
 			let captured: CollectionEvent | undefined;
-			c.addEventListener(CollectionEvent.COLLECTION_CHANGE, (e) => (captured = e));
+			c.addEventListener(CollectionEvent.COLLECTION_CHANGE, e => (captured = e));
 
 			const old = c.replaceItemAt('B', 1);
 
@@ -95,7 +95,7 @@ describe('ArrayCollection', () => {
 		it('clears the source and dispatches REMOVE for all items starting at index 0', () => {
 			const c = new ArrayCollection(['a', 'b', 'c']);
 			let captured: CollectionEvent | undefined;
-			c.addEventListener(CollectionEvent.COLLECTION_CHANGE, (e) => (captured = e));
+			c.addEventListener(CollectionEvent.COLLECTION_CHANGE, e => (captured = e));
 
 			c.removeAll();
 
@@ -109,7 +109,7 @@ describe('ArrayCollection', () => {
 		it('dispatches UPDATE for an existing item', () => {
 			const c = new ArrayCollection([{ id: 1 }]);
 			const events: CollectionEventKind[] = [];
-			c.addEventListener(CollectionEvent.COLLECTION_CHANGE, (e) => events.push(e.kind));
+			c.addEventListener(CollectionEvent.COLLECTION_CHANGE, e => events.push(e.kind));
 
 			c.itemUpdated(c.getItemAt(0));
 
@@ -131,7 +131,7 @@ describe('ArrayCollection', () => {
 		it('replaces the source and dispatches RESET (not individual removes)', () => {
 			const c = new ArrayCollection(['a', 'b']);
 			const kinds: CollectionEventKind[] = [];
-			c.addEventListener(CollectionEvent.COLLECTION_CHANGE, (e) => kinds.push(e.kind));
+			c.addEventListener(CollectionEvent.COLLECTION_CHANGE, e => kinds.push(e.kind));
 
 			c.source = ['x', 'y', 'z'];
 
@@ -152,7 +152,7 @@ describe('ArrayCollection', () => {
 		it('grows, shrinks, and overwrites without dispatching RESET', () => {
 			const c = new ArrayCollection(['a', 'b', 'c', 'd']);
 			const kinds: CollectionEventKind[] = [];
-			c.addEventListener(CollectionEvent.COLLECTION_CHANGE, (e) => kinds.push(e.kind));
+			c.addEventListener(CollectionEvent.COLLECTION_CHANGE, e => kinds.push(e.kind));
 
 			c.replaceAll(['x', 'y']);
 
@@ -178,7 +178,7 @@ describe('ArrayCollection', () => {
 		it('sorts with a comparator and dispatches REFRESH', () => {
 			const c = new ArrayCollection([3, 1, 2]);
 			const kinds: CollectionEventKind[] = [];
-			c.addEventListener(CollectionEvent.COLLECTION_CHANGE, (e) => kinds.push(e.kind));
+			c.addEventListener(CollectionEvent.COLLECTION_CHANGE, e => kinds.push(e.kind));
 
 			c.sort((a, b) => (a as number) - (b as number));
 
@@ -213,7 +213,7 @@ describe('ArrayCollection', () => {
 		it('refresh dispatches REFRESH without changing data', () => {
 			const c = new ArrayCollection([1, 2]);
 			const kinds: CollectionEventKind[] = [];
-			c.addEventListener(CollectionEvent.COLLECTION_CHANGE, (e) => kinds.push(e.kind));
+			c.addEventListener(CollectionEvent.COLLECTION_CHANGE, e => kinds.push(e.kind));
 
 			c.refresh();
 

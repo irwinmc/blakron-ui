@@ -1,4 +1,4 @@
-import { Sprite, Rectangle, Point, DisplayObject } from '@blakron/core';
+import { Sprite, Rectangle, Point, DisplayObject, Event, type DisplayObjectEvents } from '@blakron/core';
 import { UIState, isUIComponent } from '../core/UIState.js';
 import type { IUIOwner } from '../core/UIState.js';
 import type { IUIComponent } from '../core/IUIComponent.js';
@@ -7,9 +7,21 @@ import type { ILayoutTarget } from '../layouts/ILayoutTarget.js';
 import type { LayoutBase } from '../layouts/LayoutBase.js';
 import type { State } from '../states/State.js';
 import type { Component } from './Component.js';
+import type { ComponentEvents } from './Component.js';
 import type { Skin } from './Skin.js';
 import { PropertyEvent } from '../events/PropertyEvent.js';
+import { CollectionEvent } from '../events/CollectionEvent.js';
+import { ItemTapEvent } from '../events/ItemTapEvent.js';
 import { BasicLayout } from '../layouts/BasicLayout.js';
+
+/**
+ * EventMap for Group and all its subclasses (DataGroup, ListBase, List, TabBar…).
+ * Adds CollectionEvent and ItemTapEvent on top of {@link ComponentEvents}.
+ */
+export interface GroupEvents extends ComponentEvents {
+	[CollectionEvent.COLLECTION_CHANGE]: CollectionEvent;
+	[ItemTapEvent.ITEM_TAP]: ItemTapEvent;
+}
 
 /**
  * Group is the base container for UI components.
@@ -394,6 +406,47 @@ export class Group extends Sprite implements IUIComponent, IViewport, ILayoutTar
 		this.invalidateSize();
 		this.invalidateDisplayList();
 		if (this._layout) this._layout.elementRemoved(index);
+	}
+
+	// Overload 1: type-safe path for events declared in GroupEvents
+	public override addEventListener<K extends keyof GroupEvents & string>(
+		type: K,
+		listener: (event: GroupEvents[K]) => void,
+		useCapture?: boolean,
+		priority?: number,
+	): void;
+	// Overload 2: fallback for arbitrary type strings
+	public override addEventListener(
+		type: string,
+		listener: (event: Event) => void,
+		useCapture?: boolean,
+		priority?: number,
+	): void;
+	public override addEventListener(
+		type: string,
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		listener: (event: any) => void,
+		useCapture?: boolean,
+		priority?: number,
+	): void {
+		super.addEventListener(type, listener, useCapture, priority);
+	}
+
+	// Overload 1: type-safe path
+	public override removeEventListener<K extends keyof GroupEvents & string>(
+		type: K,
+		listener: (event: GroupEvents[K]) => void,
+		useCapture?: boolean,
+	): void;
+	// Overload 2: fallback
+	public override removeEventListener(type: string, listener: (event: Event) => void, useCapture?: boolean): void;
+	public override removeEventListener(
+		type: string,
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		listener: (event: any) => void,
+		useCapture?: boolean,
+	): void {
+		super.removeEventListener(type, listener, useCapture);
 	}
 
 	// ── IUIOwner lifecycle ────────────────────────────────────────────────
