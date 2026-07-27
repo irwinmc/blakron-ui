@@ -1,4 +1,4 @@
-import { TouchEvent, Point } from '@blakron/core';
+import { TouchEvent, Point, DisplayObject } from '@blakron/core';
 import { Range } from './Range.js';
 import { Direction } from '../core/Direction.js';
 
@@ -19,8 +19,8 @@ export class SliderBase extends Range {
 
 	private _direction = Direction.LTR;
 	private _directionChanged = false;
-	private _thumb?: TouchEvent['currentTarget'];
-	private _track?: TouchEvent['currentTarget'];
+	private _thumb?: DisplayObject;
+	private _track?: DisplayObject;
 	private _pendingValue = 0;
 	private _isDragging = false;
 	private _touchOffsetX = 0;
@@ -41,22 +41,22 @@ export class SliderBase extends Range {
 		this.invalidateDisplayList();
 	}
 
-	public get thumb(): TouchEvent['currentTarget'] | undefined {
+	public get thumb(): DisplayObject | undefined {
 		return this._thumb;
 	}
 
-	public set thumb(value: TouchEvent['currentTarget'] | undefined) {
+	public set thumb(value: DisplayObject | undefined) {
 		if (this._thumb === value) return;
 		this._removeThumbListeners();
 		this._thumb = value;
 		this._addThumbListeners();
 	}
 
-	public get track(): TouchEvent['currentTarget'] | undefined {
+	public get track(): DisplayObject | undefined {
 		return this._track;
 	}
 
-	public set track(value: TouchEvent['currentTarget'] | undefined) {
+	public set track(value: DisplayObject | undefined) {
 		if (this._track === value) return;
 		this._removeTrackListeners();
 		this._track = value;
@@ -80,20 +80,17 @@ export class SliderBase extends Range {
 		super.updateSkinDisplayList();
 		if (!this._thumb) return;
 
-		const thumbObj = this._thumb as unknown as { x: number; y: number; width: number; height: number };
-		if (!thumbObj) return;
-
 		const range = this.maximum - this.minimum;
 		const ratio = range > 0 ? (this.value - this.minimum) / range : 0;
 
 		if (this._direction === Direction.LTR) {
-			thumbObj.x = ratio * (this.width - thumbObj.width);
+			this._thumb.x = ratio * (this.width - this._thumb.width);
 		} else if (this._direction === Direction.RTL) {
-			thumbObj.x = (1 - ratio) * (this.width - thumbObj.width);
+			this._thumb.x = (1 - ratio) * (this.width - this._thumb.width);
 		} else if (this._direction === Direction.TTB) {
-			thumbObj.y = ratio * (this.height - thumbObj.height);
+			this._thumb.y = ratio * (this.height - this._thumb.height);
 		} else {
-			thumbObj.y = (1 - ratio) * (this.height - thumbObj.height);
+			this._thumb.y = (1 - ratio) * (this.height - this._thumb.height);
 		}
 	}
 
@@ -101,56 +98,36 @@ export class SliderBase extends Range {
 
 	private _addThumbListeners(): void {
 		if (!this._thumb) return;
-		const t = this._thumb as unknown as {
-			addEventListener: (type: string, listener: (e: TouchEvent) => void) => void;
-		};
-		t.addEventListener(TouchEvent.TOUCH_BEGIN, this._onThumbDown);
+		this._thumb.addEventListener(TouchEvent.TOUCH_BEGIN, this._onThumbDown);
 	}
 
 	private _removeThumbListeners(): void {
 		if (!this._thumb) return;
-		const t = this._thumb as unknown as {
-			removeEventListener: (type: string, listener: (e: TouchEvent) => void) => void;
-		};
-		t.removeEventListener(TouchEvent.TOUCH_BEGIN, this._onThumbDown);
+		this._thumb.removeEventListener(TouchEvent.TOUCH_BEGIN, this._onThumbDown);
 	}
 
 	private _addTrackListeners(): void {
 		if (!this._track) return;
-		const t = this._track as unknown as {
-			addEventListener: (type: string, listener: (e: TouchEvent) => void) => void;
-		};
-		t.addEventListener(TouchEvent.TOUCH_BEGIN, this._onTrackDown);
+		this._track.addEventListener(TouchEvent.TOUCH_BEGIN, this._onTrackDown);
 	}
 
 	private _removeTrackListeners(): void {
 		if (!this._track) return;
-		const t = this._track as unknown as {
-			removeEventListener: (type: string, listener: (e: TouchEvent) => void) => void;
-		};
-		t.removeEventListener(TouchEvent.TOUCH_BEGIN, this._onTrackDown);
+		this._track.removeEventListener(TouchEvent.TOUCH_BEGIN, this._onTrackDown);
 	}
 
 	private _onThumbDown = (e: TouchEvent): void => {
 		e.stopPropagation();
 		this._isDragging = true;
-		const stage = (
-			this as unknown as {
-				stage: {
-					addEventListener: (type: string, listener: (e: TouchEvent) => void) => void;
-					removeEventListener: (type: string, listener: (e: TouchEvent) => void) => void;
-				};
-			}
-		).stage;
+		const stage = this.stage;
 		if (stage) {
 			stage.addEventListener(TouchEvent.TOUCH_MOVE, this._onThumbMove);
 			stage.addEventListener(TouchEvent.TOUCH_END, this._onThumbUp);
 		}
 
-		const thumbObj = this._thumb as unknown as { width: number; height: number; x: number; y: number };
-		if (thumbObj) {
-			this._touchOffsetX = e.stageX - thumbObj.x - thumbObj.width / 2;
-			this._touchOffsetY = e.stageY - thumbObj.y - thumbObj.height / 2;
+		if (this._thumb) {
+			this._touchOffsetX = e.stageX - this._thumb.x - this._thumb.width / 2;
+			this._touchOffsetY = e.stageY - this._thumb.y - this._thumb.height / 2;
 		}
 	};
 
@@ -161,14 +138,7 @@ export class SliderBase extends Range {
 
 	private _onThumbUp = (_e: TouchEvent): void => {
 		this._isDragging = false;
-		const stage = (
-			this as unknown as {
-				stage: {
-					addEventListener: (type: string, listener: (e: TouchEvent) => void) => void;
-					removeEventListener: (type: string, listener: (e: TouchEvent) => void) => void;
-				};
-			}
-		).stage;
+		const stage = this.stage;
 		if (stage) {
 			stage.removeEventListener(TouchEvent.TOUCH_MOVE, this._onThumbMove);
 			stage.removeEventListener(TouchEvent.TOUCH_END, this._onThumbUp);
@@ -181,23 +151,13 @@ export class SliderBase extends Range {
 	};
 
 	private _updateValueFromPosition(stageX: number, stageY: number): void {
-		const trackObj = this._track as unknown as {
-			width: number;
-			height: number;
-			x: number;
-			y: number;
-		};
-		if (!trackObj) return;
+		if (!this._track) return;
 
 		let range: number;
 		let position: number;
 
 		const pt = new Point();
-		const thisPt = (this as unknown as { globalToLocal: (x: number, y: number, r?: Point) => Point }).globalToLocal(
-			stageX,
-			stageY,
-			pt,
-		);
+		const thisPt = this.globalToLocal(stageX, stageY, pt);
 
 		if (this._direction === Direction.LTR || this._direction === Direction.RTL) {
 			range = this.width;

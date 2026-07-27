@@ -2,13 +2,13 @@ import { DisplayObject, TouchEvent, Event } from '@blakron/core';
 import { Component } from './Component.js';
 import { Button } from './Button.js';
 import { UIEvent } from '../events/UIEvent.js';
-import type { IDisplayText } from '../core/IDisplayText.js';
+import type { Label } from './Label.js';
 
 /**
  * Panel — a skinnable container with an optional title bar, close button, and drag area.
  *
  * Skin parts:
- * - `titleDisplay`  — IDisplayText for the panel title
+ * - `titleDisplay`  — Label for the panel title
  * - `closeButton`   — Button that dispatches UIEvent.CLOSING when tapped
  * - `moveArea`      — DisplayObject used as the drag handle
  *
@@ -25,7 +25,7 @@ export class Panel extends Component {
 
 	private _title = '';
 	private _titleChanged = false;
-	private _titleDisplay?: IDisplayText;
+	private _titleDisplay?: Label;
 	private _dragStartX = 0;
 	private _dragStartY = 0;
 	private _panelStartX = 0;
@@ -44,11 +44,11 @@ export class Panel extends Component {
 		this.invalidateProperties();
 	}
 
-	public get titleDisplay(): IDisplayText | undefined {
+	public get titleDisplay(): Label | undefined {
 		return this._titleDisplay;
 	}
 
-	public set titleDisplay(value: IDisplayText | undefined) {
+	public set titleDisplay(value: Label | undefined) {
 		if (this._titleDisplay === value) return;
 		this._titleDisplay = value;
 		if (value && this._title) value.text = this._title;
@@ -104,10 +104,9 @@ export class Panel extends Component {
 		}
 	};
 
-	private _onMoveAreaTouchBegin = (e: Event): void => {
-		const te = e as TouchEvent;
-		this._dragStartX = te.stageX;
-		this._dragStartY = te.stageY;
+	private _onMoveAreaTouchBegin = (e: TouchEvent): void => {
+		this._dragStartX = e.stageX;
+		this._dragStartY = e.stageY;
 		this._panelStartX = this.x;
 		this._panelStartY = this.y;
 		const stage = this.stage;
@@ -117,10 +116,9 @@ export class Panel extends Component {
 		}
 	};
 
-	private _onMoveAreaTouchMove = (e: Event): void => {
-		const te = e as TouchEvent;
-		this.x = this._panelStartX + (te.stageX - this._dragStartX);
-		this.y = this._panelStartY + (te.stageY - this._dragStartY);
+	private _onMoveAreaTouchMove = (e: TouchEvent): void => {
+		this.x = this._panelStartX + (e.stageX - this._dragStartX);
+		this.y = this._panelStartY + (e.stageY - this._dragStartY);
 	};
 
 	private _onMoveAreaTouchEnd = (): void => {

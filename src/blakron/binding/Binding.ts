@@ -1,6 +1,5 @@
 import { Watcher } from './Watcher.js';
 import type { IEventDispatcher } from '@blakron/core';
-import type { Skin } from '../components/Skin.js';
 
 /**
  * Binding — static utility class for data binding.
@@ -26,12 +25,6 @@ export class Binding {
 			};
 			watcher.setHandler(assign, undefined);
 			assign(watcher.getValue());
-
-			if (host && typeof host === 'object' && '$watchers' in host) {
-				const skin = host as unknown as Skin & { $watchers: Watcher[] };
-				if (!skin.$watchers) skin.$watchers = [];
-				skin.$watchers.push(watcher);
-			}
 		}
 		return watcher;
 	}
@@ -95,12 +88,6 @@ export class Binding {
 			if (watcher) {
 				templates[index] = watcher;
 				watcher.setHandler(assign, undefined);
-
-				if (host && typeof host === 'object' && '$watchers' in host) {
-					const skin = host as unknown as Skin & { $watchers: Watcher[] };
-					if (!skin.$watchers) skin.$watchers = [];
-					skin.$watchers.push(watcher);
-				}
 
 				lastWatcher = watcher;
 			}

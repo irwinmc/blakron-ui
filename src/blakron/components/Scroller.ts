@@ -189,14 +189,7 @@ export class Scroller extends Component {
 		this._hScroll.stop();
 		this._vScroll.stop();
 
-		const stage = (
-			this as unknown as {
-				stage?: {
-					addEventListener: (t: string, l: (e: Event) => void) => void;
-					removeEventListener: (t: string, l: (e: Event) => void) => void;
-				};
-			}
-		).stage;
+		const stage = this.stage;
 		if (stage) {
 			stage.addEventListener(TouchEvent.TOUCH_MOVE, this._onTouchMove);
 			stage.addEventListener(TouchEvent.TOUCH_END, this._onTouchEnd);
@@ -205,14 +198,7 @@ export class Scroller extends Component {
 	};
 
 	private _removeStageTouchListeners(): void {
-		const stage = (
-			this as unknown as {
-				stage?: {
-					addEventListener: (t: string, l: (e: Event) => void) => void;
-					removeEventListener: (t: string, l: (e: Event) => void) => void;
-				};
-			}
-		).stage;
+		const stage = this.stage;
 		if (stage) {
 			stage.removeEventListener(TouchEvent.TOUCH_MOVE, this._onTouchMove);
 			stage.removeEventListener(TouchEvent.TOUCH_END, this._onTouchEnd);
@@ -220,15 +206,14 @@ export class Scroller extends Component {
 		}
 	}
 
-	private _onTouchMove = (e: Event): void => {
-		const te = e as TouchEvent;
-		if (te.touchPointID !== this._touchPointID) return;
+	private _onTouchMove = (e: TouchEvent): void => {
+		if (e.touchPointID !== this._touchPointID) return;
 
 		const vp = this._viewport;
 		if (!vp) return;
 
-		const moveX = this._startTouchPointX - te.stageX;
-		const moveY = this._startTouchPointY - te.stageY;
+		const moveX = this._startTouchPointX - e.stageX;
+		const moveY = this._startTouchPointY - e.stageY;
 
 		if (!this._hScroll.isStarted() && !this._vScroll.isStarted()) {
 			if (Math.abs(moveX) < Scroller.DEFAULT_THRESHOLD && Math.abs(moveY) < Scroller.DEFAULT_THRESHOLD) {
@@ -242,30 +227,29 @@ export class Scroller extends Component {
 			if (maxH > 0 && Math.abs(moveX) >= Math.abs(moveY)) {
 				this._hScroll.scrollFactor = this.scrollFactor;
 				this._hScroll.bounces = this.bounces;
-				this._hScroll.start(te.stageX);
+				this._hScroll.start(e.stageX);
 			}
 			if (maxV > 0 && Math.abs(moveY) >= Math.abs(moveX)) {
 				this._vScroll.scrollFactor = this.scrollFactor;
 				this._vScroll.bounces = this.bounces;
-				this._vScroll.start(te.stageY);
+				this._vScroll.start(e.stageY);
 			}
 		}
 
 		if (this._hScroll.isStarted()) {
 			const b = Scroller._vpBounds;
 			vp.getLayoutBounds(b);
-			this._hScroll.update(te.stageX, Math.max(0, vp.contentWidth - b.width), vp.scrollH);
+			this._hScroll.update(e.stageX, Math.max(0, vp.contentWidth - b.width), vp.scrollH);
 		}
 		if (this._vScroll.isStarted()) {
 			const b = Scroller._vpBounds;
 			vp.getLayoutBounds(b);
-			this._vScroll.update(te.stageY, Math.max(0, vp.contentHeight - b.height), vp.scrollV);
+			this._vScroll.update(e.stageY, Math.max(0, vp.contentHeight - b.height), vp.scrollV);
 		}
 	};
 
-	private _onTouchEnd = (e: Event): void => {
-		const te = e as TouchEvent;
-		if (te.touchPointID !== this._touchPointID) return;
+	private _onTouchEnd = (e: TouchEvent): void => {
+		if (e.touchPointID !== this._touchPointID) return;
 
 		this._touchPointID = -1;
 		this._removeStageTouchListeners();

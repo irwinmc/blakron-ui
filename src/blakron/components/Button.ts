@@ -3,6 +3,7 @@ import { Event, TouchEvent, DisplayObject } from '@blakron/core';
 import type { Texture } from '@blakron/core';
 import type { IDisplayText } from '../core/IDisplayText.js';
 import type { Image } from './Image.js';
+import type { Label } from './Label.js';
 
 /**
  * Button component with label, icon, and state management.
@@ -15,7 +16,7 @@ import type { Image } from './Image.js';
 export class Button extends Component implements IDisplayText {
 	// ── Instance fields ───────────────────────────────────────────────────
 
-	public labelDisplay?: IDisplayText;
+	public labelDisplay?: Label;
 	public iconDisplay?: Image;
 
 	private _label = '';
@@ -156,13 +157,13 @@ export class Button extends Component implements IDisplayText {
 		}
 	};
 
-	private _onStageTouchEnd = (e: Event): void => {
+	private _onStageTouchEnd = (e: TouchEvent): void => {
 		const stage = this.stage;
 		if (stage) {
 			stage.removeEventListener(TouchEvent.TOUCH_END, this._onStageTouchEnd);
 			stage.removeEventListener(TouchEvent.TOUCH_CANCEL, this._onTouchCancel);
 		}
-		const target = (e as TouchEvent).target;
+		const target = e.target;
 		if (target instanceof DisplayObject && this.contains(target)) {
 			this.buttonReleased();
 		}

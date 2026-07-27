@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@blakron/core':
-        specifier: ^1.0.2
-        version: 1.0.2
+        specifier: ^1.0.3
+        version: 1.0.3
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
@@ -27,8 +27,8 @@ importers:
 
 packages:
 
-  '@blakron/core@1.0.2':
-    resolution: {integrity: sha512-U9tUQodSIMoZl7CcWyTBkvABwrBXHQUwTN3KQTRCbhxXsu6XxqTic8OVykJwPcKJj2zn96aylClXc1AW20cx6A==}
+  '@blakron/core@1.0.3':
+    resolution: {integrity: sha512-M7aK4cJob9XPawrw4mBovZIZNs6iS+i5AnnVw3OZh4OjZ3EWCbq3hL12vtRXBw/YtjTo6Akz2DDBJjMQ8rQN1Q==}
 
   '@emnapi/core@1.11.1':
     resolution: {integrity: sha512-RSvbQmHzdKzNsLYa/wHrbc3KN4sYLKAdPZxqiM2HATqv/SBk2/ENSHpvXGaLOMcsAyz0poEGqkmmKYG3OWiJEQ==}
@@ -504,7 +504,7 @@ packages:
 
 snapshots:
 
-  '@blakron/core@1.0.2': {}
+  '@blakron/core@1.0.3': {}
 
   '@emnapi/core@1.11.1':
     dependencies:

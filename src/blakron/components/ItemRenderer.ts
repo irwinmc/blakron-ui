@@ -9,8 +9,8 @@ import type { IItemRenderer } from '../core/IItemRenderer.js';
  *
  * States: `up` | `down` | `disabled` | `upAndSelected` | `downAndSelected`
  *
- * @skinPart iconDisplay  — optional IDisplayText or DisplayObject for an icon
- * @skinPart labelDisplay — optional IDisplayText for the item label
+ * @skinPart iconDisplay  — optional DisplayObject for an icon
+ * @skinPart labelDisplay — optional Label for the item label
  */
 export class ItemRenderer extends Component implements IItemRenderer {
 	// ── Instance fields ───────────────────────────────────────────────────
@@ -74,14 +74,13 @@ export class ItemRenderer extends Component implements IItemRenderer {
 
 	// ── Private methods ───────────────────────────────────────────────────
 
-	private _onTouchBegin = (e: Event): void => {
-		const te = e as TouchEvent;
+	private _onTouchBegin = (e: TouchEvent): void => {
 		if (!this.stage) return;
 		this.stage.addEventListener(TouchEvent.TOUCH_END, this._onStageTouchEnd);
 		this.stage.addEventListener(TouchEvent.TOUCH_CANCEL, this._onStageTouchEnd);
 		this._touchCaptured = true;
 		this.invalidateState();
-		te.updateAfterEvent();
+		e.updateAfterEvent();
 	};
 
 	private _onStageTouchEnd = (_e: Event): void => {

@@ -5,6 +5,7 @@ import { Scroller } from './Scroller.js';
 import type { ArrayCollection } from '../collections/ArrayCollection.js';
 import type { IDisplayText } from '../core/IDisplayText.js';
 import type { Button } from './Button.js';
+import type { Label } from './Label.js';
 
 /**
  * ComboBox — a drop-down selection component.
@@ -12,7 +13,7 @@ import type { Button } from './Button.js';
  * Displays a trigger button showing the currently selected item's label,
  * and a drop-down list that appears when the trigger is tapped.
  *
- * @skinPart labelDisplay — IDisplayText showing the selected item label
+ * @skinPart labelDisplay — Label showing the selected item label
  * @skinPart button        — the trigger Button that toggles the drop-down
  * @skinPart dropDown      — the drop-down container (typically a Scroller or Group)
  * @skinPart list          — the List inside the drop-down for item selection
@@ -24,7 +25,7 @@ import type { Button } from './Button.js';
 export class ComboBox extends Component implements IDisplayText {
 	// ── Instance fields ───────────────────────────────────────────────────
 
-	public labelDisplay?: IDisplayText;
+	public labelDisplay?: Label;
 	public button?: Button;
 	public dropDown?: Scroller;
 	public list?: List;
@@ -148,15 +149,12 @@ export class ComboBox extends Component implements IDisplayText {
 	}
 
 	public get textColor(): number {
-		if (this.labelDisplay && 'textColor' in this.labelDisplay) {
-			return (this.labelDisplay as unknown as { textColor: number }).textColor;
-		}
-		return 0;
+		return this.labelDisplay?.textColor ?? 0;
 	}
 
 	public set textColor(value: number) {
-		if (this.labelDisplay && 'textColor' in this.labelDisplay) {
-			(this.labelDisplay as unknown as { textColor: number }).textColor = value;
+		if (this.labelDisplay) {
+			this.labelDisplay.textColor = value;
 		}
 	}
 
