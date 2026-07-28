@@ -4,6 +4,19 @@ All notable changes to `@blakron/ui` are documented here.
 
 ---
 
+## [1.0.1] — 2026-07-28
+
+### Fixed
+
+- **RadioButton**: Clicking a RadioButton no longer leaves the group with zero selection. `Button.buttonReleased` mutated `_selected` directly (`this._selected = !this._selected`), bypassing the (polymorphic) `selected` setter, so `RadioButton`'s override — which calls `group.notifySelected(this)` to deselect the other radios in the same `groupName` — was never invoked. The symptom was that `groupName` had no effect: selecting one radio did not deselect the others. `buttonReleased` now routes through the setter (`this.selected = !this.selected`), matching egret's `eui.ToggleButton.buttonReleased`. Since the `selected` setter already calls `invalidateState()`, the redundant `invalidateState()` was moved out of the toggle branch into the non-toggle `else` branch.
+- **RadioButton**: Tapping an already-selected RadioButton now keeps it selected instead of deselecting it (standard radio semantics: once any radio in a group is selected it cannot be tapped back to empty). `RadioButton` overrides `buttonReleased` to early-return when `enabled === false || selected === true`, mirroring egret's `eui.RadioButton.buttonReleased`.
+
+### Tests
+
+- Added regression coverage in `test/SkinAlignment.test.ts` for the RadioButton group contract (3 new cases): (1) basic mutual exclusion via the `selected` setter, (2) mutual exclusion through the real `buttonReleased()` click path — the case that was silently green before the setter fix, (3) tapping a selected radio does not deselect it. (8 → 11 tests in this file.)
+
+---
+
 ## [1.0.0] — 2026-07-28
 
 First stable release. From this version forward the public API surface (exports from `src/index.ts`) is committed to backward-compatible evolution per semver.

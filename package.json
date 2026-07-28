@@ -1,6 +1,6 @@
 {
 	"name": "@blakron/ui",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "EUI-compatible UI component framework for the Blakron game engine — skin-based components, layouts, data binding, view states",
 	"author": "Kelvin <kyia.x52@gmail.com>",
 	"license": "MIT",

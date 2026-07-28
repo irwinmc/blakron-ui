@@ -137,10 +137,11 @@ export class Button extends Component implements IDisplayText {
 	 */
 	protected buttonReleased(): void {
 		if (this._toggle) {
-			this._selected = !this._selected;
+			this.selected = !this.selected;
 			this._stickyHighlighting = this._selected;
+		} else {
+			this.invalidateState();
 		}
-		this.invalidateState();
 		this.dispatchEventWith(Event.CHANGE);
 	}
 

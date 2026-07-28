@@ -176,4 +176,9 @@ export class RadioButton extends ToggleButton {
 			this._group.notifySelected(this);
 		}
 	}
+
+	protected override buttonReleased(): void {
+		if (!this.enabled || this.selected) return;
+		super.buttonReleased();
+	}
 }
