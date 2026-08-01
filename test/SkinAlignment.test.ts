@@ -1,13 +1,14 @@
 /**
- * 皮肤对齐回归测试
+ * Skin alignment regression tests.
  *
- * 验证 my-game / CLI 模板里那批皮肤和组件 API 是对得上的：
- * - skin part 能被 Component.setSkinPart 正确挂上
- * - 状态切换时 SetProperty 生效（ToggleSwitch 的 knob 滑动）
- * - Panel 的 closeButton / moveArea 被识别
+ * Verifies that the skins and component APIs from the my-game / CLI templates
+ * are aligned:
+ * - skin parts are correctly attached via Component.setSkinPart
+ * - state changes apply SetProperty (ToggleSwitch knob slides)
+ * - Panel's closeButton / moveArea are recognised
  *
- * 这里手写最关键的几条 skin factory（和 codegen 产物等价），
- * 避免测试里去 import 编译产物。如果 codegen 行为变了，这些用例会先红。
+ * The skin factories here are hand-written equivalents of the codegen output.
+ * If codegen behavior changes, these tests will fail first.
  */
 import { describe, it, expect } from 'vitest';
 import {
@@ -29,7 +30,7 @@ import {
 	VerticalLayout,
 } from '../src/index.js';
 
-/** 复刻 ToggleSwitchSkin.exml 编译后的 factory（节选关键状态）。 */
+/** Replicates the compiled ToggleSwitchSkin.exml factory (key states only). */
 function makeToggleSwitchSkin(): Skin {
 	const skin = new Skin();
 	skin.skinParts = ['knob'];
@@ -63,7 +64,7 @@ function makeToggleSwitchSkin(): Skin {
 	return skin;
 }
 
-/** 复刻 PanelSkin.exml 编译后的 factory（节选关键 part）。 */
+/** Replicates the compiled PanelSkin.exml factory (key parts only). */
 function makePanelSkin(): Skin {
 	const skin = new Skin();
 	skin.skinParts = ['moveArea', 'titleDisplay', 'closeButton'];
@@ -94,21 +95,20 @@ describe('skin alignment (my-game / cli template)', () => {
 	it('ToggleSwitch knob slides to x=28 when selected', () => {
 		const ts = new ToggleSwitch();
 		const skin = makeToggleSwitchSkin();
-		// 用 protected setSkin 的公开等价路径：直接走 Component 的内部赋值
-		// ToggleSwitch 继承 Button 继承 Component，skin 走 setSkinPart 绑定
+		// Use the internal skin-attach path (equivalent to the protected setSkin).
 		(ts as unknown as { _setSkin: (s: Skin) => void })._setSkin(skin);
 
 		const knob = skin.getPart('knob') as Rect;
 		expect(knob).toBeInstanceOf(Rect);
 
-		// 初始：未选中，knob 在 x=4
+		// Initial: not selected, knob at x=4.
 		ts.currentState = 'up';
 		(skin as unknown as { currentState: string }).currentState = 'up';
 		expect(knob.x).toBe(4);
 
-		// 选中：currentState 切到 upAndSelected，knob 应滑到 x=28
+		// Selected: currentState switches to upAndSelected, knob should slide to x=28.
 		ts.selected = true;
-		// 模拟 commitProperties 把 skin.currentState 同步过去
+		// Simulate commitProperties syncing skin.currentState.
 		(skin as unknown as { currentState: string }).currentState = 'upAndSelected';
 		expect(knob.x).toBe(28);
 	});
@@ -122,7 +122,7 @@ describe('skin alignment (my-game / cli template)', () => {
 		expect(panel.moveArea).toBeInstanceOf(Rect);
 		expect(panel.titleDisplay).toBeInstanceOf(Label);
 
-		// closeButton 的 skinParts 会被注册到 skin.skinParts
+		// closeButton skinParts are registered in skin.skinParts.
 		expect(skin.skinParts).toContain('closeButton');
 		expect(skin.skinParts).toContain('moveArea');
 		expect(skin.skinParts).toContain('titleDisplay');
@@ -132,15 +132,15 @@ describe('skin alignment (my-game / cli template)', () => {
 		const panel = new Panel();
 		panel.title = 'Hello';
 		const skin = makePanelSkin();
-		// partAdded 会在绑定 titleDisplay 后写入 title
+		// partAdded writes the title after binding titleDisplay.
 		(panel as unknown as { _setSkin: (s: Skin) => void })._setSkin(skin);
 
 		expect(panel.titleDisplay?.text).toBe('Hello');
 	});
 
-	// ── 复合皮肤：自定义组件 + 多个嵌套 skin part ─────────────────────
+	// ── Composite skin: custom component + multiple nested skin parts ──────
 	describe('composite skin (settings-screen pattern)', () => {
-		/** 一个最小自定义组件，声明多个 skin part，记录 partAdded 调用。 */
+		/** A minimal custom component declaring multiple skin parts, recording partAdded calls. */
 		class FakeSettingsScreen extends Component {
 			public titleDisplay?: Label;
 			public closeButton?: Button;
@@ -197,21 +197,22 @@ describe('skin alignment (my-game / cli template)', () => {
 			slider.addEventListener(PropertyEvent.PROPERTY_CHANGE, e => propCalls.push((e as PropertyEvent).property));
 
 			slider.value = 42;
-			// value 走 invalidateProperties，没 stage 时验证循环不会自己跑；
-			// 直接调 commitProperties() 强制 flush，触发 setValue → propertyChange
+			// value goes through invalidateProperties; without a stage the validation
+			// cycle won't run on its own — call commitProperties() to flush and trigger
+			// setValue → propertyChange.
 			slider.commitProperties();
 
-			// Programmatic set does not dispatch CHANGE
+			// Programmatic set does not dispatch CHANGE.
 			expect(changeCalls).toHaveLength(0);
-			// Only dispatches propertyChange with property === 'value'
+			// Only dispatches propertyChange with property === 'value'.
 			expect(propCalls).toContain('value');
 		});
 	});
 
-	// ── Group 布局：横/竖排列 ──────────────────────────────────────────
+	// ── Group layout: horizontal / vertical arrangement ───────────────────
 	describe('Group layout (HorizontalLayout / VerticalLayout)', () => {
-		it('HorizontalLayout 排列子元素从左到右，按 gap 间隔', () => {
-			// 复刻 SettingsScreenSkin 里画质行：Group + HorizontalLayout
+		it('HorizontalLayout arranges children left-to-right with gap spacing', () => {
+			// Replicates the quality row from SettingsScreenSkin: Group + HorizontalLayout.
 			const group = new Group();
 			group.width = 528;
 			group.height = 48;
@@ -232,16 +233,16 @@ describe('skin alignment (my-game / cli template)', () => {
 			c.height = 32;
 			group.elementsContent = [a, b, c];
 
-			// 没 stage，布局不会自己跑；手动调 updateDisplayList flush
+			// No stage — layout won't run on its own; call updateDisplayList to flush.
 			group.updateDisplayList(528, 48);
 
-			// a 在 0；b 跟在 a 后面加 gap；c 再跟一个 gap
+			// a at 0; b after a + gap; c after b + gap.
 			expect(a.x).toBe(0);
 			expect(b.x).toBe(120 + 16);
 			expect(c.x).toBe(120 + 16 + 96 + 16);
 		});
 
-		it('VerticalLayout 排列子元素从上到下，按 gap 间隔', () => {
+		it('VerticalLayout arranges children top-to-bottom with gap spacing', () => {
 			const group = new Group();
 			group.width = 100;
 			group.height = 200;
@@ -265,10 +266,10 @@ describe('skin alignment (my-game / cli template)', () => {
 		});
 	});
 
-	// ── RadioButton 组互斥 ───────────────────────────────────────────────
-	describe('RadioButton groupName 互斥', () => {
-		it('EXML 里设 selected="true" 后 groupName 互斥仍生效', () => {
-			// 复刻 codegen 的顺序：先设 groupName，再设 selected
+	// ── RadioButton group mutual exclusion ────────────────────────────────
+	describe('RadioButton groupName mutual exclusion', () => {
+		it('setting selected=true after groupName still triggers mutual exclusion', () => {
+			// Replicates the codegen order: groupName set first, then selected.
 			const rb1 = new RadioButton();
 			rb1.groupName = 'quality';
 			rb1.value = 'low';
@@ -276,7 +277,7 @@ describe('skin alignment (my-game / cli template)', () => {
 			const rb2 = new RadioButton();
 			rb2.groupName = 'quality';
 			rb2.value = 'mid';
-			// selected 在 groupName 之后设（EXML 里 selected="true" 的属性就是这个顺序）
+			// selected is set after groupName (same order as EXML selected="true").
 			rb2.selected = true;
 
 			const rb3 = new RadioButton();
@@ -284,21 +285,21 @@ describe('skin alignment (my-game / cli template)', () => {
 			rb3.value = 'high';
 
 			expect(rb1.selected).toBe(false);
-			expect(rb2.selected).toBe(true);   // EXML 设的默认选中
+			expect(rb2.selected).toBe(true); // EXML-set default selection
 			expect(rb3.selected).toBe(false);
 
-			// 点 rb1
+			// Select rb1.
 			rb1.selected = !rb1.selected;
 			expect(rb1.selected).toBe(true);
 			expect(rb2.selected).toBe(false);
 			expect(rb3.selected).toBe(false);
 		});
 
-		it('走 buttonReleased 点击路径时互斥 + CHANGE 派发', () => {
-			// 直接调用 Button.buttonReleased()，
-			// 专门覆盖旧 bug：buttonReleased 里用 `this._selected = !this._selected`
-			// 直接写私有字段会绕过 RadioButton 的 selected setter，导致
-			// group 的互斥不被触发，同组其他 RadioButton 不会被取消选中。
+		it('buttonReleased click path triggers mutual exclusion + CHANGE dispatch', () => {
+			// Calls buttonReleased() directly — specifically covers the old bug where
+			// buttonReleased wrote `this._selected = !this._selected` directly to the
+			// private field, bypassing the RadioButton selected setter so group
+			// mutual exclusion was never triggered.
 			const rb1 = new RadioButton();
 			rb1.groupName = 'quality';
 			rb1.value = 'low';
@@ -307,21 +308,21 @@ describe('skin alignment (my-game / cli template)', () => {
 			rb2.groupName = 'quality';
 			rb2.value = 'mid';
 
-			// 初始全未选中
+			// Initially all unselected.
 			expect(rb1.selected).toBe(false);
 			expect(rb2.selected).toBe(false);
 
-			// 点击 rb1（走真正的 buttonReleased 路径，而非直接调 setter）
+			// Click rb1 (via the real buttonReleased path, not the setter directly).
 			(rb1 as any).buttonReleased();
 			expect(rb1.selected).toBe(true);
 
-			// 点击 rb2：必须把 rb1 取消选中，否则说明互斥没生效
+			// Click rb2 — must deselect rb1, otherwise mutual exclusion failed.
 			(rb2 as any).buttonReleased();
 			expect(rb1.selected).toBe(false);
 			expect(rb2.selected).toBe(true);
 		});
 
-		it('已选中态再次点击不会取消选中（不可点空整组）', () => {
+		it('clicking an already-selected radio does not deselect it (cannot empty the group)', () => {
 			const rb1 = new RadioButton();
 			rb1.groupName = 'quality';
 			rb1.value = 'low';
@@ -330,16 +331,16 @@ describe('skin alignment (my-game / cli template)', () => {
 			rb2.groupName = 'quality';
 			rb2.value = 'mid';
 
-			// 先选中 rb1
+			// Select rb1 first.
 			(rb1 as any).buttonReleased();
 			expect(rb1.selected).toBe(true);
 
-			// 再次点击已选中的 rb1 —— 应保持选中，不能把整组点空
+			// Click the already-selected rb1 — should stay selected.
 			(rb1 as any).buttonReleased();
 			expect(rb1.selected).toBe(true);
 			expect(rb2.selected).toBe(false);
 
-			// 点别的 radio 才能切换
+			// Must click a different radio to switch.
 			(rb2 as any).buttonReleased();
 			expect(rb1.selected).toBe(false);
 			expect(rb2.selected).toBe(true);
