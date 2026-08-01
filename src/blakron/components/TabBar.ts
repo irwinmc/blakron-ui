@@ -22,6 +22,7 @@ export class TabBar extends ListBase {
 
 	public constructor() {
 		super();
+		this.requireSelection = true;
 		this.useVirtualLayout = false;
 	}
 
