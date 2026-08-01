@@ -14,6 +14,7 @@ All notable changes to `@blakron/ui` are documented here.
 - **SliderBase / HSlider / VSlider**: Four high-severity deviations fixed. (1) `Event.CHANGE` is now dispatched on interaction (thumb drag with `liveDragging`, track tap, and release when `liveDragging` is false). (2) `UIEvent.CHANGE_START` and `CHANGE_END` bracket the drag lifecycle. (3) Default `maximum` is now 10 (was 100), matching egret. (4) `HSlider` and `VSlider` now override `pointToValue` and `updateSkinDisplayList` to position the thumb using the track's layout bounds (`trackWidth − thumbWidth`) instead of the slider's own `width`/`height`, which mispositioned the thumb whenever the track was inset or differed from the slider bounds. Added `liveDragging` (default true) and `pendingValue` properties.
 - **ListBase**: Added `requireSelection` property (default false). When true, `commitSelection` refuses to deselect to −1 if there is data (restoring the previous selection), and enabling it with no selection auto-selects index 0. Enables "always-one-selected" semantics needed by TabBar.
 - **Scroller**: Scrolling no longer triggers false taps on child components. The viewport now registers capture-phase listeners for `TOUCH_TAP` and `TOUCH_END`; when a scroll gesture is detected (touch moves beyond threshold), the upcoming tap is swallowed via `stopPropagation` so List items and other children don't receive a spurious click.
+- **TabBar**: Constructor now sets `requireSelection = true` (matching egret), so a tab is always selected once data is available. Previously all tabs could be deselected.
 
 ### Tests
 
@@ -23,7 +24,12 @@ All notable changes to `@blakron/ui` are documented here.
 - Added `test/Slider.test.ts` (9 cases): default maximum=10, `liveDragging` default, CHANGE dispatch (track tap / value-change guard), CHANGE_START/CHANGE_END lifecycle, `liveDragging=false` defers commit to release, `pointToValue` uses track bounds.
 - Added `test/Scroller.test.ts` (2 cases): tap swallowed when touch moves beyond threshold, tap not swallowed when within threshold.
 - Added 5 cases to `test/ListBase.test.ts` for `requireSelection`.
-- Total test count: 101 → 128.
+- Added `test/TabBar.test.ts` (4 cases): requireSelection default, auto-select index 0, prevent deselect, switch tabs.
+- Added `test/ViewStack.test.ts` (6 cases): child visibility switching, auto-select index 0, CHANGE dispatch, out-of-range clears, remove selected → index 0, index shift on remove.
+- Added `test/ItemRenderer.test.ts` (9 cases): state machine (up/down/disabled/upAndSelected/downAndSelected), skin.hasState fallback, data propertyChange, selected invalidateState.
+- Added `test/TextInput.test.ts` (12 cases): property caching before skin part, forwarding on partAdded, getCurrentState (normal/normalWithPrompt/disabled).
+- Added `test/DataGroup.test.ts` (5 cases): renderer creation, data binding, renderer recycling on dataProvider change, item replace.
+- Total test count: 101 → 164.
 
 ---
 
