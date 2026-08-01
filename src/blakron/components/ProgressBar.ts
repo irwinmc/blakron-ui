@@ -1,5 +1,5 @@
 import { Component } from './Component.js';
-import { Event } from '@blakron/core';
+import { Event, Rectangle } from '@blakron/core';
 import { Direction } from '../core/Direction.js';
 import type { Label } from './Label.js';
 
@@ -98,33 +98,32 @@ export class ProgressBar extends Component {
 
 		const thumb = this.thumb;
 		if (thumb) {
+			const thumbWidth = thumb.width;
+			const thumbHeight = thumb.height;
 			const r = this.ratio;
+			let clipW = Math.round(r * thumbWidth);
+			if (clipW < 0 || clipW === Infinity) clipW = 0;
+			let clipH = Math.round(r * thumbHeight);
+			if (clipH < 0 || clipH === Infinity) clipH = 0;
+
+			const rect = thumb.scrollRect ?? new Rectangle();
 			switch (this._direction) {
 				case Direction.RTL:
-					thumb.x = unscaledWidth * (1 - r);
-					thumb.y = 0;
-					thumb.width = unscaledWidth * r;
-					thumb.height = unscaledHeight;
+					rect.setTo(thumbWidth - clipW, 0, clipW, thumbHeight);
+					thumb.x = thumbWidth - clipW;
 					break;
 				case Direction.TTB:
-					thumb.x = 0;
-					thumb.y = 0;
-					thumb.width = unscaledWidth;
-					thumb.height = unscaledHeight * r;
+					rect.setTo(0, 0, thumbWidth, clipH);
 					break;
 				case Direction.BTT:
-					thumb.x = 0;
-					thumb.y = unscaledHeight * (1 - r);
-					thumb.width = unscaledWidth;
-					thumb.height = unscaledHeight * r;
+					rect.setTo(0, thumbHeight - clipH, thumbWidth, clipH);
+					thumb.y = thumbHeight - clipH;
 					break;
-				default:
-					thumb.x = 0;
-					thumb.y = 0;
-					thumb.width = unscaledWidth * r;
-					thumb.height = unscaledHeight;
+				default: // LTR
+					rect.setTo(0, 0, clipW, thumbHeight);
 					break;
 			}
+			thumb.scrollRect = rect;
 		}
 
 		if (this.labelDisplay) {

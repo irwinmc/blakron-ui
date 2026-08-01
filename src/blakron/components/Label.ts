@@ -183,8 +183,14 @@ export class Label extends Component implements IDisplayText {
 	}
 
 	public override measure(): void {
-		this._textField.width = isNaN(this.$explicitWidth) ? 100000 : this.$explicitWidth;
-		this.setMeasuredSize(this._textField.textWidth, this._textField.textHeight);
+		const tf = this._textField;
+		// Mirror Egret: temporarily constrain the text field's width to measure
+		// the wrapped text dimensions, then restore the original width so that
+		// measure() has no lasting side effect on the text field's layout width.
+		const oldWidth = tf.$explicitWidth;
+		tf.width = isNaN(this.$explicitWidth) ? 100000 : this.$explicitWidth;
+		this.setMeasuredSize(tf.textWidth, tf.textHeight);
+		tf.width = oldWidth;
 	}
 
 	public override updateDisplayList(unscaledWidth: number, unscaledHeight: number): void {

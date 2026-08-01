@@ -332,10 +332,10 @@ describe('skin alignment (my-game / cli template)', () => {
 		});
 
 		it('走 buttonReleased 点击路径时 groupName 互斥仍生效', () => {
-			// 这条用例直接调用 Button.buttonReleased()，
+			// 直接调用 Button.buttonReleased()，
 			// 专门覆盖旧 bug：buttonReleased 里用 `this._selected = !this._selected`
 			// 直接写私有字段会绕过 RadioButton 的 selected setter，导致
-			// group.notifySelected 不被触发，同组其他 RadioButton 不会被取消选中。
+			// group 的互斥不被触发，同组其他 RadioButton 不会被取消选中。
 			const rb1 = new RadioButton();
 			rb1.groupName = 'quality';
 			rb1.value = 'low';
@@ -352,7 +352,7 @@ describe('skin alignment (my-game / cli template)', () => {
 			(rb1 as any).buttonReleased();
 			expect(rb1.selected).toBe(true);
 
-			// 点击 rb2：必须把 rb1 取消选中，否则说明 notifySelected 没被触发
+			// 点击 rb2：必须把 rb1 取消选中，否则说明互斥没生效
 			(rb2 as any).buttonReleased();
 			expect(rb1.selected).toBe(false);
 			expect(rb2.selected).toBe(true);

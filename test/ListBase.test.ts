@@ -105,4 +105,50 @@ describe('ListBase selection', () => {
 			expect(list.selectedIndex).toBe(-1);
 		});
 	});
+
+	describe('requireSelection', () => {
+		it('defaults to false', () => {
+			const list = makeList(['a', 'b', 'c']);
+			expect(list.requireSelection).toBe(false);
+		});
+
+		it('enabling with no selection auto-selects index 0', () => {
+			const list = makeList(['a', 'b', 'c']);
+			expect(list.selectedIndex).toBe(-1);
+
+			list.requireSelection = true;
+			list.validateProperties();
+
+			expect(list.selectedIndex).toBe(0);
+		});
+
+		it('prevents deselecting to -1 when there is data', () => {
+			const list = makeList(['a', 'b', 'c']);
+			list.requireSelection = true;
+			list.validateProperties();
+			expect(list.selectedIndex).toBe(0);
+
+			// Try to deselect.
+			list.selectProgrammatic(-1);
+			list.validateProperties();
+			expect(list.selectedIndex).toBe(0); // stayed at 0
+		});
+
+		it('allows switching to another index', () => {
+			const list = makeList(['a', 'b', 'c']);
+			list.requireSelection = true;
+			list.validateProperties();
+
+			list.selectProgrammatic(2);
+			list.validateProperties();
+			expect(list.selectedIndex).toBe(2);
+		});
+
+		it('does nothing when enabled with empty dataProvider', () => {
+			const list = makeList([]);
+			list.requireSelection = true;
+			list.validateProperties();
+			expect(list.selectedIndex).toBe(-1);
+		});
+	});
 });

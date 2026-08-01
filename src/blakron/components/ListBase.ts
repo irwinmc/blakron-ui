@@ -16,6 +16,8 @@ export class ListBase extends DataGroup {
 	private _previousSelectedIndex = -1;
 	private _selectedIndexChanged = false;
 	private _dispatchChangeAfterSelection = false;
+	private _requireSelection = false;
+	private _requireSelectionChanged = false;
 
 	// ── Getters / Setters ─────────────────────────────────────────────────
 
@@ -40,9 +42,30 @@ export class ListBase extends DataGroup {
 		this.selectedIndex = this.dataProvider.getItemIndex(value);
 	}
 
+	/**
+	 * If `true`, the list always keeps an item selected (defaults to the first).
+	 * Setting this to true when no item is selected selects index 0.
+	 */
+	public get requireSelection(): boolean {
+		return this._requireSelection;
+	}
+
+	public set requireSelection(value: boolean) {
+		if (this._requireSelection === value) return;
+		this._requireSelection = value;
+		this._requireSelectionChanged = true;
+		this.invalidateProperties();
+	}
+
 	// ── Override methods ──────────────────────────────────────────────────
 
 	public override commitProperties(): void {
+		if (this._requireSelectionChanged) {
+			this._requireSelectionChanged = false;
+			if (this._requireSelection && this._selectedIndex === -1 && this.dataProvider && this.dataProvider.length > 0) {
+				this.setSelectedIndex(0, false);
+			}
+		}
 		if (this._selectedIndexChanged) {
 			this._selectedIndexChanged = false;
 			this.commitSelection();
@@ -105,10 +128,17 @@ export class ListBase extends DataGroup {
 		this.invalidateProperties();
 	}
 
-	protected commitSelection(): void {
+	protected commitSelection(): boolean {
 		const maxIndex = this.dataProvider ? this.dataProvider.length - 1 : -1;
 		if (this._selectedIndex < -1) this._selectedIndex = -1;
 		if (this._selectedIndex > maxIndex) this._selectedIndex = maxIndex;
+
+		// requireSelection: refuse to deselect when there is data.
+		if (this._requireSelection && this._selectedIndex === -1 && this.dataProvider && this.dataProvider.length > 0) {
+			this._selectedIndex = this._previousSelectedIndex;
+			this._dispatchChangeAfterSelection = false;
+			return false;
+		}
 
 		if (this._previousSelectedIndex !== this._selectedIndex) {
 			this.itemSelected(this._previousSelectedIndex, false);
@@ -123,6 +153,7 @@ export class ListBase extends DataGroup {
 		}
 		PropertyEvent.dispatchPropertyEvent(this, 'selectedIndex');
 		PropertyEvent.dispatchPropertyEvent(this, 'selectedItem');
+		return true;
 	}
 
 	/**

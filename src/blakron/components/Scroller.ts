@@ -36,6 +36,8 @@ export class Scroller extends Component {
 	private _touchPointID = -1;
 	private _startTouchPointX = 0;
 	private _startTouchPointY = 0;
+	private _touchMoved = false;
+	private _touchCancelled = false;
 
 	// ── Constructor ───────────────────────────────────────────────────────
 
@@ -57,12 +59,16 @@ export class Scroller extends Component {
 		const old = this._viewport;
 		if (old) {
 			old.removeEventListener(PropertyEvent.PROPERTY_CHANGE, this._onViewportPropChange);
-			old.removeEventListener(TouchEvent.TOUCH_BEGIN, this._onTouchBegin);
+			old.removeEventListener(TouchEvent.TOUCH_BEGIN, this._onTouchBeginCapture, true);
+			old.removeEventListener(TouchEvent.TOUCH_END, this._onTouchEndCapture, true);
+			old.removeEventListener(TouchEvent.TOUCH_TAP, this._onTouchTapCapture, true);
 		}
 		this._viewport = value;
 		if (value) {
 			value.addEventListener(PropertyEvent.PROPERTY_CHANGE, this._onViewportPropChange);
-			value.addEventListener(TouchEvent.TOUCH_BEGIN, this._onTouchBegin);
+			value.addEventListener(TouchEvent.TOUCH_BEGIN, this._onTouchBeginCapture, true);
+			value.addEventListener(TouchEvent.TOUCH_END, this._onTouchEndCapture, true);
+			value.addEventListener(TouchEvent.TOUCH_TAP, this._onTouchTapCapture, true);
 			value.scrollEnabled = true;
 		}
 		this.invalidateDisplayList();
@@ -175,6 +181,33 @@ export class Scroller extends Component {
 		}
 	};
 
+	private _onTouchBeginCapture = (e: Event): void => {
+		if (!this._canScroll()) return;
+		this._touchCancelled = false;
+		this._touchMoved = false;
+		this._onTouchBegin(e);
+	};
+
+	private _onTouchEndCapture = (e: Event): void => {
+		if (this._touchCancelled) {
+			e.stopPropagation();
+		}
+	};
+
+	private _onTouchTapCapture = (e: Event): void => {
+		if (this._touchCancelled) {
+			e.stopPropagation();
+		}
+	};
+
+	private _canScroll(): boolean {
+		const vp = this._viewport;
+		if (!vp) return false;
+		const b = Scroller._vpBounds;
+		vp.getLayoutBounds(b);
+		return vp.contentWidth > b.width || vp.contentHeight > b.height;
+	}
+
 	private _onTouchBegin = (e: Event): void => {
 		const te = e as TouchEvent;
 		if (this._touchPointID !== -1) return;
@@ -219,6 +252,10 @@ export class Scroller extends Component {
 			if (Math.abs(moveX) < Scroller.DEFAULT_THRESHOLD && Math.abs(moveY) < Scroller.DEFAULT_THRESHOLD) {
 				return;
 			}
+			// Scroll gesture confirmed — swallow the upcoming tap so child
+			// components (e.g. List items) don't receive a false "click".
+			this._touchCancelled = true;
+			this._touchMoved = true;
 			const tb = Scroller._vpBounds;
 			vp.getLayoutBounds(tb);
 			const maxH = Math.max(0, vp.contentWidth - tb.width);

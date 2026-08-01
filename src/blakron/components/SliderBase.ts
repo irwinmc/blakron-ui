@@ -1,6 +1,7 @@
-import { TouchEvent, Point, DisplayObject } from '@blakron/core';
+import { TouchEvent, Point, DisplayObject, Event } from '@blakron/core';
 import { Range } from './Range.js';
 import { Direction } from '../core/Direction.js';
+import { UIEvent } from '../events/UIEvent.js';
 
 /**
  * SliderBase — abstract base for slider components.
@@ -22,9 +23,17 @@ export class SliderBase extends Range {
 	private _thumb?: DisplayObject;
 	private _track?: DisplayObject;
 	private _pendingValue = 0;
+	private _liveDragging = true;
 	private _isDragging = false;
 	private _touchOffsetX = 0;
 	private _touchOffsetY = 0;
+
+	// ── Constructor ───────────────────────────────────────────────────────
+
+	public constructor() {
+		super();
+		this.maximum = 10;
+	}
 
 	// ── Getters / Setters ─────────────────────────────────────────────────
 
@@ -63,6 +72,25 @@ export class SliderBase extends Range {
 		this._addTrackListeners();
 	}
 
+	/** Whether `value` updates live during drag (default true). If false, value commits on release. */
+	public get liveDragging(): boolean {
+		return this._liveDragging;
+	}
+
+	public set liveDragging(value: boolean) {
+		this._liveDragging = value;
+	}
+
+	/** The not-yet-committed value during interaction (egret parity). */
+	public get pendingValue(): number {
+		return this._pendingValue;
+	}
+
+	public set pendingValue(value: number) {
+		this._pendingValue = value;
+		this.invalidateDisplayList();
+	}
+
 	// ── Override methods ──────────────────────────────────────────────────
 
 	public override commitProperties(): void {
@@ -81,7 +109,7 @@ export class SliderBase extends Range {
 		if (!this._thumb) return;
 
 		const range = this.maximum - this.minimum;
-		const ratio = range > 0 ? (this.value - this.minimum) / range : 0;
+		const ratio = range > 0 ? (this._pendingValue - this.minimum) / range : 0;
 
 		if (this._direction === Direction.LTR) {
 			this._thumb.x = ratio * (this.width - this._thumb.width);
@@ -92,6 +120,14 @@ export class SliderBase extends Range {
 		} else {
 			this._thumb.y = (1 - ratio) * (this.height - this._thumb.height);
 		}
+	}
+
+	/**
+	 * Converts a track-local position to a value. Override in subclasses
+	 * to use track bounds (egret's HSlider/VSlider override this).
+	 */
+	protected pointToValue(x: number, y: number): number {
+		return this.minimum;
 	}
 
 	// ── Private methods ───────────────────────────────────────────────────
@@ -119,21 +155,27 @@ export class SliderBase extends Range {
 	private _onThumbDown = (e: TouchEvent): void => {
 		e.stopPropagation();
 		this._isDragging = true;
+		this._pendingValue = this.value;
 		const stage = this.stage;
 		if (stage) {
 			stage.addEventListener(TouchEvent.TOUCH_MOVE, this._onThumbMove);
 			stage.addEventListener(TouchEvent.TOUCH_END, this._onThumbUp);
 		}
-
-		if (this._thumb) {
-			this._touchOffsetX = e.stageX - this._thumb.x - this._thumb.width / 2;
-			this._touchOffsetY = e.stageY - this._thumb.y - this._thumb.height / 2;
-		}
+		UIEvent.dispatchUIEvent(this, UIEvent.CHANGE_START);
 	};
 
 	private _onThumbMove = (e: TouchEvent): void => {
-		if (!this._isDragging) return;
-		this._updateValueFromPosition(e.stageX, e.stageY);
+		if (!this._isDragging || !this._track) return;
+		const newValue = this._positionToValue(e.stageX, e.stageY);
+		if (newValue !== this._pendingValue) {
+			if (this._liveDragging) {
+				this.value = newValue;
+				this.dispatchEventWith(Event.CHANGE);
+			} else {
+				this._pendingValue = newValue;
+				this.invalidateDisplayList();
+			}
+		}
 	};
 
 	private _onThumbUp = (_e: TouchEvent): void => {
@@ -143,40 +185,26 @@ export class SliderBase extends Range {
 			stage.removeEventListener(TouchEvent.TOUCH_MOVE, this._onThumbMove);
 			stage.removeEventListener(TouchEvent.TOUCH_END, this._onThumbUp);
 		}
+		UIEvent.dispatchUIEvent(this, UIEvent.CHANGE_END);
+		if (!this._liveDragging && this.value !== this._pendingValue) {
+			this.value = this._pendingValue;
+			this.dispatchEventWith(Event.CHANGE);
+		}
 	};
 
 	private _onTrackDown = (e: TouchEvent): void => {
 		e.stopPropagation();
-		this._updateValueFromPosition(e.stageX, e.stageY);
+		this._pendingValue = this.value;
+		const newValue = this._positionToValue(e.stageX, e.stageY);
+		if (this.value !== newValue) {
+			this.value = newValue;
+			this.dispatchEventWith(Event.CHANGE);
+		}
 	};
 
-	private _updateValueFromPosition(stageX: number, stageY: number): void {
-		if (!this._track) return;
-
-		let range: number;
-		let position: number;
-
-		const pt = new Point();
-		const thisPt = this.globalToLocal(stageX, stageY, pt);
-
-		if (this._direction === Direction.LTR || this._direction === Direction.RTL) {
-			range = this.width;
-			position = thisPt.x;
-		} else {
-			range = this.height;
-			position = thisPt.y;
-		}
-
-		if (range <= 0) return;
-
-		let ratio = position / range;
-		ratio = Math.max(0, Math.min(1, ratio));
-
-		if (this._direction === Direction.RTL || this._direction === Direction.BTT) {
-			ratio = 1 - ratio;
-		}
-
-		const newValue = this.minimum + ratio * (this.maximum - this.minimum);
-		this.setValuePending(newValue);
+	private _positionToValue(stageX: number, stageY: number): number {
+		if (!this._track) return this.minimum;
+		const pt = this._track.globalToLocal(stageX, stageY, new Point());
+		return this.nearestValidValue(this.pointToValue(pt.x, pt.y), this.snapInterval);
 	}
 }
