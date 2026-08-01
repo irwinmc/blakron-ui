@@ -8,6 +8,11 @@
 import { describe, it, expect } from 'vitest';
 import { TextInput, EditableText, Label } from '../src/index.js';
 
+// Reach the protected partAdded method without repeating the cast.
+function attachPart(ti: TextInput, partName: string, instance: unknown): void {
+	(ti as unknown as { partAdded: (n: string, i: unknown) => void }).partAdded(partName, instance);
+}
+
 describe('TextInput', () => {
 	describe('property caching before skin part is attached', () => {
 		it('caches prompt before promptDisplay is attached', () => {
@@ -41,7 +46,7 @@ describe('TextInput', () => {
 			ti.prompt = 'Enter name';
 
 			const label = new Label();
-			ti.partAdded('promptDisplay', label);
+			attachPart(ti, 'promptDisplay', label);
 			expect(label.text).toBe('Enter name');
 		});
 
@@ -50,7 +55,7 @@ describe('TextInput', () => {
 			ti.text = 'hello';
 
 			const ed = new EditableText();
-			ti.partAdded('textDisplay', ed);
+			attachPart(ti, 'textDisplay', ed);
 			expect(ed.text).toBe('hello');
 		});
 
@@ -59,14 +64,14 @@ describe('TextInput', () => {
 			ti.displayAsPassword = true;
 
 			const ed = new EditableText();
-			ti.partAdded('textDisplay', ed);
+			attachPart(ti, 'textDisplay', ed);
 			expect(ed.displayAsPassword).toBe(true);
 		});
 
 		it('reads back from textDisplay after attachment', () => {
 			const ti = new TextInput();
 			const ed = new EditableText();
-			ti.partAdded('textDisplay', ed);
+			attachPart(ti, 'textDisplay', ed);
 
 			ed.text = 'typed text';
 			expect(ti.text).toBe('typed text');
