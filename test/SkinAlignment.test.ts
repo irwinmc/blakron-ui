@@ -184,8 +184,9 @@ describe('skin alignment (my-game / cli template)', () => {
 			expect(screen.added.sort()).toEqual(['closeButton', 'soundToggle', 'titleDisplay', 'volumeSlider']);
 		});
 
-		it('HSlider dispatches propertyChange(value), not Event.CHANGE', () => {
-			// 回归：很多人会用 Event.CHANGE 监听滑块，但 Range 派发的是 propertyChange
+		it('HSlider: programmatic value set dispatches propertyChange, not CHANGE', () => {
+			// CHANGE is reserved for interaction (thumb drag / track tap).
+			// Programmatic value changes only dispatch propertyChange.
 			const slider = new HSlider();
 			slider.maximum = 100;
 			slider.minimum = 0;
@@ -200,9 +201,9 @@ describe('skin alignment (my-game / cli template)', () => {
 			// 直接调 commitProperties() 强制 flush，触发 setValue → propertyChange
 			slider.commitProperties();
 
-			// Range 不派发 Event.CHANGE
+			// Programmatic set does not dispatch CHANGE
 			expect(changeCalls).toHaveLength(0);
-			// 只派发 propertyChange 且 property === 'value'
+			// Only dispatches propertyChange with property === 'value'
 			expect(propCalls).toContain('value');
 		});
 	});
@@ -266,44 +267,6 @@ describe('skin alignment (my-game / cli template)', () => {
 
 	// ── RadioButton 组互斥 ───────────────────────────────────────────────
 	describe('RadioButton groupName 互斥', () => {
-		it('选中一个时，同 groupName 的其他自动取消选中', () => {
-			const rb1 = new RadioButton();
-			rb1.groupName = 'quality';
-			rb1.value = 'low';
-
-			const rb2 = new RadioButton();
-			rb2.groupName = 'quality';
-			rb2.value = 'mid';
-
-			const rb3 = new RadioButton();
-			rb3.groupName = 'quality';
-			rb3.value = 'high';
-
-			// 初始全未选中
-			expect(rb1.selected).toBe(false);
-			expect(rb2.selected).toBe(false);
-			expect(rb3.selected).toBe(false);
-
-			// 点 rb1（模拟用户点击：RadioButton 是 ToggleButton，点击会 toggle）
-			rb1.selected = true;
-			expect(rb1.selected).toBe(true);
-			expect(rb2.selected).toBe(false);
-			expect(rb3.selected).toBe(false);
-
-			// 模拟点击 rb2 — 由于 toggle=true，buttonReleased 会做 selected = !selected
-			// 这里直接模拟 selected 从 false → true
-			rb2.selected = !rb2.selected;
-			expect(rb1.selected).toBe(false);
-			expect(rb2.selected).toBe(true);
-			expect(rb3.selected).toBe(false);
-
-			// 模拟点击 rb3
-			rb3.selected = !rb3.selected;
-			expect(rb1.selected).toBe(false);
-			expect(rb2.selected).toBe(false);
-			expect(rb3.selected).toBe(true);
-		});
-
 		it('EXML 里设 selected="true" 后 groupName 互斥仍生效', () => {
 			// 复刻 codegen 的顺序：先设 groupName，再设 selected
 			const rb1 = new RadioButton();
@@ -331,7 +294,7 @@ describe('skin alignment (my-game / cli template)', () => {
 			expect(rb3.selected).toBe(false);
 		});
 
-		it('走 buttonReleased 点击路径时 groupName 互斥仍生效', () => {
+		it('走 buttonReleased 点击路径时互斥 + CHANGE 派发', () => {
 			// 直接调用 Button.buttonReleased()，
 			// 专门覆盖旧 bug：buttonReleased 里用 `this._selected = !this._selected`
 			// 直接写私有字段会绕过 RadioButton 的 selected setter，导致
