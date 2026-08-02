@@ -10,7 +10,6 @@ import { isUIComponent } from '../core/UIComponent.js';
  * using the track's layout bounds (not the slider's own width), matching egret.
  */
 export class HSlider extends SliderBase {
-	private static readonly _bounds = new Rectangle();
 
 	public constructor() {
 		super();
@@ -24,7 +23,7 @@ export class HSlider extends SliderBase {
 		const track = this.track;
 		const thumb = this.thumb;
 		if (!track || !thumb || !isUIComponent(track) || !isUIComponent(thumb)) return 0;
-		const b = HSlider._bounds;
+		const b = new Rectangle();
 		track.getLayoutBounds(b);
 		const trackWidth = b.width;
 		thumb.getLayoutBounds(b);
@@ -45,14 +44,7 @@ export class HSlider extends SliderBase {
 		const thumbRange = this._getThumbRange();
 		const range = this.maximum - this.minimum;
 		const ratio = range > 0 ? (this.pendingValue - this.minimum) / range : 0;
-		const thumbX = ratio * thumbRange;
 
-		if (isUIComponent(thumb)) {
-			const b = HSlider._bounds;
-			thumb.getLayoutBounds(b);
-			thumb.setLayoutBoundsPosition(Math.round(thumbX), b.y);
-		} else {
-			thumb.x = thumbX;
-		}
+		thumb.x = ratio * thumbRange;
 	}
 }

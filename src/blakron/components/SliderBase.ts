@@ -106,20 +106,6 @@ export class SliderBase extends Range {
 
 	protected override updateSkinDisplayList(): void {
 		super.updateSkinDisplayList();
-		if (!this._thumb) return;
-
-		const range = this.maximum - this.minimum;
-		const ratio = range > 0 ? (this._pendingValue - this.minimum) / range : 0;
-
-		if (this._direction === Direction.LTR) {
-			this._thumb.x = ratio * (this.width - this._thumb.width);
-		} else if (this._direction === Direction.RTL) {
-			this._thumb.x = (1 - ratio) * (this.width - this._thumb.width);
-		} else if (this._direction === Direction.TTB) {
-			this._thumb.y = ratio * (this.height - this._thumb.height);
-		} else {
-			this._thumb.y = (1 - ratio) * (this.height - this._thumb.height);
-		}
 	}
 
 	/**
