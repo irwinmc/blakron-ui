@@ -4,6 +4,20 @@ All notable changes to `@blakron/ui` are documented here.
 
 ---
 
+## [1.0.3] — 2026-08-03
+
+### Fixed
+
+- **HSlider / VSlider (invisible)**: Both sliders rendered with no visible thumb/track because `Theme.getSkinName()` could not resolve their skin. The cause was a `private static readonly _bounds = new Rectangle()` field on each class: the Rollup/esbuild bundler rewrites a class that has a static initialiser holding an object literal by renaming it internally (e.g. `HSlider` → `_HSlider`), so `constructor.name` — which the framework uses as the default `hostComponentKey` for skin lookup — returned `"_HSlider"` instead of `"HSlider"`. With no matching entry in the theme, the skin was never loaded and the `thumb`/`track` skin parts were never bound. Replaced the shared static `Rectangle` with a local allocation in `pointToValue`/`updateSkinDisplayList`. `updateSkinDisplayList` was also simplified to position the thumb via direct `.x`/`.y` assignment instead of `setLayoutBoundsPosition`, and the now-dead thumb-positioning fallback in `SliderBase` was removed (positioning is fully owned by the `HSlider`/`VSlider` overrides).
+- **SliderBase / HSlider / VSlider (thumb not following drag)**: While dragging the thumb in `liveDragging` mode the thumb visually stayed put even though `value` updated correctly. `updateSkinDisplayList` positioned the thumb off `pendingValue`, but the `liveDragging` branch of `_onThumbMove` only updated `value` (never `_pendingValue`), so the two diverged during a drag. The thumb is now positioned from `this.value` (always current), and `_pendingValue` is synced inside the `liveDragging` branch so both stay consistent.
+
+### Tests
+
+- Cleaned up `test/SkinAlignment.test.ts`: removed a duplicate RadioButton mutual-exclusion case (already covered by `RadioButton.test.ts` — "defaults to radioGroup"), and corrected an HSlider test name/comment that implied HSlider never dispatches `Event.CHANGE` (it does dispatch CHANGE on interaction after the Slider fix; only programmatic `value` sets dispatch `propertyChange` without CHANGE).
+- Translated all remaining Chinese comments/descriptions in `test/SkinAlignment.test.ts` to English.
+
+---
+
 ## [1.0.2] — 2026-08-01
 
 ### Fixed
