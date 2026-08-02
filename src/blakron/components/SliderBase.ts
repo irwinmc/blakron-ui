@@ -155,6 +155,7 @@ export class SliderBase extends Range {
 		const newValue = this._positionToValue(e.stageX, e.stageY);
 		if (newValue !== this._pendingValue) {
 			if (this._liveDragging) {
+				this._pendingValue = newValue;
 				this.value = newValue;
 				this.dispatchEventWith(Event.CHANGE);
 			} else {

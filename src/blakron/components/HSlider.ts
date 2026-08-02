@@ -43,7 +43,7 @@ export class HSlider extends SliderBase {
 
 		const thumbRange = this._getThumbRange();
 		const range = this.maximum - this.minimum;
-		const ratio = range > 0 ? (this.pendingValue - this.minimum) / range : 0;
+		const ratio = range > 0 ? (this.value - this.minimum) / range : 0;
 
 		thumb.x = ratio * thumbRange;
 	}
