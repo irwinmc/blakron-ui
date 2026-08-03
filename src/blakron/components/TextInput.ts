@@ -27,6 +27,7 @@ export class TextInput extends Component implements IDisplayText {
 	private _displayAsPassword = false;
 	private _maxChars = 0;
 	private _restrict = '';
+	private _inputType = 'text';
 	private _isFocused = false;
 
 	// ── Getters / Setters ─────────────────────────────────────────────────
@@ -87,6 +88,16 @@ export class TextInput extends Component implements IDisplayText {
 		if (this.textDisplay) this.textDisplay.restrict = value;
 	}
 
+	public get inputType(): string {
+		return this.textDisplay ? this.textDisplay.inputType : this._inputType;
+	}
+
+	public set inputType(value: string) {
+		this._inputType = value;
+		if (this.textDisplay) this.textDisplay.inputType = value as never;
+		this.invalidateProperties();
+	}
+
 	// ── Override methods ──────────────────────────────────────────────────
 
 	protected override getCurrentState(): string {
@@ -106,6 +117,7 @@ export class TextInput extends Component implements IDisplayText {
 			if (this._displayAsPassword) instance.displayAsPassword = true;
 			if (this._maxChars) instance.maxChars = this._maxChars;
 			if (this._restrict) instance.restrict = this._restrict;
+			if (this._inputType) instance.inputType = this._inputType as never;
 			if (this._prompt) instance.prompt = this._prompt;
 			instance.addEventListener(Event.FOCUS_IN, this._onFocusIn);
 			instance.addEventListener(Event.FOCUS_OUT, this._onFocusOut);

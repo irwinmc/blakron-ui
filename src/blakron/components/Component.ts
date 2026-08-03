@@ -515,15 +515,33 @@ export class Component extends Sprite implements IUIComponent, ILayoutTarget, IU
 		let skin: Skin | undefined;
 		if (skinName) {
 			if (typeof skinName === 'function') {
-				skin = new (skinName as new () => Skin)();
+				skin = this._invokeSkinFactory(skinName as new () => Skin);
 			} else if (typeof skinName === 'string') {
-				const clazz = (globalThis as Record<string, unknown>)[skinName] as (new () => Skin) | undefined;
-				if (clazz) skin = new clazz();
+				const clazz = (globalThis as Record<string, unknown>)[skinName] as ((new () => Skin) | ((thisArg: unknown) => Skin)) | undefined;
+				if (clazz) skin = this._invokeSkinFactory(clazz);
 			} else {
 				skin = skinName as Skin;
 			}
 		}
 		this._setSkin(skin);
+		// After the skin is applied, bind any deferred watchers so that
+		// Binding.bindProperty(this, ...) calls inside the factory resolve `this`
+		// to this component.
+	}
+
+	/**
+	 * Invoke a skin factory function with `this` (the host component) as context.
+	 *
+	 * EXML-compiled skins are factory functions (not class constructors) that use
+	 * `this` for `Binding.bindProperty(this, ...)`. Calling with `.call(this)` ensures
+	 * the bindings watch the host component rather than an empty `new`-target.
+	 *
+	 * Falls back to `new` for genuine class constructors (have a non-trivial prototype).
+	 */
+	private _invokeSkinFactory(factory: (new () => Skin) | ((thisArg: unknown) => Skin)): Skin | undefined {
+		// EXML factories are plain functions — call with host context.
+		const result = (factory as (this: unknown, ...args: unknown[]) => Skin).call(this);
+		return (result && typeof result === 'object' && 'skinParts' in result) ? (result as Skin) : undefined;
 	}
 
 	private _setSkin(skin: Skin | undefined): void {

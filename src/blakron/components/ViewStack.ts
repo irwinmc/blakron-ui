@@ -1,6 +1,9 @@
 import { Group } from './Group.js';
 import { Event, DisplayObject } from '@blakron/core';
 import { isUIComponent } from '../core/UIState.js';
+import type { ICollection } from '../collections/ICollection.js';
+import { CollectionEvent, CollectionEventKind } from '../events/CollectionEvent.js';
+import { PropertyEvent } from '../events/PropertyEvent.js';
 
 /**
  * ViewStack navigator container consisting of a collection of child containers
@@ -10,9 +13,12 @@ import { isUIComponent } from '../core/UIState.js';
  * it appears in the same location. However, the old child still exists; it is
  * just invisible and excluded from layout.
  *
+ * Implements {@link ICollection} so it can be used directly as a
+ * `dataProvider` for {@link TabBar} (`<eui:TabBar dataProvider="{viewStack}"/>`).
+ *
  * States: none (container component).
  */
-export class ViewStack extends Group {
+export class ViewStack extends Group implements ICollection {
 	// ── Instance fields ───────────────────────────────────────────────────
 
 	private _selectedIndex = -1;
@@ -34,6 +40,7 @@ export class ViewStack extends Group {
 		value = +value | 0;
 		if (this._selectedIndex === value) return;
 		this._commitSelection(value);
+		PropertyEvent.dispatchPropertyEvent(this, 'selectedIndex');
 		this.dispatchEventWith(Event.CHANGE);
 	}
 
@@ -52,6 +59,32 @@ export class ViewStack extends Group {
 		if (index >= 0 && index < this.numChildren) {
 			this.selectedIndex = index;
 		}
+	}
+
+	// ── ICollection implementation ────────────────────────────────────────
+
+	/** The number of child views. */
+	public get length(): number {
+		return this.numChildren;
+	}
+
+	/**
+	 * Returns the child's `name` at the given index (used by TabBar as tab label).
+	 */
+	public getItemAt(index: number): unknown {
+		const child = this.getChildAt(index);
+		return child ? child.name : '';
+	}
+
+	/**
+	 * Returns the index of the child whose `name` matches the given item.
+	 */
+	public getItemIndex(item: unknown): number {
+		const name = String(item ?? '');
+		for (let i = 0; i < this.numChildren; i++) {
+			if (this.getChildAt(i)?.name === name) return i;
+		}
+		return -1;
 	}
 
 	// ── Override methods ──────────────────────────────────────────────────
@@ -82,6 +115,9 @@ export class ViewStack extends Group {
 		} else if (index <= this._selectedIndex) {
 			this._selectedIndex++;
 		}
+		CollectionEvent.dispatchCollectionEvent(
+			this, CollectionEventKind.ADD, index, -1, [displayChild.name],
+		);
 	}
 
 	public override childRemoved(child: unknown, index: number): void {
@@ -105,6 +141,9 @@ export class ViewStack extends Group {
 		}
 		this.invalidateSize();
 		this.invalidateDisplayList();
+		CollectionEvent.dispatchCollectionEvent(
+			this, CollectionEventKind.REMOVE, index, -1, [displayChild.name],
+		);
 	}
 
 	// ── Private methods ───────────────────────────────────────────────────

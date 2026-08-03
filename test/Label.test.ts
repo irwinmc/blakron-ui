@@ -50,4 +50,34 @@ describe('Label', () => {
 			expect(tf.$explicitWidth).toBe(50);
 		});
 	});
+
+	describe('width constraint from layout', () => {
+		it('setLayoutBoundsSize stores the layout width', () => {
+			const label = new Label('');
+			const h = label as unknown as { _widthConstraint: number };
+			expect(isNaN(h._widthConstraint)).toBe(true);
+
+			// Simulate the parent layout assigning a width.
+			label.setLayoutBoundsSize(200, NaN);
+
+			// The constraint should now be stored.
+			expect(h._widthConstraint).toBe(200);
+		});
+
+		it('measure() consumes and uses _widthConstraint', () => {
+			const label = new Label('');
+			const h = label as unknown as { _widthConstraint: number };
+			const tf = textField(label);
+
+			// Simulate a layout constraint of 200.
+			h._widthConstraint = 200;
+
+			label.measure();
+
+			// measure() should have consumed (reset) the constraint.
+			expect(isNaN(h._widthConstraint)).toBe(true);
+			// And restored the text field width.
+			expect(isNaN(tf.$explicitWidth)).toBe(true);
+		});
+	});
 });

@@ -2,6 +2,7 @@ import { Component } from './Component.js';
 import { TextField } from '@blakron/core';
 import type { HorizontalAlign, VerticalAlign } from '@blakron/core';
 import type { IDisplayText } from '../core/IDisplayText.js';
+import { PropertyEvent } from '../events/PropertyEvent.js';
 
 /**
  * Label component for displaying text.
@@ -13,6 +14,8 @@ export class Label extends Component implements IDisplayText {
 	// ── Instance fields ───────────────────────────────────────────────────
 
 	protected _textField: TextField;
+
+	private _widthConstraint = NaN;
 
 	// ── Constructor ───────────────────────────────────────────────────────
 
@@ -32,6 +35,7 @@ export class Label extends Component implements IDisplayText {
 	public set text(value: string) {
 		if (this._textField.text === value) return;
 		this._textField.text = value;
+		PropertyEvent.dispatchPropertyEvent(this, 'text');
 		this.invalidateSize();
 		this.invalidateDisplayList();
 	}
@@ -184,13 +188,37 @@ export class Label extends Component implements IDisplayText {
 
 	public override measure(): void {
 		const tf = this._textField;
-		// Mirror Egret: temporarily constrain the text field's width to measure
-		// the wrapped text dimensions, then restore the original width so that
-		// measure() has no lasting side effect on the text field's layout width.
+		// Mirror Egret: determine the available width for wrapping, then
+		// temporarily apply it to measure textWidth/textHeight, restoring the
+		// original width afterwards so measure() has no lasting side effect.
 		const oldWidth = tf.$explicitWidth;
-		tf.width = isNaN(this.$explicitWidth) ? 100000 : this.$explicitWidth;
+		let availableWidth = NaN;
+		if (!isNaN(this._widthConstraint)) {
+			availableWidth = this._widthConstraint;
+			this._widthConstraint = NaN;
+		} else if (!isNaN(this.$explicitWidth)) {
+			availableWidth = this.$explicitWidth;
+		} else if (this.maxWidth !== 100000) {
+			availableWidth = this.maxWidth;
+		}
+		tf.width = availableWidth;
 		this.setMeasuredSize(tf.textWidth, tf.textHeight);
 		tf.width = oldWidth;
+	}
+
+	public override setLayoutBoundsSize(layoutWidth: number, layoutHeight: number): void {
+		super.setLayoutBoundsSize(layoutWidth, layoutHeight);
+		// Mirror Egret: track the layout-assigned width so the next measure()
+		// can re-measure wrapped text height at that constraint. Skip if the
+		// width didn't change or an explicit height is set.
+		if (isNaN(layoutWidth) || layoutWidth === this._widthConstraint || layoutWidth === 0) {
+			this._widthConstraint = layoutWidth;
+			return;
+		}
+		this._widthConstraint = layoutWidth;
+		if (!isNaN(this.$explicitHeight)) return;
+		if (layoutWidth === this.measuredWidth) return;
+		this.invalidateSize();
 	}
 
 	public override updateDisplayList(unscaledWidth: number, unscaledHeight: number): void {

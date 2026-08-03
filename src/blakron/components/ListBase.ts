@@ -1,5 +1,6 @@
 import { Event } from '@blakron/core';
 import { DataGroup } from './DataGroup.js';
+import type { ItemRenderer } from './ItemRenderer.js';
 import { CollectionEvent, CollectionEventKind } from '../events/CollectionEvent.js';
 import { PropertyEvent } from '../events/PropertyEvent.js';
 
@@ -73,6 +74,15 @@ export class ListBase extends DataGroup {
 		super.commitProperties();
 	}
 
+	/**
+	 * Override updateRenderer to sync the renderer's `selected` state when it
+	 * is created/recycled (matching Egret's `itemSelected` call).
+	 */
+	public override updateRenderer(renderer: ItemRenderer, itemIndex: number, data: unknown): ItemRenderer {
+		this.itemSelected(itemIndex, this._selectedIndex === itemIndex);
+		return super.updateRenderer(renderer, itemIndex, data);
+	}
+
 	protected override onCollectionChange(event: CollectionEvent): void {
 		const kind = event.kind;
 		const location = event.location ?? -1;
@@ -138,6 +148,18 @@ export class ListBase extends DataGroup {
 			this._selectedIndex = this._previousSelectedIndex;
 			this._dispatchChangeAfterSelection = false;
 			return false;
+		}
+
+		// Interactive selection: dispatch CHANGING (cancelable). If prevented,
+		// revert to the previous selection.
+		if (this._dispatchChangeAfterSelection && this._previousSelectedIndex !== this._selectedIndex) {
+			const allowed = this.dispatchEventWith(Event.CHANGING, false, true, true);
+			if (!allowed) {
+				this.itemSelected(this._selectedIndex, false);
+				this._selectedIndex = this._previousSelectedIndex;
+				this._dispatchChangeAfterSelection = false;
+				return false;
+			}
 		}
 
 		if (this._previousSelectedIndex !== this._selectedIndex) {

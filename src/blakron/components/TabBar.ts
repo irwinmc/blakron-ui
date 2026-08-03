@@ -4,6 +4,9 @@ import { ItemRenderer } from './ItemRenderer.js';
 import { ItemTapEvent } from '../events/ItemTapEvent.js';
 import { HorizontalLayout } from '../layouts/HorizontalLayout.js';
 import { JustifyAlign } from '../layouts/JustifyAlign.js';
+import type { ICollection } from '../collections/ICollection.js';
+import { ViewStack } from './ViewStack.js';
+import { PropertyEvent } from '../events/PropertyEvent.js';
 
 /**
  * TabBar — a horizontal strip of selectable tabs.
@@ -17,6 +20,8 @@ export class TabBar extends ListBase {
 	// ── Instance fields ───────────────────────────────────────────────────
 
 	private readonly _rendererHandlers = new Map<ItemRenderer, (e: Event) => void>();
+	private _viewStack?: ViewStack;
+	private _indexBeingUpdated = false;
 
 	// ── Constructor ───────────────────────────────────────────────────────
 
@@ -27,6 +32,45 @@ export class TabBar extends ListBase {
 	}
 
 	// ── Override methods ──────────────────────────────────────────────────
+
+	/**
+	 * Override dataProvider to detect ViewStack and set up bidirectional binding:
+	 * TabBar CHANGE → ViewStack.selectedIndex, ViewStack PropertyChange → TabBar.selectedIndex.
+	 */
+	public override get dataProvider(): ICollection | undefined {
+		return super.dataProvider;
+	}
+
+	public override set dataProvider(value: ICollection | undefined) {
+		// Clean up previous ViewStack binding
+		if (this._viewStack) {
+			this._viewStack.removeEventListener(PropertyEvent.PROPERTY_CHANGE, this._onViewStackPropChange);
+			this.removeEventListener(Event.CHANGE, this._onTabBarChange);
+			this._viewStack = undefined;
+		}
+		super.dataProvider = value;
+		// Set up new ViewStack binding
+		if (value instanceof ViewStack) {
+			this._viewStack = value;
+			value.addEventListener(PropertyEvent.PROPERTY_CHANGE, this._onViewStackPropChange);
+			this.addEventListener(Event.CHANGE, this._onTabBarChange);
+		}
+	}
+
+	private _onTabBarChange = (): void => {
+		if (!this._viewStack) return;
+		this._indexBeingUpdated = true;
+		this._viewStack.selectedIndex = this.selectedIndex;
+		this._indexBeingUpdated = false;
+	};
+
+	private _onViewStackPropChange = (e: Event): void => {
+		if (!this._viewStack || this._indexBeingUpdated) return;
+		const pe = e as PropertyEvent;
+		if (pe.property === 'selectedIndex') {
+			this.setSelectedIndex(this._viewStack.selectedIndex, false);
+		}
+	};
 
 	public override createChildren(): void {
 		if (!this.layout) {

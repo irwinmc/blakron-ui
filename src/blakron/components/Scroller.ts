@@ -1,11 +1,24 @@
-import { TouchEvent, Event, Rectangle } from '@blakron/core';
+import { TouchEvent, Event, Rectangle, DisplayObject } from '@blakron/core';
 import { Component } from './Component.js';
+import type { Skin } from './Skin.js';
 import type { IViewport } from '../core/IViewport.js';
 import { ScrollPolicy } from '../core/ScrollPolicy.js';
 import { TouchScroll } from './TouchScroll.js';
 import { HScrollBar } from './HScrollBar.js';
 import { VScrollBar } from './VScrollBar.js';
 import { PropertyEvent } from '../events/PropertyEvent.js';
+import { isUIComponent } from '../core/UIComponent.js';
+
+/**
+ * Scratch rectangle for viewport layout-bounds queries.
+ *
+ * Kept at module scope (rather than as a `static`/instance field on the class)
+ * because a `static readonly` *object* field triggers the Rollup class-rename
+ * that corrupts `constructor.name` (the HSlider/VSlider bug from 1.0.3), and an
+ * instance field with an object initialiser also provokes the rename. The
+ * methods that use it are non-reentrant, so sharing one rectangle is safe.
+ */
+const vpBounds = new Rectangle();
 
 /**
  * Scroller wraps an {@link IViewport} (typically a Group) and provides
@@ -18,8 +31,6 @@ export class Scroller extends Component {
 	// ── Static fields ─────────────────────────────────────────────────────
 
 	public static readonly DEFAULT_THRESHOLD = 8;
-
-	private static readonly _vpBounds = new Rectangle();
 
 	// ── Instance fields ───────────────────────────────────────────────────
 
@@ -62,9 +73,13 @@ export class Scroller extends Component {
 			old.removeEventListener(TouchEvent.TOUCH_BEGIN, this._onTouchBeginCapture, true);
 			old.removeEventListener(TouchEvent.TOUCH_END, this._onTouchEndCapture, true);
 			old.removeEventListener(TouchEvent.TOUCH_TAP, this._onTouchTapCapture, true);
+			old.scrollEnabled = false;
+			const oldDisplay = old as unknown as DisplayObject;
+			if (oldDisplay.parent === this) this.removeChild(oldDisplay);
 		}
 		this._viewport = value;
 		if (value) {
+			this.addChildAt(value as unknown as DisplayObject, 0);
 			value.addEventListener(PropertyEvent.PROPERTY_CHANGE, this._onViewportPropChange);
 			value.addEventListener(TouchEvent.TOUCH_BEGIN, this._onTouchBeginCapture, true);
 			value.addEventListener(TouchEvent.TOUCH_END, this._onTouchEndCapture, true);
@@ -120,7 +135,24 @@ export class Scroller extends Component {
 
 	public override updateDisplayList(unscaledWidth: number, unscaledHeight: number): void {
 		super.updateDisplayList(unscaledWidth, unscaledHeight);
+		const vp = this._viewport;
+		if (vp && isUIComponent(vp)) {
+			// Match egret: size the viewport to fill the Scroller and anchor it at (0,0).
+			vp.setLayoutBoundsSize(unscaledWidth, unscaledHeight);
+			vp.setLayoutBoundsPosition(0, 0);
+		}
 		this._updateScrollBarVisibility();
+	}
+
+	protected override setSkin(skin: Skin | undefined): void {
+		super.setSkin(skin);
+		// Match egret: after the skin (scroll bars) is applied, re-add the viewport
+		// at index 0 so it sits beneath the scroll bars and is never orphaned by
+		// the skin application.
+		const vp = this._viewport;
+		if (vp) {
+			this.addChildAt(vp as unknown as DisplayObject, 0);
+		}
 	}
 
 	public override $onRemoveFromStage(): void {
@@ -137,7 +169,7 @@ export class Scroller extends Component {
 		const vp = this._viewport;
 		if (!vp) return;
 
-		const b = Scroller._vpBounds;
+		const b = vpBounds;
 		vp.getLayoutBounds(b);
 		const vpWidth = b.width;
 		const vpHeight = b.height;
@@ -203,7 +235,7 @@ export class Scroller extends Component {
 	private _canScroll(): boolean {
 		const vp = this._viewport;
 		if (!vp) return false;
-		const b = Scroller._vpBounds;
+		const b = vpBounds;
 		vp.getLayoutBounds(b);
 		return vp.contentWidth > b.width || vp.contentHeight > b.height;
 	}
@@ -256,7 +288,7 @@ export class Scroller extends Component {
 			// components (e.g. List items) don't receive a false "click".
 			this._touchCancelled = true;
 			this._touchMoved = true;
-			const tb = Scroller._vpBounds;
+			const tb = vpBounds;
 			vp.getLayoutBounds(tb);
 			const maxH = Math.max(0, vp.contentWidth - tb.width);
 			const maxV = Math.max(0, vp.contentHeight - tb.height);
@@ -274,12 +306,12 @@ export class Scroller extends Component {
 		}
 
 		if (this._hScroll.isStarted()) {
-			const b = Scroller._vpBounds;
+			const b = vpBounds;
 			vp.getLayoutBounds(b);
 			this._hScroll.update(e.stageX, Math.max(0, vp.contentWidth - b.width), vp.scrollH);
 		}
 		if (this._vScroll.isStarted()) {
-			const b = Scroller._vpBounds;
+			const b = vpBounds;
 			vp.getLayoutBounds(b);
 			this._vScroll.update(e.stageY, Math.max(0, vp.contentHeight - b.height), vp.scrollV);
 		}
@@ -294,12 +326,12 @@ export class Scroller extends Component {
 		if (!vp) return;
 
 		if (this._hScroll.isStarted()) {
-			const b = Scroller._vpBounds;
+			const b = vpBounds;
 			vp.getLayoutBounds(b);
 			this._hScroll.finish(vp.scrollH, Math.max(0, vp.contentWidth - b.width));
 		}
 		if (this._vScroll.isStarted()) {
-			const b = Scroller._vpBounds;
+			const b = vpBounds;
 			vp.getLayoutBounds(b);
 			this._vScroll.finish(vp.scrollV, Math.max(0, vp.contentHeight - b.height));
 		}

@@ -1,5 +1,6 @@
 import { TouchEvent, Event } from '@blakron/core';
 import { Component } from './Component.js';
+import { Label } from './Label.js';
 import { PropertyEvent } from '../events/PropertyEvent.js';
 import type { IItemRenderer } from '../core/IItemRenderer.js';
 
@@ -20,6 +21,12 @@ export class ItemRenderer extends Component implements IItemRenderer {
 	private _data: unknown;
 	private _selected = false;
 	private _touchCaptured = false;
+
+	/**
+	 * Skin part: the label. When present, `data` is auto-synced to its `text`
+	 * (fallback for when the EXML `{data}` binding isn't compiled in).
+	 */
+	public labelDisplay?: Label;
 
 	// ── Constructor ───────────────────────────────────────────────────────
 
@@ -53,6 +60,21 @@ export class ItemRenderer extends Component implements IItemRenderer {
 
 	// ── Override methods ──────────────────────────────────────────────────
 
+	protected override partAdded(partName: string, instance: unknown): void {
+		super.partAdded(partName, instance);
+		if (partName === 'labelDisplay' && instance instanceof Label) {
+			this.labelDisplay = instance;
+			this._syncLabel();
+		}
+	}
+
+	protected override partRemoved(partName: string, instance: unknown): void {
+		super.partRemoved(partName, instance);
+		if (partName === 'labelDisplay') {
+			this.labelDisplay = undefined;
+		}
+	}
+
 	protected override getCurrentState(): string {
 		if (!this.enabled) return 'disabled';
 		if (this._touchCaptured) return this._selected ? 'downAndSelected' : 'down';
@@ -69,7 +91,13 @@ export class ItemRenderer extends Component implements IItemRenderer {
 	 * Called after `data` changes. Override to update the view.
 	 */
 	protected dataChanged(): void {
-		// override point
+		this._syncLabel();
+	}
+
+	private _syncLabel(): void {
+		if (this.labelDisplay) {
+			this.labelDisplay.text = this._data == null ? '' : String(this._data);
+		}
 	}
 
 	// ── Private methods ───────────────────────────────────────────────────

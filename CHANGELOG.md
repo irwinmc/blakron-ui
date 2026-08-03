@@ -4,6 +4,39 @@ All notable changes to `@blakron/ui` are documented here.
 
 ---
 
+## [1.0.4] — 2026-08-03
+
+### Fixed
+
+- **Scroller (viewport never added to display list)**: Assigning `scroller.viewport = group` registered the touch/property listeners and enabled scrolling on the viewport but never added it to the Scroller's display list, so the viewport (and any List/Group inside it) was completely invisible. Egret's `installViewport()` calls `this.addChildAt(viewport, 0)`; Blakron's setter now does the same, and the old viewport is removed (`removeChild`) with `scrollEnabled = false` reset.
+- **Scroller (viewport never sized/positioned)**: `updateDisplayList` did not call `viewport.setLayoutBoundsSize(unscaledWidth, unscaledHeight)` / `setLayoutBoundsPosition(0, 0)`, so the viewport could end up unsized or mispositioned even after being added as a child. Egret's `Scroller.updateDisplayList` (reference L916-917) sizes the viewport to fill the Scroller and anchors it at (0,0); Blakron now matches.
+- **Scroller (viewport orphaned on skin re-apply)**: Egret overrides `setSkin` to re-`addChildAt(viewport, 0)` after the skin (scroll bars) is applied so the viewport is never orphaned and sits beneath the bars. Blakron was missing this override; now added.
+- **Scroller (static-object field)**: `private static readonly _vpBounds = new Rectangle()` was converted to a module-level constant, applying the same remedy as the HSlider/VSlider class-name-corruption fix from 1.0.3.
+- **ItemRenderer (labelDisplay auto-sync)**: Added `partAdded`/`partRemoved`/`dataChanged` to auto-sync `labelDisplay.text = String(data)`, matching Egret's binding fallback. Previously the default ItemRenderer had no mechanism to push `data` into the label.
+- **Label (_widthConstraint)**: Added `_widthConstraint` mechanism (`setLayoutBoundsSize` override + `measure` update) so that when a parent layout constrains the Label's width, the measured height correctly accounts for text wrapping. Matches Egret's Label L695-710.
+- **Label (text PropertyEvent)**: `text` setter now dispatches `PropertyEvent('text')` for data binding.
+- **Panel (elementsContent)**: Added missing `elementsContent` setter so that EXML-declared children of `<eui:Panel>` are added to the display list. Previously they were silently discarded because Panel (via Component) had no such setter.
+- **Panel (drag includeInLayout)**: Dragging the moveArea now sets `includeInLayout = false` to prevent the parent layout from snapping the panel back.
+- **ViewStack (ICollection)**: ViewStack now implements `ICollection` (`length`/`getItemAt`/`getItemIndex`), dispatches `CollectionEvent` on child add/remove, and dispatches `PropertyEvent('selectedIndex')`. Enables `<eui:TabBar dataProvider="{viewStack}"/>`.
+- **TabBar (ViewStack binding)**: TabBar now detects ViewStack dataProviders and sets up bidirectional binding: TabBar CHANGE → ViewStack.selectedIndex, ViewStack PropertyChange → TabBar.selectedIndex.
+- **ListBase (CHANGING event)**: `commitSelection` now dispatches `Event.CHANGING` (cancelable) before interactive selection changes, matching Egret. `preventDefault()` reverts the selection.
+- **ListBase (updateRenderer selection sync)**: `updateRenderer` now calls `itemSelected` to sync the renderer's `selected` state when renderers are created/recycled (virtual layout).
+- **TextInput (inputType)**: Added `inputType` property (proxies to `textDisplay.inputType`) for mobile keyboard type control.
+- **ProgressBar (slideDuration)**: Added `slideDuration` (default 500ms) value-change slide animation using the internal `Animation` utility. Matches Egret's default behavior.
+
+### Fixed (CLI)
+
+- **EXML binding codegen**: `emitBinding` was passing the entire expression to `parseBindingTemplate`, which treated simple chains like `"data"` as literal text (no inner `{}`), silently dropping the binding. Now checks for inner `{` first; simple bindings always generate `Binding.bindProperty(...)`.
+- **Skin factory `this` context**: `Component._parseSkinName` now calls skin factory functions via `.call(this)` instead of `new`, so `Binding.bindProperty(this, ...)` inside EXML factories correctly references the host component.
+
+### Tests
+
+- Added 3 cases to `test/Scroller.test.ts` for viewport display-list contract.
+- Added 2 cases to `test/Label.test.ts` for `_widthConstraint` behavior.
+- Total test count: 163 → 168.
+
+---
+
 ## [1.0.3] — 2026-08-03
 
 ### Fixed

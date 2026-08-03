@@ -31,6 +31,19 @@ export class Panel extends Component {
 	private _panelStartX = 0;
 	private _panelStartY = 0;
 
+	// ── Default property (EXML children) ───────────────────────────────
+
+	/**
+	 * Write-only: adds EXML-declared children to the panel.
+	 * Mirrors Egret's `registerProperty(Panel, "elementsContent", "Array", true)`.
+	 */
+	public set elementsContent(value: DisplayObject[] | undefined) {
+		if (!value) return;
+		for (const child of value) {
+			this.addChild(child);
+		}
+	}
+
 	// ── Getters / Setters ─────────────────────────────────────────────────
 
 	public get title(): string {
@@ -105,6 +118,7 @@ export class Panel extends Component {
 	};
 
 	private _onMoveAreaTouchBegin = (e: TouchEvent): void => {
+		this.includeInLayout = false;
 		this._dragStartX = e.stageX;
 		this._dragStartY = e.stageY;
 		this._panelStartX = this.x;

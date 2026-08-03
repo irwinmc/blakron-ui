@@ -10,6 +10,33 @@ import { Event, TouchEvent } from '@blakron/core';
 import { Scroller, Group, Rect } from '../src/index.js';
 
 describe('Scroller', () => {
+	describe('viewport display-list management', () => {
+		it('adds the viewport as a child of the scroller on assignment', () => {
+			const scroller = new Scroller();
+			const viewport = new Group();
+			scroller.viewport = viewport;
+			expect(scroller.getChildIndex(viewport)).toBe(0);
+		});
+
+		it('removes the previous viewport when a new one is assigned', () => {
+			const scroller = new Scroller();
+			const vp1 = new Group();
+			const vp2 = new Group();
+			scroller.viewport = vp1;
+			scroller.viewport = vp2;
+			expect(scroller.contains(vp1)).toBe(false);
+			expect(scroller.contains(vp2)).toBe(true);
+		});
+
+		it('removes the viewport from the scroller on reset to undefined', () => {
+			const scroller = new Scroller();
+			const viewport = new Group();
+			scroller.viewport = viewport;
+			scroller.viewport = undefined;
+			expect(scroller.contains(viewport)).toBe(false);
+		});
+	});
+
 	describe('tap swallowing during scroll', () => {
 		it('swallows TOUCH_TAP when touch moves beyond threshold (scroll)', () => {
 			const scroller = new Scroller();
