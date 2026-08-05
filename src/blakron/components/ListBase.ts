@@ -11,6 +11,11 @@ import { PropertyEvent } from '../events/PropertyEvent.js';
  * Subclasses (e.g. List) add touch interaction.
  */
 export class ListBase extends DataGroup {
+	// ── Sentinel constants ──────────────────────────────────────────────
+
+	/** Sentinel for "no selection" — matches egret `ListBase.NO_SELECTION`. */
+	protected static readonly NO_SELECTION = -1;
+
 	// ── Instance fields ───────────────────────────────────────────────────
 
 	private _selectedIndex = -1;
@@ -18,7 +23,10 @@ export class ListBase extends DataGroup {
 	private _selectedIndexChanged = false;
 	private _dispatchChangeAfterSelection = false;
 	private _requireSelection = false;
-	private _requireSelectionChanged = false;
+    private _requireSelectionChanged = false;
+
+	/** Item passed to selectedItem setter before dataProvider is available (egret `pendingSelectedItem`). */
+	private _pendingSelectedItem: unknown;
 
 	// ── Getters / Setters ─────────────────────────────────────────────────
 
@@ -37,9 +45,11 @@ export class ListBase extends DataGroup {
 
 	public set selectedItem(value: unknown) {
 		if (!this.dataProvider) {
-			this.selectedIndex = -1;
+			this._pendingSelectedItem = value;
+			this.invalidateProperties();
 			return;
 		}
+		this._pendingSelectedItem = undefined;
 		this.selectedIndex = this.dataProvider.getItemIndex(value);
 	}
 
@@ -67,6 +77,15 @@ export class ListBase extends DataGroup {
 				this.setSelectedIndex(0, false);
 			}
 		}
+
+		// Resolve a pending selectedItem now that dataProvider is available
+		// (egret `commitProperties` pendingSelectedItem resolve).
+		if (this._pendingSelectedItem !== undefined && this.dataProvider) {
+			const item = this._pendingSelectedItem;
+			this._pendingSelectedItem = undefined;
+			this.setSelectedIndex(this.dataProvider.getItemIndex(item), false);
+		}
+
 		if (this._selectedIndexChanged) {
 			this._selectedIndexChanged = false;
 			this.commitSelection();
@@ -87,37 +106,29 @@ export class ListBase extends DataGroup {
 		const kind = event.kind;
 		const location = event.location ?? -1;
 
-		if (this._selectedIndex === -1) {
-			super.onCollectionChange(event);
-			return;
-		}
-
 		switch (kind) {
 			case CollectionEventKind.ADD: {
-				if (location <= this._selectedIndex) {
-					this._selectedIndex++;
-					PropertyEvent.dispatchPropertyEvent(this, 'selectedIndex');
+				if (this._requireSelection && this._selectedIndex === -1) {
+					this.adjustSelection(location, true);
+				} else if (location <= this._selectedIndex) {
+					this.adjustSelection(this._selectedIndex + 1, true);
 				}
 				break;
 			}
 			case CollectionEventKind.REMOVE: {
-				if (location < this._selectedIndex) {
-					this._selectedIndex--;
-					PropertyEvent.dispatchPropertyEvent(this, 'selectedIndex');
-				} else if (location === this._selectedIndex) {
-					this._selectedIndex = -1;
-					PropertyEvent.dispatchPropertyEvent(this, 'selectedIndex');
+				const sel = this._selectedIndex;
+				if (location < sel) {
+					this.adjustSelection(sel - 1, false);
+				} else if (location === sel) {
+					if (this.numChildren === 0) {
+						this.adjustSelection(-1, false);
+					}
 				}
-				break;
-			}
-			case CollectionEventKind.MOVE: {
-				// handled by oldLocation / newLocation in full impl
 				break;
 			}
 			case CollectionEventKind.RESET:
 			case CollectionEventKind.REFRESH: {
-				this._selectedIndex = -1;
-				PropertyEvent.dispatchPropertyEvent(this, 'selectedIndex');
+				this.dataProviderRefreshed();
 				break;
 			}
 		}
@@ -185,5 +196,36 @@ export class ListBase extends DataGroup {
 	protected itemSelected(index: number, selected: boolean): void {
 		const renderer = this.getRendererAt(index);
 		if (renderer) renderer.selected = selected;
+	}
+
+	/**
+	 * Adjust the selection index in response to collection mutations without
+	 * dispatching events or calling `itemSelected` (egret `adjustSelection`).
+	 *
+	 * If a selection change is already pending (`_selectedIndexChanged`), the
+	 * pending value is adjusted; otherwise the committed value is adjusted
+	 * directly. This ensures multiple add/remove operations within a single
+	 * frame only produce one final selection event.
+	 */
+	protected adjustSelection(newIndex: number, _add: boolean): void {
+		if (this._selectedIndexChanged) {
+			this._selectedIndex = newIndex;
+		} else {
+			this._selectedIndex = newIndex;
+		}
+		PropertyEvent.dispatchPropertyEvent(this, 'selectedIndex');
+	}
+
+	/**
+	 * Called when the data provider is reset or refreshed (egret parity).
+	 * Re-applies {@link requireSelection} logic so that the first item is
+	 * automatically selected when the data source is replaced.
+	 */
+	protected dataProviderRefreshed(): void {
+		this._selectedIndex = -1;
+		PropertyEvent.dispatchPropertyEvent(this, 'selectedIndex');
+		if (this._requireSelection && this.dataProvider && this.dataProvider.length > 0) {
+			this.setSelectedIndex(0, false);
+		}
 	}
 }

@@ -7,6 +7,7 @@ import { TouchScroll } from './TouchScroll.js';
 import { HScrollBar } from './HScrollBar.js';
 import { VScrollBar } from './VScrollBar.js';
 import { PropertyEvent } from '../events/PropertyEvent.js';
+import { UIEvent } from '../events/UIEvent.js';
 import { isUIComponent } from '../core/UIComponent.js';
 
 /**
@@ -49,6 +50,18 @@ export class Scroller extends Component {
 	private _startTouchPointY = 0;
 	private _touchMoved = false;
 	private _touchCancelled = false;
+
+	/**
+	 * Whether a CHANGE_START event has been dispatched for the current
+	 * scroll gesture (egret parity). Cleared when CHANGE_END fires.
+	 */
+	private _changeStartDispatched = false;
+
+	/**
+	 * Timer ID for the 200 ms auto-hide timeout on the scroll bars.
+	 * Matches egret's {@code autoHideTimer} (a {@code egret.Timer(200, 1)}).
+	 */
+	private _autoHideTimer: ReturnType<typeof setTimeout> | undefined;
 
 	// ── Constructor ───────────────────────────────────────────────────────
 
@@ -109,6 +122,23 @@ export class Scroller extends Component {
 		this.invalidateDisplayList();
 	}
 
+	/**
+	 * Speed multiplier for scroll throw animation (egret parity).
+	 * Delegates to the underlying {@link TouchScroll} instances.
+	 * @default 1.0
+	 */
+	public get throwSpeed(): number {
+		return this._hScroll.scrollFactor;
+	}
+
+	public set throwSpeed(val: number) {
+		val = +val;
+		if (val < 0) val = 0;
+		this._hScroll.scrollFactor = val;
+		this._vScroll.scrollFactor = val;
+		this.scrollFactor = val;
+	}
+
 	// ── Override methods ──────────────────────────────────────────────────
 
 	protected override partAdded(partName: string, instance: unknown): void {
@@ -161,6 +191,7 @@ export class Scroller extends Component {
 		this._hScroll.stop();
 		this._vScroll.stop();
 		this._touchPointID = -1;
+		this._clearAutoHideTimer();
 	}
 
 	// ── Private methods ───────────────────────────────────────────────────
@@ -288,6 +319,13 @@ export class Scroller extends Component {
 			// components (e.g. List items) don't receive a false "click".
 			this._touchCancelled = true;
 			this._touchMoved = true;
+
+			// Dispatch CHANGE_START once per gesture (egret parity).
+			if (!this._changeStartDispatched) {
+				this._changeStartDispatched = true;
+				UIEvent.dispatchUIEvent(this, UIEvent.CHANGE_START);
+			}
+
 			const tb = vpBounds;
 			vp.getLayoutBounds(tb);
 			const maxH = Math.max(0, vp.contentWidth - tb.width);
@@ -347,11 +385,40 @@ export class Scroller extends Component {
 		if (vp) vp.scrollV = scrollPos;
 	};
 
+	/**
+	 * Called when a scroll throw animation ends (egret parity).
+	 * Dispatches CHANGE_END when both horizontal and vertical animations
+	 * have stopped, and starts the auto-hide timer for the scroll bars.
+	 */
 	private onHScrollEnd = (): void => {
-		// Horizontal throw animation ended
+		if (!this._vScroll.isStarted()) this._onChangeEnd();
 	};
 
 	private onVScrollEnd = (): void => {
-		// Vertical throw animation ended
+		if (!this._hScroll.isStarted()) this._onChangeEnd();
 	};
+
+	private _onChangeEnd(): void {
+		this._changeStartDispatched = false;
+		this._scheduleAutoHide();
+		UIEvent.dispatchUIEvent(this, UIEvent.CHANGE_END);
+	}
+
+	// ── Auto-hide scroll bars (egret parity) ─────────────────────────
+
+	private _scheduleAutoHide(): void {
+		this._clearAutoHideTimer();
+		this._autoHideTimer = setTimeout(() => {
+			this._autoHideTimer = undefined;
+			if (this.horizontalScrollBar?.visible) this.horizontalScrollBar.visible = false;
+			if (this.verticalScrollBar?.visible) this.verticalScrollBar.visible = false;
+		}, 200);
+	}
+
+	private _clearAutoHideTimer(): void {
+		if (this._autoHideTimer !== undefined) {
+			clearTimeout(this._autoHideTimer);
+			this._autoHideTimer = undefined;
+		}
+	}
 }

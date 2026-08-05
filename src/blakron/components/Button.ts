@@ -117,16 +117,31 @@ export class Button extends Component implements IDisplayText {
 		}
 	}
 
+	/**
+	 * Return the current view state, layering the selected state on top of
+	 * the base up/down/disabled states.
+	 *
+	 * Matches egret `ToggleButton.getCurrentState` (L132-145): if the skin
+	 * does not export an `AndSelected` variant, the state falls back to `down`
+	 * (or `disabled`) instead of returning a skin-missing state name that
+	 * would leave the button visually blank.
+	 */
 	protected override getCurrentState(): string {
+		// Base state (egret Button.getCurrentState)
+		let state: string;
 		if (!this.enabled) {
-			return this._selected ? 'disabledAndSelected' : 'disabled';
+			state = 'disabled';
+		} else if (this._touchCaptured || this._stickyHighlighting) {
+			state = 'down';
+		} else {
+			state = 'up';
 		}
-		if (this._selected) {
-			if (this._touchCaptured || this._stickyHighlighting) return 'downAndSelected';
-			return 'upAndSelected';
-		}
-		if (this._touchCaptured) return 'down';
-		return 'up';
+
+		if (!this._selected) return state;
+
+		const selectedState = state + 'AndSelected';
+		if (this.skin?.hasState(selectedState)) return selectedState;
+		return state === 'disabled' ? 'disabled' : 'down';
 	}
 
 	// ── Protected methods ─────────────────────────────────────────────────

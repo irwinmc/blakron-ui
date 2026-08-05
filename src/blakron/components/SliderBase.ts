@@ -142,6 +142,16 @@ export class SliderBase extends Range {
 		e.stopPropagation();
 		this._isDragging = true;
 		this._pendingValue = this.value;
+
+		// Capture the offset of the touch point within the thumb so that
+		// dragging tracks from the grab point rather than jumping to the
+		// finger centre (egret `SliderBase.onThumbTouchBegin` L399-404).
+		if (this._thumb) {
+			const offset = this._thumb.globalToLocal(e.stageX, e.stageY, new Point());
+			this._touchOffsetX = offset.x;
+			this._touchOffsetY = offset.y;
+		}
+
 		const stage = this.stage;
 		if (stage) {
 			stage.addEventListener(TouchEvent.TOUCH_MOVE, this._onThumbMove);
@@ -189,9 +199,17 @@ export class SliderBase extends Range {
 		}
 	};
 
+	/**
+	 * Convert a stage-space touch coordinate to a slider value, taking into
+	 * account the thumb's grab offset so the handle follows the finger from
+	 * the exact point where it was grabbed (egret parity).
+	 */
 	private _positionToValue(stageX: number, stageY: number): number {
 		if (!this._track) return this.minimum;
 		const pt = this._track.globalToLocal(stageX, stageY, new Point());
-		return this.nearestValidValue(this.pointToValue(pt.x, pt.y), this.snapInterval);
+		return this.nearestValidValue(
+			this.pointToValue(pt.x - this._touchOffsetX, pt.y - this._touchOffsetY),
+			this.snapInterval,
+		);
 	}
 }
