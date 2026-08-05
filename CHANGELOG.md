@@ -4,6 +4,26 @@ All notable changes to `@blakron/ui` are documented here.
 
 ---
 
+## [1.0.5] — 2026-08-03
+
+### Fixed
+
+- **Component (`enabled` / `touchEnabled` cycle completely broken)**: Three interdependent issues in the `enabled` setter and `touchEnabled` accessor:
+  1. **`touchEnabled` getter always returned `undefined`**. Overriding only the setter on `Component.prototype` creates a JS accessor with `get: undefined`, which shadows the inherited `DisplayObject` getter. Every read of `.touchEnabled` on any Component subclass (Button, Label, TextInput, …) silently returned `undefined` instead of the real boolean.
+  2. **`enabled = false` never disabled hit-testing**. The setter delegated to `this.touchEnabled = false`, but `Component`'s own `touchEnabled` setter contains a guard (`if (this._enabled) super.touchEnabled = value`) that skips the display-level write when the component is already disabled. The result: a disabled button still captured touches and blocked elements behind it — unlike egret, where disabled components are excluded from hit-testing.
+  3. **disable → enable permanently broke touch**. The disable path clobbered `_explicitTouchEnabled` to `false`, and the re-enable path restored `$touchEnabled` from that corrupted value — leaving every Component subclass permanently non-touchable after a single disable/enable cycle.
+  The fix matches egret’s `$setEnabled`: the `enabled` setter now writes `touchEnabled` / `touchChildren` directly at the display-object level via `super.touchEnabled` / `super.touchChildren`, bypassing the guarded setters. Additionally, `touchEnabled` and `touchChildren` getters are now explicitly overridden to delegate to `super`, un-shadowing the parent accessor.
+- **Skin factory: ES class constructors crash via `.call(this)`**: 1.0.4 fixed the EXML binding `this` context by switching from `new factory()` to `factory.call(this)`, but `call()` throws `TypeError` on genuine ES class constructors (the documented `skinName: (new () => Skin)` path). Now detects class constructors via `Function.prototype.toString()` and falls back to `new`.
+- **Button: `selected` PropertyEvent never dispatched**: `selected` setter did not dispatch `PropertyEvent('selected')`, breaking data bindings (`{selected}`) on Buttons and ToggleButtons. Now dispatched after `_selected` is updated.
+- **Button: redundant `touchEnabled` override after `enabled` setter fix**: The now-fixed `Component.enabled` setter handles `touchEnabled`/`touchChildren` at the display-object level. Button's own `this.touchEnabled = value` line was overwriting that with the user's new value regardless of pre-disable intent, so it has been removed.
+- **Skin: `$watchers` / `unwatchAll` missing — watchers leaked on skin swap**: EXML-compiled bindings create `Watcher` instances that were never cleaned up when a skin was detached or replaced, causing memory leaks and stale callbacks firing on the wrong host. `Skin` now exposes a `$watchers` array and `unwatchAll()` method; `Component._setSkin` calls `oldSkin.unwatchAll()` before detaching the old skin.
+- **EditableText: `text` PropertyEvent never dispatched**: `text` setter did not dispatch `PropertyEvent('text')`, so watchers/bindings on EditableText’s text property were silent. Now dispatched after the internal `super.text = value` assignment.
+
+### Tests
+
+- Added `test/Enabled.test.ts` (30 cases): verifies `enabled` / `touchEnabled` / `touchChildren` cycle semantics for every Component subclass (Component, Button, Label, TextInput, Scroller, ItemRenderer) — initial state, disable-writes-display-touchEnabled, re-enable-restores, and preserves user’s pre-disable intent for both `touchEnabled` and `touchChildren`.
+- Total test count: 168 → 198.
+
 ## [1.0.4] — 2026-08-03
 
 ### Fixed

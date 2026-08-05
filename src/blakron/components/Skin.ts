@@ -2,6 +2,7 @@ import { EventDispatcher, DisplayObject, Event, type EventMap } from '@blakron/c
 import { PropertyEvent } from '../events/PropertyEvent.js';
 import type { State } from '../states/State.js';
 import type { Component } from './Component.js';
+import type { Watcher } from '../binding/Watcher.js';
 
 /**
  * EventMap for Skin. Skins dispatch PropertyEvent when hostComponent changes.
@@ -32,6 +33,13 @@ export class Skin extends EventDispatcher<SkinEvents> {
 	public minHeight: number = 0;
 	public maxHeight: number = 100000;
 	public states: State[] = [];
+
+	/**
+	 * Watchers created by EXML bindings (e.g. `{data}`). The runtime appends
+	 * every {@link Watcher} instance created by the skin factory so they can
+	 * be unwound together via {@link unwatchAll} when the skin is replaced.
+	 */
+	public $watchers: Watcher[] = [];
 
 	private _elementsContent: DisplayObject[] = [];
 	private _hostComponent?: Component;
@@ -93,6 +101,20 @@ export class Skin extends EventDispatcher<SkinEvents> {
 	 */
 	public getPart(name: string): unknown {
 		return (this as Record<string, unknown>)[name];
+	}
+
+	/**
+	 * Unwatch every binding created from this skin.
+	 * Called by the host component when the skin is detached or replaced
+	 * so stale watchers don't leak or fire on the wrong host.
+	 */
+	public unwatchAll(): void {
+		if (this.$watchers && this.$watchers.length > 0) {
+			for (const watcher of this.$watchers) {
+				watcher.unwatch();
+			}
+			this.$watchers.length = 0;
+		}
 	}
 
 	public hasState(stateName: string): boolean {

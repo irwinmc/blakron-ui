@@ -94,16 +94,27 @@ export class Component extends Sprite implements IUIComponent, ILayoutTarget, IU
 		return this._enabled;
 	}
 
+	/**
+	 * Enable or disable this component (and its children).
+	 *
+	 * Mirrors egret's `$setEnabled`: writes `touchEnabled` / `touchChildren`
+	 * directly at the display-object level (via `super`) so that:
+	 *
+	 * 1. The display-layer values change immediately (disabled components are
+	 *    skipped in hit-testing, just like egret).
+	 * 2. `_explicitTouchEnabled` / `_explicitTouchChildren` survive the
+	 *    disable→enable cycle so the original intent is restored on re-enable.
+	 */
 	public set enabled(value: boolean) {
 		value = !!value;
 		if (this._enabled === value) return;
 		this._enabled = value;
 		if (value) {
-			this.touchEnabled = this._explicitTouchEnabled;
-			this.touchChildren = this._explicitTouchChildren;
+			super.touchEnabled = this._explicitTouchEnabled;
+			super.touchChildren = this._explicitTouchChildren;
 		} else {
-			this.touchEnabled = false;
-			this.touchChildren = false;
+			super.touchEnabled = false;
+			super.touchChildren = false;
 		}
 		this.invalidateState();
 	}
@@ -290,9 +301,25 @@ export class Component extends Sprite implements IUIComponent, ILayoutTarget, IU
 		if (instance) this.partAdded(partName, instance);
 	}
 
+	/**
+	 * Whether the display object receives touch events.
+	 *
+	 * Unlike the setter, reading this property always returns the *actual*
+	 * display-level value — even when the component is disabled (the setter
+	 * deliberately preserves `_explicitTouchEnabled` for the next `enabled`
+	 * restore, so the getter must bypass that layer).
+	 */
+	public override get touchEnabled(): boolean {
+		return super.touchEnabled;
+	}
+
 	public override set touchEnabled(value: boolean) {
 		this._explicitTouchEnabled = value;
 		if (this._enabled) super.touchEnabled = value;
+	}
+
+	public override get touchChildren(): boolean {
+		return super.touchChildren;
 	}
 
 	public override set touchChildren(value: boolean) {
@@ -534,19 +561,29 @@ export class Component extends Sprite implements IUIComponent, ILayoutTarget, IU
 	 *
 	 * EXML-compiled skins are factory functions (not class constructors) that use
 	 * `this` for `Binding.bindProperty(this, ...)`. Calling with `.call(this)` ensures
-	 * the bindings watch the host component rather than an empty `new`-target.
+	 * the bindings watch the host component, not a `new`-target blank object.
 	 *
-	 * Falls back to `new` for genuine class constructors (have a non-trivial prototype).
+	 * For genuine ES class constructors (e.g. a user-written `class MySkin extends Skin`),
+	 * `.call(this)` would throw `TypeError: Class constructor cannot be invoked without
+	 * 'new'`, so we detect class constructors by their string representation and use `new`
+	 * instead. This secondary path never has correct binding-`this`, so user skins should
+	 * always be factory functions when they contain EXML `{…}` bindings.
 	 */
 	private _invokeSkinFactory(factory: (new () => Skin) | ((thisArg: unknown) => Skin)): Skin | undefined {
-		// EXML factories are plain functions — call with host context.
-		const result = (factory as (this: unknown, ...args: unknown[]) => Skin).call(this);
+		const fn = factory as (...args: unknown[]) => unknown;
+
+		// Detect genuine class constructors: `Function.prototype.toString()` returns
+		// a string starting with "class" for ES classes. Plain functions never do.
+		const isClass = typeof fn === 'function' && /^class\s/.test(Function.prototype.toString.call(fn));
+
+		const result = isClass ? new (factory as new () => Skin)() : fn.call(this);
 		return (result && typeof result === 'object' && 'skinParts' in result) ? (result as Skin) : undefined;
 	}
 
 	private _setSkin(skin: Skin | undefined): void {
 		const oldSkin = this._skin;
 		if (oldSkin) {
+			oldSkin.unwatchAll();
 			for (const partName of oldSkin.skinParts) {
 				if ((this as Record<string, unknown>)[partName]) this.setSkinPart(partName, undefined);
 			}

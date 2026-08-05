@@ -1,5 +1,6 @@
 import { TextField, TextFieldType, Event } from '@blakron/core';
 import type { IDisplayText } from '../core/IDisplayText.js';
+import { PropertyEvent } from '../events/PropertyEvent.js';
 
 /**
  * Editable text component with placeholder (prompt) support.
@@ -62,6 +63,7 @@ export class EditableText extends TextField implements IDisplayText {
 		this.textColor = this._userTextColor;
 		this.displayAsPassword = this._asPassword;
 		super.text = value;
+		PropertyEvent.dispatchPropertyEvent(this, 'text');
 		if (!this._isFocused && (!value || value === '')) {
 			this._showPrompt();
 		}

@@ -4,6 +4,7 @@ import type { Texture } from '@blakron/core';
 import type { IDisplayText } from '../core/IDisplayText.js';
 import type { Image } from './Image.js';
 import type { Label } from './Label.js';
+import { PropertyEvent } from '../events/PropertyEvent.js';
 
 /**
  * Button component with label, icon, and state management.
@@ -70,6 +71,7 @@ export class Button extends Component implements IDisplayText {
 	public set selected(value: boolean) {
 		if (this._selected === value) return;
 		this._selected = value;
+		PropertyEvent.dispatchPropertyEvent(this, 'selected');
 		this.invalidateState();
 	}
 
@@ -101,7 +103,6 @@ export class Button extends Component implements IDisplayText {
 		if (this.enabled === value) return;
 		super.enabled = value;
 		this.invalidateState();
-		this.touchEnabled = value;
 	}
 
 	// ── Override methods ──────────────────────────────────────────────────
