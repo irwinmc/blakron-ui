@@ -23,7 +23,7 @@ export class ListBase extends DataGroup {
 	private _selectedIndexChanged = false;
 	private _dispatchChangeAfterSelection = false;
 	private _requireSelection = false;
-    private _requireSelectionChanged = false;
+	private _requireSelectionChanged = false;
 
 	/** Item passed to selectedItem setter before dataProvider is available (egret `pendingSelectedItem`). */
 	private _pendingSelectedItem: unknown;
@@ -202,18 +202,12 @@ export class ListBase extends DataGroup {
 	 * Adjust the selection index in response to collection mutations without
 	 * dispatching events or calling `itemSelected` (egret `adjustSelection`).
 	 *
-	 * If a selection change is already pending (`_selectedIndexChanged`), the
-	 * pending value is adjusted; otherwise the committed value is adjusted
-	 * directly. This ensures multiple add/remove operations within a single
-	 * frame only produce one final selection event.
+	 * The index is mutated silently so that multiple add/remove operations
+	 * within a single frame only produce one final commit event when
+	 * `commitProperties` runs.
 	 */
 	protected adjustSelection(newIndex: number, _add: boolean): void {
-		if (this._selectedIndexChanged) {
-			this._selectedIndex = newIndex;
-		} else {
-			this._selectedIndex = newIndex;
-		}
-		PropertyEvent.dispatchPropertyEvent(this, 'selectedIndex');
+		this._selectedIndex = newIndex;
 	}
 
 	/**
@@ -223,7 +217,6 @@ export class ListBase extends DataGroup {
 	 */
 	protected dataProviderRefreshed(): void {
 		this._selectedIndex = -1;
-		PropertyEvent.dispatchPropertyEvent(this, 'selectedIndex');
 		if (this._requireSelection && this.dataProvider && this.dataProvider.length > 0) {
 			this.setSelectedIndex(0, false);
 		}

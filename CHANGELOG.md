@@ -4,6 +4,15 @@ All notable changes to `@blakron/ui` are documented here.
 
 ---
 
+## [1.0.7] — 2026-08-05
+
+### Changed
+
+- **SliderBase: reuse scratch `Point` across frame** — replaced per-event `new Point()` allocations in `_onThumbDown` / `_positionToValue` (hot path: every touch move during drag) with an instance-level `_scratchPoint`. Removed dead `commitProperties` / `measure` / `updateSkinDisplayList` overrides and the never-read `_directionChanged` field.
+- **Button: remove dead `_autoRepeat` property** — getter/setter existed but no code consumed the value. Simplified `partAdded` to compare `partName` instead of `instance === this.labelDisplay` (eliminates non-null assertions).
+- **ListBase: clean up `adjustSelection` and `dataProviderRefreshed`** — removed identical if/else branches and premature `PropertyEvent` dispatch (silent adjustment per egret semantics, events deferred to `commitProperties`).
+
+
 ## [1.0.6] — 2026-08-05
 
 ### Fixed

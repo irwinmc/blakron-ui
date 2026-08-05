@@ -19,7 +19,6 @@ export class SliderBase extends Range {
 	// ── Instance fields ───────────────────────────────────────────────────
 
 	private _direction = Direction.LTR;
-	private _directionChanged = false;
 	private _thumb?: DisplayObject;
 	private _track?: DisplayObject;
 	private _pendingValue = 0;
@@ -27,6 +26,9 @@ export class SliderBase extends Range {
 	private _isDragging = false;
 	private _touchOffsetX = 0;
 	private _touchOffsetY = 0;
+
+	/** Scratch point reused across frame to avoid per-event allocations (egret `$TempPoint`). */
+	private readonly _scratchPoint = new Point();
 
 	// ── Constructor ───────────────────────────────────────────────────────
 
@@ -44,7 +46,6 @@ export class SliderBase extends Range {
 	public set direction(value: string) {
 		if (this._direction === value) return;
 		this._direction = value;
-		this._directionChanged = true;
 		this.invalidateProperties();
 		this.invalidateSize();
 		this.invalidateDisplayList();
@@ -91,27 +92,6 @@ export class SliderBase extends Range {
 		this.invalidateDisplayList();
 	}
 
-	// ── Override methods ──────────────────────────────────────────────────
-
-	public override commitProperties(): void {
-		if (this._directionChanged) {
-			this._directionChanged = false;
-		}
-		super.commitProperties();
-	}
-
-	public override measure(): void {
-		super.measure();
-	}
-
-	protected override updateSkinDisplayList(): void {
-		super.updateSkinDisplayList();
-	}
-
-	/**
-	 * Converts a track-local position to a value. Override in subclasses
-	 * to use track bounds (egret's HSlider/VSlider override this).
-	 */
 	protected pointToValue(x: number, y: number): number {
 		return this.minimum;
 	}
@@ -147,7 +127,7 @@ export class SliderBase extends Range {
 		// dragging tracks from the grab point rather than jumping to the
 		// finger centre (egret `SliderBase.onThumbTouchBegin` L399-404).
 		if (this._thumb) {
-			const offset = this._thumb.globalToLocal(e.stageX, e.stageY, new Point());
+			const offset = this._thumb.globalToLocal(e.stageX, e.stageY, this._scratchPoint);
 			this._touchOffsetX = offset.x;
 			this._touchOffsetY = offset.y;
 		}
@@ -206,7 +186,7 @@ export class SliderBase extends Range {
 	 */
 	private _positionToValue(stageX: number, stageY: number): number {
 		if (!this._track) return this.minimum;
-		const pt = this._track.globalToLocal(stageX, stageY, new Point());
+		const pt = this._track.globalToLocal(stageX, stageY, this._scratchPoint);
 		return this.nearestValidValue(
 			this.pointToValue(pt.x - this._touchOffsetX, pt.y - this._touchOffsetY),
 			this.snapInterval,

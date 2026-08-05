@@ -24,7 +24,6 @@ export class Button extends Component implements IDisplayText {
 	private _icon?: string | Texture;
 	private _selected = false;
 	private _toggle = false;
-	private _autoRepeat = false;
 	private _touchCaptured = false;
 	private _stickyHighlighting = false;
 
@@ -83,14 +82,6 @@ export class Button extends Component implements IDisplayText {
 		this._toggle = value;
 	}
 
-	public get autoRepeat(): boolean {
-		return this._autoRepeat;
-	}
-
-	public set autoRepeat(value: boolean) {
-		this._autoRepeat = value;
-	}
-
 	public get touchCaptured(): boolean {
 		return this._touchCaptured;
 	}
@@ -109,11 +100,10 @@ export class Button extends Component implements IDisplayText {
 
 	public override partAdded(partName: string, instance: unknown): void {
 		super.partAdded(partName, instance);
-		if (instance === this.labelDisplay) {
-			this.labelDisplay!.text = this._label;
-		}
-		if (instance === this.iconDisplay) {
-			this.iconDisplay!.source = this._icon;
+		if (partName === 'labelDisplay' && this.labelDisplay) {
+			this.labelDisplay.text = this._label;
+		} else if (partName === 'iconDisplay' && this.iconDisplay) {
+			this.iconDisplay.source = this._icon;
 		}
 	}
 
