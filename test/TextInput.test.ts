@@ -6,7 +6,7 @@
  * (normal / normalWithPrompt / disabled).
  */
 import { describe, it, expect } from 'vitest';
-import { TextInput, EditableText, Label } from '../src/index.js';
+import { Component, TextInput, EditableText, Label } from '../src/index.js';
 
 // Reach the protected partAdded method without repeating the cast.
 function attachPart(ti: TextInput, partName: string, instance: unknown): void {
@@ -14,6 +14,23 @@ function attachPart(ti: TextInput, partName: string, instance: unknown): void {
 }
 
 describe('TextInput', () => {
+	it('lays out EditableText with EUI constraints', () => {
+		const host = new Component();
+		const editable = new EditableText();
+		editable.left = 10;
+		editable.right = 10;
+		editable.verticalCenter = 0;
+		editable.height = 24;
+		host.addChild(editable);
+
+		host.updateDisplayList(300, 40);
+
+		expect(editable.x).toBe(10);
+		expect(editable.y).toBe(8);
+		expect(editable.width).toBe(280);
+		expect(editable.height).toBe(24);
+	});
+
 	describe('property caching before skin part is attached', () => {
 		it('caches prompt before promptDisplay is attached', () => {
 			const ti = new TextInput();

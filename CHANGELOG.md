@@ -4,6 +4,27 @@ All notable changes to `@blakron/ui` are documented here.
 
 ---
 
+---
+
+## [1.1.4] — 2026-08-06
+
+### Changed
+
+- **EditableText: now extends `Label` instead of `TextField`** — the editable text component is now a full `Component` that wraps an internal `TextField`. This gives native-input fields proper layout participation (BasicLayout constraints resolve on the wrapper, `updateDisplayList` forwards final bounds to the native input element). Previously EditableText was a leaf `DisplayObject` that could not be measured or constrained by layouts. Added `inputType`, `restrict`, `selectionBeginIndex`, `selectionEndIndex`, `caretIndex`, `setFocus`, and `setSelection` proxies to the internal TextField.
+- **All touch components: capture originating stage, not `this.stage`** — `Button`, `ItemRenderer`, `Panel`, `Scroller`, and `SliderBase` now store the `Stage` reference at touch-begin (`_touchStage`) and use it for listener detachment rather than reading `this.stage` at the end of the gesture. This prevents leaked listeners when a component is reparented or removed from the display list mid-gesture. All now implement `$onRemoveFromStage` and `TOUCH_CANCEL` to clean up touch state, and `Panel`/`SliderBase` cancel in-progress drags when the move area or thumb skin part is detached.
+- **ComboBox: drop-down reparents to stage** — instead of only reordering within the parent (which fails inside layout containers), the drop-down is now temporarily moved directly to the stage when opened, using `$getConcatenatedMatrix()` to preserve its visual position. Restored to its original parent on close.
+- **Scroller: viewport swap cleans up old touch state** — assigning a new viewport now stops any active scroll gesture and detaches stage listeners from the old viewport.
+
+### Dependencies
+
+- `@blakron/core`: `^1.0.5` → `^1.0.7`
+
+### Tests
+
+- ComboBox/TextInput: updated for new behaviours.
+
+---
+
 ## [1.1.3] — 2026-08-06
 
 ### Fixed

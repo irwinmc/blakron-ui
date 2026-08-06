@@ -1,4 +1,4 @@
-import { TouchEvent, Point, DisplayObject, Event } from '@blakron/core';
+import { TouchEvent, Point, DisplayObject, Event, type Stage } from '@blakron/core';
 import { Range } from './Range.js';
 import { Direction } from '../core/Direction.js';
 import { UIEvent } from '../events/UIEvent.js';
@@ -24,6 +24,7 @@ export class SliderBase extends Range {
 	private _pendingValue = 0;
 	private _liveDragging = true;
 	private _isDragging = false;
+	private _touchStage?: Stage;
 	private _touchOffsetX = 0;
 	private _touchOffsetY = 0;
 
@@ -57,6 +58,7 @@ export class SliderBase extends Range {
 
 	public set thumb(value: DisplayObject | undefined) {
 		if (this._thumb === value) return;
+		if (this._isDragging) this._cancelDrag();
 		this._removeThumbListeners();
 		this._thumb = value;
 		this._addThumbListeners();
@@ -94,6 +96,11 @@ export class SliderBase extends Range {
 
 	protected pointToValue(x: number, y: number): number {
 		return this.minimum;
+	}
+
+	public override $onRemoveFromStage(): void {
+		this._cancelDrag();
+		super.$onRemoveFromStage();
 	}
 
 	// ── Private methods ───────────────────────────────────────────────────
@@ -134,8 +141,10 @@ export class SliderBase extends Range {
 
 		const stage = this.stage;
 		if (stage) {
+			this._touchStage = stage;
 			stage.addEventListener(TouchEvent.TOUCH_MOVE, this._onThumbMove);
 			stage.addEventListener(TouchEvent.TOUCH_END, this._onThumbUp);
+			stage.addEventListener(TouchEvent.TOUCH_CANCEL, this._onThumbCancel);
 		}
 		UIEvent.dispatchUIEvent(this, UIEvent.CHANGE_START);
 	};
@@ -157,17 +166,33 @@ export class SliderBase extends Range {
 
 	private _onThumbUp = (_e: TouchEvent): void => {
 		this._isDragging = false;
-		const stage = this.stage;
-		if (stage) {
-			stage.removeEventListener(TouchEvent.TOUCH_MOVE, this._onThumbMove);
-			stage.removeEventListener(TouchEvent.TOUCH_END, this._onThumbUp);
-		}
+		this._removeStageListeners();
 		UIEvent.dispatchUIEvent(this, UIEvent.CHANGE_END);
 		if (!this._liveDragging && this.value !== this._pendingValue) {
 			this.value = this._pendingValue;
 			this.dispatchEventWith(Event.CHANGE);
 		}
 	};
+
+	private _onThumbCancel = (): void => {
+		this._cancelDrag();
+	};
+
+	private _removeStageListeners(): void {
+		const stage = this._touchStage;
+		if (!stage) return;
+		stage.removeEventListener(TouchEvent.TOUCH_MOVE, this._onThumbMove);
+		stage.removeEventListener(TouchEvent.TOUCH_END, this._onThumbUp);
+		stage.removeEventListener(TouchEvent.TOUCH_CANCEL, this._onThumbCancel);
+		this._touchStage = undefined;
+	}
+
+	private _cancelDrag(): void {
+		this._removeStageListeners();
+		this._isDragging = false;
+		this._pendingValue = this.value;
+		this.invalidateDisplayList();
+	}
 
 	private _onTrackDown = (e: TouchEvent): void => {
 		e.stopPropagation();

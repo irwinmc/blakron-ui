@@ -1,4 +1,4 @@
-import { DisplayObject, TouchEvent, Event } from '@blakron/core';
+import { DisplayObject, TouchEvent, Event, type Stage } from '@blakron/core';
 import { Component } from './Component.js';
 import { Button } from './Button.js';
 import { UIEvent } from '../events/UIEvent.js';
@@ -30,6 +30,7 @@ export class Panel extends Component {
 	private _dragStartY = 0;
 	private _panelStartX = 0;
 	private _panelStartY = 0;
+	private _dragStage?: Stage;
 
 	// ── Default property (EXML children) ───────────────────────────────
 
@@ -94,9 +95,15 @@ export class Panel extends Component {
 			instance.removeEventListener(TouchEvent.TOUCH_TAP, this._onCloseButtonTap);
 			this.closeButton = undefined;
 		} else if (instance instanceof DisplayObject && partName === 'moveArea') {
+			this._removeDragListeners();
 			instance.removeEventListener(TouchEvent.TOUCH_BEGIN, this._onMoveAreaTouchBegin);
 			this.moveArea = undefined;
 		}
+	}
+
+	public override $onRemoveFromStage(): void {
+		this._removeDragListeners();
+		super.$onRemoveFromStage();
 	}
 
 	// ── Public methods ────────────────────────────────────────────────────
@@ -125,8 +132,10 @@ export class Panel extends Component {
 		this._panelStartY = this.y;
 		const stage = this.stage;
 		if (stage) {
+			this._dragStage = stage;
 			stage.addEventListener(TouchEvent.TOUCH_MOVE, this._onMoveAreaTouchMove);
 			stage.addEventListener(TouchEvent.TOUCH_END, this._onMoveAreaTouchEnd);
+			stage.addEventListener(TouchEvent.TOUCH_CANCEL, this._onMoveAreaTouchEnd);
 		}
 	};
 
@@ -136,10 +145,15 @@ export class Panel extends Component {
 	};
 
 	private _onMoveAreaTouchEnd = (): void => {
-		const stage = this.stage;
-		if (stage) {
-			stage.removeEventListener(TouchEvent.TOUCH_MOVE, this._onMoveAreaTouchMove);
-			stage.removeEventListener(TouchEvent.TOUCH_END, this._onMoveAreaTouchEnd);
-		}
+		this._removeDragListeners();
 	};
+
+	private _removeDragListeners(): void {
+		const stage = this._dragStage;
+		if (!stage) return;
+		stage.removeEventListener(TouchEvent.TOUCH_MOVE, this._onMoveAreaTouchMove);
+		stage.removeEventListener(TouchEvent.TOUCH_END, this._onMoveAreaTouchEnd);
+		stage.removeEventListener(TouchEvent.TOUCH_CANCEL, this._onMoveAreaTouchEnd);
+		this._dragStage = undefined;
+	}
 }

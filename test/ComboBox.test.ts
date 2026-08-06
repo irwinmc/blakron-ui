@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { TouchEvent, Event } from '@blakron/core';
+import { TouchEvent, Event, Stage } from '@blakron/core';
 import { ComboBox } from '../src/blakron/components/ComboBox.js';
 import { Group } from '../src/blakron/components/Group.js';
+import { Scroller } from '../src/blakron/components/Scroller.js';
 import { ArrayCollection } from '../src/blakron/collections/ArrayCollection.js';
 import { VerticalLayout } from '../src/blakron/layouts/VerticalLayout.js';
 
@@ -79,6 +80,46 @@ describe('ComboBox', () => {
 			cb.open();
 
 			expect(parent.getChildIndex(cb)).toBe(0);
+		});
+
+		it('moves only the drop-down to the stage while open', () => {
+			const stage = new Stage();
+			const cb = makeComboBox(['a', 'b']);
+			const skin = new Group();
+			const dropDown = new Group();
+			dropDown.x = 5;
+			dropDown.y = 36;
+			skin.addChild(dropDown);
+			cb.addChild(skin);
+			stage.addChild(cb);
+			(cb as unknown as { dropDown: Group }).dropDown = dropDown;
+
+			cb.open();
+			expect(dropDown.parent).toBe(stage);
+			expect(cb.parent).toBe(stage);
+
+			cb.close();
+			expect(dropDown.parent).toBe(skin);
+			expect(dropDown.x).toBe(5);
+			expect(dropDown.y).toBe(36);
+		});
+
+		it('restores the staged drop-down when its skin part is removed', () => {
+			const stage = new Stage();
+			const cb = makeComboBox(['a', 'b']);
+			const skin = new Group();
+			const dropDown = new Scroller();
+			skin.addChild(dropDown);
+			cb.addChild(skin);
+			stage.addChild(cb);
+			cb.setSkinPart('dropDown', dropDown);
+
+			cb.open();
+			expect(dropDown.parent).toBe(stage);
+			cb.setSkinPart('dropDown', undefined);
+
+			expect(cb.isOpen).toBe(false);
+			expect(dropDown.parent).toBe(skin);
 		});
 	});
 

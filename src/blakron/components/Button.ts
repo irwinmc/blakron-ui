@@ -1,6 +1,6 @@
 import { Component } from './Component.js';
 import { Event, TouchEvent, DisplayObject } from '@blakron/core';
-import type { Texture } from '@blakron/core';
+import type { Stage, Texture } from '@blakron/core';
 import type { IDisplayText } from '../core/IDisplayText.js';
 import type { Image } from './Image.js';
 import type { Label } from './Label.js';
@@ -25,6 +25,7 @@ export class Button extends Component implements IDisplayText {
 	private _selected = false;
 	private _toggle = false;
 	private _touchCaptured = false;
+	private _touchStage?: Stage;
 	private _stickyHighlighting = false;
 
 	// ── Constructor ───────────────────────────────────────────────────────
@@ -107,6 +108,11 @@ export class Button extends Component implements IDisplayText {
 		}
 	}
 
+	public override $onRemoveFromStage(): void {
+		this._cancelTouchCapture();
+		super.$onRemoveFromStage();
+	}
+
 	/**
 	 * Return the current view state, layering the selected state on top of
 	 * the base up/down/disabled states.
@@ -159,17 +165,14 @@ export class Button extends Component implements IDisplayText {
 		this.invalidateState();
 		const stage = this.stage;
 		if (stage) {
+			this._touchStage = stage;
 			stage.addEventListener(TouchEvent.TOUCH_END, this._onStageTouchEnd);
 			stage.addEventListener(TouchEvent.TOUCH_CANCEL, this._onTouchCancel);
 		}
 	};
 
 	private _onStageTouchEnd = (e: TouchEvent): void => {
-		const stage = this.stage;
-		if (stage) {
-			stage.removeEventListener(TouchEvent.TOUCH_END, this._onStageTouchEnd);
-			stage.removeEventListener(TouchEvent.TOUCH_CANCEL, this._onTouchCancel);
-		}
+		this._removeStageListeners();
 		const target = e.target;
 		if (target instanceof DisplayObject && this.contains(target)) {
 			this.buttonReleased();
@@ -179,12 +182,20 @@ export class Button extends Component implements IDisplayText {
 	};
 
 	private _onTouchCancel = (_e: Event): void => {
-		const stage = this.stage;
-		if (stage) {
-			stage.removeEventListener(TouchEvent.TOUCH_END, this._onStageTouchEnd);
-			stage.removeEventListener(TouchEvent.TOUCH_CANCEL, this._onTouchCancel);
-		}
+		this._cancelTouchCapture();
+	};
+
+	private _removeStageListeners(): void {
+		const stage = this._touchStage;
+		if (!stage) return;
+		stage.removeEventListener(TouchEvent.TOUCH_END, this._onStageTouchEnd);
+		stage.removeEventListener(TouchEvent.TOUCH_CANCEL, this._onTouchCancel);
+		this._touchStage = undefined;
+	}
+
+	private _cancelTouchCapture(): void {
+		this._removeStageListeners();
 		this._touchCaptured = false;
 		this.invalidateState();
-	};
+	}
 }

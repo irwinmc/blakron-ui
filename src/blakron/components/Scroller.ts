@@ -1,4 +1,4 @@
-import { TouchEvent, Event, Rectangle, DisplayObject } from '@blakron/core';
+import { TouchEvent, Event, Rectangle, DisplayObject, type Stage } from '@blakron/core';
 import { Component } from './Component.js';
 import type { Skin } from './Skin.js';
 import type { IViewport } from '../core/IViewport.js';
@@ -46,6 +46,7 @@ export class Scroller extends Component {
 	private _hScroll: TouchScroll;
 	private _vScroll: TouchScroll;
 	private _touchPointID = -1;
+	private _touchStage?: Stage;
 	private _startTouchPointX = 0;
 	private _startTouchPointY = 0;
 	private _touchMoved = false;
@@ -82,6 +83,10 @@ export class Scroller extends Component {
 		if (value === this._viewport) return;
 		const old = this._viewport;
 		if (old) {
+			this._removeStageTouchListeners();
+			this._hScroll.stop();
+			this._vScroll.stop();
+			this._touchPointID = -1;
 			if (this.horizontalScrollBar) this.horizontalScrollBar.viewport = undefined;
 			if (this.verticalScrollBar) this.verticalScrollBar.viewport = undefined;
 			old.removeEventListener(PropertyEvent.PROPERTY_CHANGE, this._onViewportPropChange);
@@ -196,12 +201,12 @@ export class Scroller extends Component {
 	}
 
 	public override $onRemoveFromStage(): void {
-		super.$onRemoveFromStage();
 		this._removeStageTouchListeners();
 		this._hScroll.stop();
 		this._vScroll.stop();
 		this._touchPointID = -1;
 		this._clearAutoHideTimer();
+		super.$onRemoveFromStage();
 	}
 
 	// ── Private methods ───────────────────────────────────────────────────
@@ -299,6 +304,7 @@ export class Scroller extends Component {
 
 		const stage = this.stage;
 		if (stage) {
+			this._touchStage = stage;
 			stage.addEventListener(TouchEvent.TOUCH_MOVE, this._onTouchMove);
 			stage.addEventListener(TouchEvent.TOUCH_END, this._onTouchEnd);
 			stage.addEventListener(TouchEvent.TOUCH_CANCEL, this._onTouchEnd);
@@ -306,12 +312,13 @@ export class Scroller extends Component {
 	};
 
 	private _removeStageTouchListeners(): void {
-		const stage = this.stage;
+		const stage = this._touchStage;
 		if (stage) {
 			stage.removeEventListener(TouchEvent.TOUCH_MOVE, this._onTouchMove);
 			stage.removeEventListener(TouchEvent.TOUCH_END, this._onTouchEnd);
 			stage.removeEventListener(TouchEvent.TOUCH_CANCEL, this._onTouchEnd);
 		}
+		this._touchStage = undefined;
 	}
 
 	private _onTouchMove = (e: TouchEvent): void => {

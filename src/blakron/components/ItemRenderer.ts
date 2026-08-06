@@ -1,4 +1,4 @@
-import { TouchEvent, Event } from '@blakron/core';
+import { TouchEvent, Event, type Stage } from '@blakron/core';
 import { Component } from './Component.js';
 import { Label } from './Label.js';
 import { PropertyEvent } from '../events/PropertyEvent.js';
@@ -21,6 +21,7 @@ export class ItemRenderer extends Component implements IItemRenderer {
 	private _data: unknown;
 	private _selected = false;
 	private _touchCaptured = false;
+	private _touchStage?: Stage;
 
 	/**
 	 * Skin part: the label. When present, `data` is auto-synced to its `text`
@@ -85,6 +86,11 @@ export class ItemRenderer extends Component implements IItemRenderer {
 		return 'up';
 	}
 
+	public override $onRemoveFromStage(): void {
+		this._releaseTouchCapture();
+		super.$onRemoveFromStage();
+	}
+
 	// ── Protected methods ─────────────────────────────────────────────────
 
 	/**
@@ -103,21 +109,26 @@ export class ItemRenderer extends Component implements IItemRenderer {
 	// ── Private methods ───────────────────────────────────────────────────
 
 	private _onTouchBegin = (e: TouchEvent): void => {
-		if (!this.stage) return;
-		this.stage.addEventListener(TouchEvent.TOUCH_END, this._onStageTouchEnd);
-		this.stage.addEventListener(TouchEvent.TOUCH_CANCEL, this._onStageTouchEnd);
+		const stage = this.stage;
+		if (!stage) return;
+		this._touchStage = stage;
+		stage.addEventListener(TouchEvent.TOUCH_END, this._onStageTouchEnd);
+		stage.addEventListener(TouchEvent.TOUCH_CANCEL, this._onStageTouchEnd);
 		this._touchCaptured = true;
 		this.invalidateState();
 		e.updateAfterEvent();
 	};
 
 	private _onStageTouchEnd = (_e: Event): void => {
-		const s = this.stage;
-		if (s) {
-			s.removeEventListener(TouchEvent.TOUCH_END, this._onStageTouchEnd);
-			s.removeEventListener(TouchEvent.TOUCH_CANCEL, this._onStageTouchEnd);
-		}
+		this._releaseTouchCapture();
+	};
+
+	private _releaseTouchCapture(): void {
+		const stage = this._touchStage;
+		stage?.removeEventListener(TouchEvent.TOUCH_END, this._onStageTouchEnd);
+		stage?.removeEventListener(TouchEvent.TOUCH_CANCEL, this._onStageTouchEnd);
+		this._touchStage = undefined;
 		this._touchCaptured = false;
 		this.invalidateState();
-	};
+	}
 }

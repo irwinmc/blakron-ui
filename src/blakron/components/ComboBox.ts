@@ -1,4 +1,4 @@
-import { TouchEvent, Event, DisplayObject } from '@blakron/core';
+import { TouchEvent, Event, DisplayObject, DisplayObjectContainer, Matrix } from '@blakron/core';
 import { Component } from './Component.js';
 import { List } from './List.js';
 import { Scroller } from './Scroller.js';
@@ -38,6 +38,9 @@ export class ComboBox extends Component implements IDisplayText {
 	private _isOpen = false;
 	private _prompt = '';
 	private _openParentIndex = -1;
+	private _dropDownParent?: DisplayObjectContainer;
+	private _dropDownParentIndex = -1;
+	private _dropDownLocalMatrix?: Matrix;
 
 	// ── Constructor ───────────────────────────────────────────────────────
 
@@ -188,11 +191,19 @@ export class ComboBox extends Component implements IDisplayText {
 	}
 
 	public override partRemoved(partName: string, instance: unknown): void {
+		if (partName === 'dropDown' && instance === this.dropDown) {
+			this.close();
+		}
 		super.partRemoved(partName, instance);
 
 		if (partName === 'list' && instance instanceof List) {
 			instance.removeEventListener(Event.CHANGE, this._onListChange);
 		}
+	}
+
+	public override $onRemoveFromStage(): void {
+		this.close();
+		super.$onRemoveFromStage();
 	}
 
 	public override commitProperties(): void {
@@ -252,6 +263,8 @@ export class ComboBox extends Component implements IDisplayText {
 	}
 
 	private _updateDisplayOrder(isOpen: boolean): void {
+		if (isOpen && this._moveDropDownToStage()) return;
+		if (!isOpen && this._restoreDropDownParent()) return;
 		const parent = this.parent;
 		if (!parent) return;
 		// A Group layout uses child index as layout order. Moving the ComboBox to
@@ -266,6 +279,38 @@ export class ComboBox extends Component implements IDisplayText {
 			parent.setChildIndex(this, this._openParentIndex);
 			this._openParentIndex = -1;
 		}
+	}
+
+	/** Move only the popup to the stage so layout siblings cannot cover it. */
+	private _moveDropDownToStage(): boolean {
+		const dropDown = this.dropDown;
+		const stage = this.stage;
+		const parent = dropDown?.parent;
+		if (!dropDown || !stage || !parent || parent === stage) return false;
+
+		this._dropDownParent = parent;
+		this._dropDownParentIndex = parent.getChildIndex(dropDown);
+		this._dropDownLocalMatrix = dropDown.$getMatrix().clone();
+		const stageMatrix = dropDown.$getConcatenatedMatrix().clone();
+		parent.removeChild(dropDown);
+		stage.addChild(dropDown);
+		dropDown.$setMatrix(stageMatrix);
+		return true;
+	}
+
+	private _restoreDropDownParent(): boolean {
+		const dropDown = this.dropDown;
+		const parent = this._dropDownParent;
+		const matrix = this._dropDownLocalMatrix;
+		if (!dropDown || !parent || !matrix) return false;
+
+		dropDown.parent?.removeChild(dropDown);
+		parent.addChildAt(dropDown, Math.min(this._dropDownParentIndex, parent.numChildren));
+		dropDown.$setMatrix(matrix);
+		this._dropDownParent = undefined;
+		this._dropDownParentIndex = -1;
+		this._dropDownLocalMatrix = undefined;
+		return true;
 	}
 
 	private _onTriggerTap = (e: Event): void => {
