@@ -1,4 +1,4 @@
-import { Event } from '@blakron/core';
+import { Event, TouchEvent } from '@blakron/core';
 import { Component } from './Component.js';
 import { EditableText } from './EditableText.js';
 import { Label } from './Label.js';
@@ -29,6 +29,13 @@ export class TextInput extends Component implements IDisplayText {
 	private _restrict = '';
 	private _inputType = 'text';
 	private _isFocused = false;
+
+	// ── Constructor ───────────────────────────────────────────────────────
+
+	public constructor() {
+		super();
+		this.addEventListener(TouchEvent.TOUCH_BEGIN, this._onTouchBegin);
+	}
 
 	// ── Getters / Setters ─────────────────────────────────────────────────
 
@@ -123,6 +130,7 @@ export class TextInput extends Component implements IDisplayText {
 			instance.addEventListener(Event.FOCUS_OUT, this._onFocusOut);
 		} else if (instance instanceof Label && partName === 'promptDisplay') {
 			this.promptDisplay = instance;
+			instance.touchEnabled = false;
 			if (this._prompt) instance.text = this._prompt;
 		}
 	}
@@ -154,5 +162,9 @@ export class TextInput extends Component implements IDisplayText {
 	private _onFocusOut = (): void => {
 		this._isFocused = false;
 		this.invalidateState();
+	};
+
+	private _onTouchBegin = (): void => {
+		this.textDisplay?.setFocus();
 	};
 }

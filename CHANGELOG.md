@@ -4,6 +4,22 @@ All notable changes to `@blakron/ui` are documented here.
 
 ---
 
+## [1.0.8] — 2026-08-05
+
+### Fixed
+
+- **ComboBox: drop-down now renders above overlapping siblings** — opening the drop-down temporarily moves the ComboBox to the top of its parent's display-list so the list overlays other content instead of being buried behind neighbouring components. The original z-order is restored on close.
+- **TextInput: tap-to-focus** — constructor now registers `TOUCH_BEGIN` on the component, forwarding to `textDisplay.setFocus()` so tapping anywhere in the input (including the prompt area) brings up the keyboard. The `promptDisplay` label is set to `touchEnabled = false` so it no longer blocks the tap.
+- **HScrollBar / VScrollBar: proportional thumb sizing** — the scroll-bar thumb now scales proportionally to the visible-viewport fraction (`thumbWidth = scrollbarWidth * viewportWidth / contentWidth`), clamped between the skin-defined minimum and the scroll-bar's full extent. Previously the thumb always used its skin-defined size, which made it impossible to gauge visible-vs-total content ratio. The normal (non-edge) case now correctly calls `setLayoutBoundsSize(thumbWidth, NaN)` instead of `(NaN, NaN)`.
+- **Scroller: show scroll bars on new gesture** — `_updateScrollBarVisibility()` is now called in `_onTouchBegin` alongside clearing the auto-hide timer, so scroll bars appear immediately when scrolling starts. The auto-hide timer now respects each scroll bar's `autoVisibility` flag.
+
+### Tests
+
+- ComboBox: 1 case (temporarily moves above sibling content while open).
+- TextInput: 1 case (forwards a touch on the component to the editable skin part).
+
+---
+
 ## [1.0.7] — 2026-08-05
 
 ### Changed

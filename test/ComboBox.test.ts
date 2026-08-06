@@ -53,6 +53,20 @@ describe('ComboBox', () => {
 			expect(cb.isOpen).toBe(false);
 			expect(dropDown.visible).toBe(false);
 		});
+
+		it('temporarily moves above sibling content while open', () => {
+			const parent = new Group();
+			const cb = makeComboBox(['a', 'b']);
+			const sibling = new Group();
+			parent.addChild(cb);
+			parent.addChild(sibling);
+
+			cb.open();
+			expect(parent.getChildIndex(cb)).toBe(1);
+
+			cb.close();
+			expect(parent.getChildIndex(cb)).toBe(0);
+		});
 	});
 
 	describe('selection', () => {

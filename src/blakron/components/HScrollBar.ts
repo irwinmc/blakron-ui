@@ -19,13 +19,15 @@ export class HScrollBar extends ScrollBarBase {
 
 		const bounds = new Rectangle();
 		thumb.getPreferredBounds(bounds);
-		const thumbWidth = bounds.width;
+		const minThumbWidth = bounds.width;
 		const thumbY = bounds.y;
 		const hsp = viewport.scrollH;
 		const contentWidth = viewport.contentWidth;
 		const vpBounds = new Rectangle();
 		viewport.getLayoutBounds(vpBounds);
 		const vpWidth = vpBounds.width;
+		const proportionalWidth = contentWidth > 0 ? Math.round((unscaledWidth * vpWidth) / contentWidth) : unscaledWidth;
+		const thumbWidth = Math.min(unscaledWidth, Math.max(minThumbWidth, proportionalWidth));
 
 		if (hsp <= 0) {
 			let scaleWidth = thumbWidth * (1 - -hsp / (vpWidth * 0.5));
@@ -39,7 +41,7 @@ export class HScrollBar extends ScrollBarBase {
 			thumb.setLayoutBoundsPosition(unscaledWidth - scaleWidth, thumbY);
 		} else {
 			const thumbX = ((unscaledWidth - thumbWidth) * hsp) / (contentWidth - vpWidth);
-			thumb.setLayoutBoundsSize(NaN, NaN);
+			thumb.setLayoutBoundsSize(thumbWidth, NaN);
 			thumb.setLayoutBoundsPosition(thumbX, thumbY);
 		}
 	}

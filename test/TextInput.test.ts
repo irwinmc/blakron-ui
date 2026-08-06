@@ -48,6 +48,7 @@ describe('TextInput', () => {
 			const label = new Label();
 			attachPart(ti, 'promptDisplay', label);
 			expect(label.text).toBe('Enter name');
+			expect(label.touchEnabled).toBe(false);
 		});
 
 		it('forwards text to textDisplay on partAdded', () => {
@@ -75,6 +76,22 @@ describe('TextInput', () => {
 
 			ed.text = 'typed text';
 			expect(ti.text).toBe('typed text');
+		});
+	});
+
+	describe('focus', () => {
+		it('forwards a touch on the component to the editable skin part', () => {
+			const ti = new TextInput();
+			const ed = new EditableText();
+			let focused = false;
+			ed.setFocus = (): void => {
+				focused = true;
+			};
+			attachPart(ti, 'textDisplay', ed);
+
+			ti.dispatchEventWith('touchBegin');
+
+			expect(focused).toBe(true);
 		});
 	});
 

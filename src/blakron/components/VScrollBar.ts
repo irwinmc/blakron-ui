@@ -19,13 +19,15 @@ export class VScrollBar extends ScrollBarBase {
 
 		const bounds = new Rectangle();
 		thumb.getPreferredBounds(bounds);
-		const thumbHeight = bounds.height;
+		const minThumbHeight = bounds.height;
 		const thumbX = bounds.x;
 		const vsp = viewport.scrollV;
 		const contentHeight = viewport.contentHeight;
 		const vpBounds = new Rectangle();
 		viewport.getLayoutBounds(vpBounds);
 		const vpHeight = vpBounds.height;
+		const proportionalHeight = contentHeight > 0 ? Math.round((unscaledHeight * vpHeight) / contentHeight) : unscaledHeight;
+		const thumbHeight = Math.min(unscaledHeight, Math.max(minThumbHeight, proportionalHeight));
 
 		if (vsp <= 0) {
 			let scaleHeight = thumbHeight * (1 - -vsp / (vpHeight * 0.5));
@@ -39,7 +41,7 @@ export class VScrollBar extends ScrollBarBase {
 			thumb.setLayoutBoundsPosition(thumbX, unscaledHeight - scaleHeight);
 		} else {
 			const thumbY = ((unscaledHeight - thumbHeight) * vsp) / (contentHeight - vpHeight);
-			thumb.setLayoutBoundsSize(NaN, NaN);
+			thumb.setLayoutBoundsSize(NaN, thumbHeight);
 			thumb.setLayoutBoundsPosition(thumbX, thumbY);
 		}
 	}

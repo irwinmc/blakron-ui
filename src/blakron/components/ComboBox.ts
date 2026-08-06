@@ -37,6 +37,7 @@ export class ComboBox extends Component implements IDisplayText {
 	private _labelFunction?: (item: unknown) => string;
 	private _isOpen = false;
 	private _prompt = '';
+	private _openParentIndex = -1;
 
 	// ── Constructor ───────────────────────────────────────────────────────
 
@@ -98,6 +99,7 @@ export class ComboBox extends Component implements IDisplayText {
 	public set isOpen(value: boolean) {
 		if (this._isOpen === value) return;
 		this._isOpen = value;
+		this._updateDisplayOrder(value);
 		this.invalidateState();
 		if (this.dropDown) {
 			this.dropDown.visible = value;
@@ -246,6 +248,18 @@ export class ComboBox extends Component implements IDisplayText {
 			this.labelDisplay.text = this.itemToLabel(this._selectedItem);
 		} else {
 			this.labelDisplay.text = this._prompt;
+		}
+	}
+
+	private _updateDisplayOrder(isOpen: boolean): void {
+		const parent = this.parent;
+		if (!parent) return;
+		if (isOpen) {
+			this._openParentIndex = parent.getChildIndex(this);
+			parent.setChildIndex(this, parent.numChildren - 1);
+		} else if (this._openParentIndex >= 0) {
+			parent.setChildIndex(this, this._openParentIndex);
+			this._openParentIndex = -1;
 		}
 	}
 

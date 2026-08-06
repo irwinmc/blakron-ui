@@ -284,6 +284,8 @@ export class Scroller extends Component {
 
 		this._hScroll.stop();
 		this._vScroll.stop();
+		this._clearAutoHideTimer();
+		this._updateScrollBarVisibility();
 
 		const stage = this.stage;
 		if (stage) {
@@ -410,8 +412,8 @@ export class Scroller extends Component {
 		this._clearAutoHideTimer();
 		this._autoHideTimer = setTimeout(() => {
 			this._autoHideTimer = undefined;
-			if (this.horizontalScrollBar?.visible) this.horizontalScrollBar.visible = false;
-			if (this.verticalScrollBar?.visible) this.verticalScrollBar.visible = false;
+			if (this.horizontalScrollBar?.autoVisibility) this.horizontalScrollBar.visible = false;
+			if (this.verticalScrollBar?.autoVisibility) this.verticalScrollBar.visible = false;
 		}, 200);
 	}
 
