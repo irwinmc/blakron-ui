@@ -22,6 +22,7 @@ function handlers(s: HSlider | VSlider): {
 	thumbUp: (e: any) => void;
 	trackDown: (e: any) => void;
 	pointToValue: (x: number, y: number) => number;
+	updateSkinDisplayList: () => void;
 } {
 	const h = s as any;
 	return {
@@ -29,6 +30,7 @@ function handlers(s: HSlider | VSlider): {
 		thumbUp: h._onThumbUp.bind(s),
 		trackDown: h._onTrackDown.bind(s),
 		pointToValue: h.pointToValue.bind(s),
+		updateSkinDisplayList: h.updateSkinDisplayList.bind(s),
 	};
 }
 
@@ -185,6 +187,52 @@ describe('Slider', () => {
 			expect(handlers(s).pointToValue(0, 0)).toBe(0);
 			expect(handlers(s).pointToValue(80, 0)).toBe(10);
 			expect(handlers(s).pointToValue(40, 0)).toBe(5);
+		});
+	});
+
+	describe('thumb positioning includes track offset', () => {
+		it('HSlider positions minimum and maximum at the track edges', () => {
+			const slider = new HSlider();
+			const track = new Rect(100, 6, 0xff);
+			const thumb = new Rect(20, 20, 0xff);
+			track.getLayoutBounds = bounds => bounds.setTo(10, 0, 100, 6);
+			thumb.getLayoutBounds = bounds => bounds.setTo(0, 0, 20, 20);
+			slider.track = track;
+			slider.thumb = thumb;
+			slider.minimum = 0;
+			slider.maximum = 10;
+
+			slider.value = 0;
+			slider.validateProperties();
+			handlers(slider).updateSkinDisplayList();
+			expect(thumb.x).toBe(10);
+
+			slider.value = 10;
+			slider.validateProperties();
+			handlers(slider).updateSkinDisplayList();
+			expect(thumb.x).toBe(90);
+		});
+
+		it('VSlider positions maximum at top and minimum at bottom of an offset track', () => {
+			const slider = new VSlider();
+			const track = new Rect(6, 100, 0xff);
+			const thumb = new Rect(20, 20, 0xff);
+			track.getLayoutBounds = bounds => bounds.setTo(0, 10, 6, 100);
+			thumb.getLayoutBounds = bounds => bounds.setTo(0, 0, 20, 20);
+			slider.track = track;
+			slider.thumb = thumb;
+			slider.minimum = 0;
+			slider.maximum = 10;
+
+			slider.value = 10;
+			slider.validateProperties();
+			handlers(slider).updateSkinDisplayList();
+			expect(thumb.y).toBe(10);
+
+			slider.value = 0;
+			slider.validateProperties();
+			handlers(slider).updateSkinDisplayList();
+			expect(thumb.y).toBe(90);
 		});
 	});
 });

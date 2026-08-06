@@ -26,9 +26,9 @@ export class AddItems implements IOverride {
 
 	// ── Public methods ────────────────────────────────────────────────────
 
-	public apply(_host: Component, skin: Skin): void {
+	public apply(host: Component, skin: Skin): void {
 		const item = skin.getPart(this.target);
-		const dest = skin.getPart(this.destination);
+		const dest = this.destination ? skin.getPart(this.destination) : host;
 		if (!(item instanceof DisplayObject) || !(dest instanceof DisplayObjectContainer)) return;
 
 		if (this.position >= 0) {
@@ -38,9 +38,9 @@ export class AddItems implements IOverride {
 		}
 	}
 
-	public remove(_host: Component, skin: Skin): void {
+	public remove(host: Component, skin: Skin): void {
 		const item = skin.getPart(this.target);
-		const dest = skin.getPart(this.destination);
+		const dest = this.destination ? skin.getPart(this.destination) : host;
 		if (!(item instanceof DisplayObject) || !(dest instanceof DisplayObjectContainer)) return;
 		if (item.parent === dest) {
 			dest.removeChild(item);

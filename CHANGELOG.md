@@ -4,6 +4,19 @@ All notable changes to `@blakron/ui` are documented here.
 
 ---
 
+## [1.1.0] — 2026-08-05
+
+### Fixed
+
+- **HSlider / VSlider: thumb positioning respects track offset** — the thumb was positioned at `ratio * thumbRange` relative to the slider's origin (0,0), which only worked when the track skin part was aligned to the top-left corner. Now reads the track's layout bounds and offsets the thumb by `trackBounds.x` / `trackBounds.y`, so sliders with inset or centred tracks render correctly.
+- **AddItems (state overrides): support `destination` defaulting to host** — when a state override's `destination` is empty, items are now added directly to the `host` Component instead of requiring a destination skin part. This enables EXML state overrides that target the component itself rather than a child container.
+
+### Tests
+
+- Slider: 2 cases (HSlider and VSlider thumb positioning with offset tracks).
+
+---
+
 ## [1.0.9] — 2026-08-05
 
 ### Fixed

@@ -40,12 +40,14 @@ export class VSlider extends SliderBase {
 	protected override updateSkinDisplayList(): void {
 		const thumb = this.thumb;
 		const track = this.track;
-		if (!thumb || !track) return;
+		if (!thumb || !track || !isUIComponent(track)) return;
 
 		const thumbRange = this._getThumbRange();
 		const range = this.maximum - this.minimum;
 		const ratio = range > 0 ? (this.value - this.minimum) / range : 0;
 
-		thumb.y = (1 - ratio) * thumbRange;
+		const trackBounds = new Rectangle();
+		track.getLayoutBounds(trackBounds);
+		thumb.y = trackBounds.y + (1 - ratio) * thumbRange;
 	}
 }
