@@ -7,11 +7,10 @@ settings:
 importers:
 
   .:
-    dependencies:
-      '@blakron/core':
-        specifier: ^1.0.7
-        version: 1.0.7
     devDependencies:
+      '@blakron/core':
+        specifier: ^1.0.8
+        version: 1.0.8
       '@types/node':
         specifier: ^22.0.0
         version: 22.20.1
@@ -27,8 +26,8 @@ importers:
 
 packages:
 
-  '@blakron/core@1.0.7':
-    resolution: {integrity: sha512-dftqc6JVjMY/COyBttmYllVQsAZg5kejieRi8NVSkijCTSMFzLJMmni8xgNULuu8IEgSn3xOPATHgoEtYhnCzw==}
+  '@blakron/core@1.0.8':
+    resolution: {integrity: sha512-6DIVl/7xj8ArYcWU8MHLkqrKFZGWJlXU7TlLy7dsDOxe6R/hTCt6TVXyA5Vz48eM7Sa3rWZm7Z3wc9bDaNDnwg==}
 
   '@jridgewell/sourcemap-codec@1.5.5':
     resolution: {integrity: sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==}
@@ -478,7 +477,7 @@ packages:
 
 snapshots:
 
-  '@blakron/core@1.0.7': {}
+  '@blakron/core@1.0.8': {}
 
   '@jridgewell/sourcemap-codec@1.5.5': {}
 
