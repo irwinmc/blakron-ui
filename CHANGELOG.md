@@ -4,6 +4,24 @@ All notable changes to `@blakron/ui` are documented here.
 
 ---
 
+## [1.1.3] — 2026-08-06
+
+### Fixed
+
+- **ComboBox: skip display-order swap inside layout containers** — `_updateDisplayOrder` now checks whether the parent has a `layout` before changing child order. Changing the index inside a layout (e.g. `VerticalLayout`) would reposition the ComboBox itself rather than just raising the drop-down above siblings. The overlay-elevation behaviour is still available when placed in a layout-free wrapper.
+- **TextInput: no longer pushes `prompt` into the internal `EditableText`** — the `partAdded` handler for `textDisplay` was syncing `this._prompt` into the EditableText, causing the placeholder text to appear as actual input content inside the text field. Removed.
+
+### Dependencies
+
+- `@blakron/core`: `^1.0.4` → `^1.0.5`
+
+### Tests
+
+- ComboBox: 1 case (does not change child order inside a layout container).
+- TextInput: 1 case (does not duplicate prompt through the internal EditableText).
+
+---
+
 ## [1.1.0] — 2026-08-05
 
 ### Fixed
