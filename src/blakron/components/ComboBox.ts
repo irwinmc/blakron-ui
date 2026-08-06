@@ -254,6 +254,11 @@ export class ComboBox extends Component implements IDisplayText {
 	private _updateDisplayOrder(isOpen: boolean): void {
 		const parent = this.parent;
 		if (!parent) return;
+		// A Group layout uses child index as layout order. Moving the ComboBox to
+		// the end would therefore move the control itself instead of only raising
+		// its drop-down above siblings. Layout users should place the ComboBox in
+		// a lightweight wrapper when overlay elevation is required.
+		if ((parent as unknown as { layout?: unknown }).layout) return;
 		if (isOpen) {
 			this._openParentIndex = parent.getChildIndex(this);
 			parent.setChildIndex(this, parent.numChildren - 1);

@@ -60,6 +60,17 @@ describe('TextInput', () => {
 			expect(ed.text).toBe('hello');
 		});
 
+		it('does not duplicate prompt through the internal EditableText', () => {
+			const ti = new TextInput();
+			ti.prompt = 'Enter name';
+			const ed = new EditableText();
+
+			attachPart(ti, 'textDisplay', ed);
+
+			expect(ed.prompt).toBe('');
+			expect(ed.text).toBe('');
+		});
+
 		it('forwards displayAsPassword to textDisplay on partAdded', () => {
 			const ti = new TextInput();
 			ti.displayAsPassword = true;

@@ -3,6 +3,7 @@ import { TouchEvent, Event } from '@blakron/core';
 import { ComboBox } from '../src/blakron/components/ComboBox.js';
 import { Group } from '../src/blakron/components/Group.js';
 import { ArrayCollection } from '../src/blakron/collections/ArrayCollection.js';
+import { VerticalLayout } from '../src/blakron/layouts/VerticalLayout.js';
 
 function makeComboBox(items: unknown[] = []): ComboBox {
 	const cb = new ComboBox();
@@ -65,6 +66,18 @@ describe('ComboBox', () => {
 			expect(parent.getChildIndex(cb)).toBe(1);
 
 			cb.close();
+			expect(parent.getChildIndex(cb)).toBe(0);
+		});
+
+		it('does not change child order inside a layout container', () => {
+			const parent = new Group();
+			parent.layout = new VerticalLayout();
+			const cb = makeComboBox(['a', 'b']);
+			parent.addChild(cb);
+			parent.addChild(new Group());
+
+			cb.open();
+
 			expect(parent.getChildIndex(cb)).toBe(0);
 		});
 	});

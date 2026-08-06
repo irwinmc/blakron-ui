@@ -125,7 +125,6 @@ export class TextInput extends Component implements IDisplayText {
 			if (this._maxChars) instance.maxChars = this._maxChars;
 			if (this._restrict) instance.restrict = this._restrict;
 			if (this._inputType) instance.inputType = this._inputType as never;
-			if (this._prompt) instance.prompt = this._prompt;
 			instance.addEventListener(Event.FOCUS_IN, this._onFocusIn);
 			instance.addEventListener(Event.FOCUS_OUT, this._onFocusOut);
 		} else if (instance instanceof Label && partName === 'promptDisplay') {
