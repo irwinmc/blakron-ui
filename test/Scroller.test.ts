@@ -7,7 +7,11 @@
  */
 import { describe, it, expect } from 'vitest';
 import { Event, TouchEvent } from '@blakron/core';
-import { Scroller, Group, Rect } from '../src/index.js';
+import { Scroller, Group, HScrollBar, VScrollBar } from '../src/index.js';
+
+function attachPart(scroller: Scroller, partName: string, instance: unknown): void {
+	(scroller as unknown as { partAdded: (name: string, part: unknown) => void }).partAdded(partName, instance);
+}
 
 describe('Scroller', () => {
 	describe('viewport display-list management', () => {
@@ -34,6 +38,48 @@ describe('Scroller', () => {
 			scroller.viewport = viewport;
 			scroller.viewport = undefined;
 			expect(scroller.contains(viewport)).toBe(false);
+		});
+
+		it('binds a viewport assigned after the scroll bar skin parts', () => {
+			const scroller = new Scroller();
+			const horizontalBar = new HScrollBar();
+			const verticalBar = new VScrollBar();
+			attachPart(scroller, 'horizontalScrollBar', horizontalBar);
+			attachPart(scroller, 'verticalScrollBar', verticalBar);
+			const viewport = new Group();
+
+			scroller.viewport = viewport;
+
+			expect(horizontalBar.viewport).toBe(viewport);
+			expect(verticalBar.viewport).toBe(viewport);
+		});
+
+		it('unbinds scroll bars when the viewport is removed', () => {
+			const scroller = new Scroller();
+			const horizontalBar = new HScrollBar();
+			const verticalBar = new VScrollBar();
+			attachPart(scroller, 'horizontalScrollBar', horizontalBar);
+			attachPart(scroller, 'verticalScrollBar', verticalBar);
+			scroller.viewport = new Group();
+
+			scroller.viewport = undefined;
+
+			expect(horizontalBar.viewport).toBeUndefined();
+			expect(verticalBar.viewport).toBeUndefined();
+		});
+
+		it('makes scroll bar skin parts non-interactive so touches reach the viewport', () => {
+			const scroller = new Scroller();
+			const horizontalBar = new HScrollBar();
+			const verticalBar = new VScrollBar();
+
+			attachPart(scroller, 'horizontalScrollBar', horizontalBar);
+			attachPart(scroller, 'verticalScrollBar', verticalBar);
+
+			expect(horizontalBar.touchEnabled).toBe(false);
+			expect(horizontalBar.touchChildren).toBe(false);
+			expect(verticalBar.touchEnabled).toBe(false);
+			expect(verticalBar.touchChildren).toBe(false);
 		});
 	});
 

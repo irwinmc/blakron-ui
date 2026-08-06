@@ -82,6 +82,8 @@ export class Scroller extends Component {
 		if (value === this._viewport) return;
 		const old = this._viewport;
 		if (old) {
+			if (this.horizontalScrollBar) this.horizontalScrollBar.viewport = undefined;
+			if (this.verticalScrollBar) this.verticalScrollBar.viewport = undefined;
 			old.removeEventListener(PropertyEvent.PROPERTY_CHANGE, this._onViewportPropChange);
 			old.removeEventListener(TouchEvent.TOUCH_BEGIN, this._onTouchBeginCapture, true);
 			old.removeEventListener(TouchEvent.TOUCH_END, this._onTouchEndCapture, true);
@@ -99,6 +101,8 @@ export class Scroller extends Component {
 			value.addEventListener(TouchEvent.TOUCH_TAP, this._onTouchTapCapture, true);
 			value.scrollEnabled = true;
 		}
+		if (this.horizontalScrollBar) this.horizontalScrollBar.viewport = value;
+		if (this.verticalScrollBar) this.verticalScrollBar.viewport = value;
 		this.invalidateDisplayList();
 	}
 
@@ -145,10 +149,16 @@ export class Scroller extends Component {
 		super.partAdded(partName, instance);
 		if (instance instanceof HScrollBar && partName === 'horizontalScrollBar') {
 			this.horizontalScrollBar = instance;
+			instance.touchChildren = false;
+			instance.touchEnabled = false;
 			instance.viewport = this._viewport;
+			if (instance.autoVisibility) instance.visible = false;
 		} else if (instance instanceof VScrollBar && partName === 'verticalScrollBar') {
 			this.verticalScrollBar = instance;
+			instance.touchChildren = false;
+			instance.touchEnabled = false;
 			instance.viewport = this._viewport;
+			if (instance.autoVisibility) instance.visible = false;
 		}
 	}
 

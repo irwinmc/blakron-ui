@@ -4,6 +4,19 @@ All notable changes to `@blakron/ui` are documented here.
 
 ---
 
+## [1.0.9] — 2026-08-05
+
+### Fixed
+
+- **Scroller: scroll bars now respect viewport changes and never steal touches** —
+  `viewport` setter propagates the new (or cleared) viewport to any existing `horizontalScrollBar` and `verticalScrollBar` skin parts so they stay in sync when the viewport is swapped at runtime. `partAdded` now sets `touchEnabled = false` and `touchChildren = false` on both scroll bars and hides them initially when `autoVisibility` is `true`, so they act as pure visual indicators and never block touches intended for the viewport.
+
+### Tests
+
+- Scroller: 3 cases (viewport binds/unbinds existing scroll bars, scroll bars are non-interactive).
+
+---
+
 ## [1.0.8] — 2026-08-05
 
 ### Fixed
