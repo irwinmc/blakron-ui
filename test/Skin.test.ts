@@ -16,6 +16,15 @@ class RecordingOverride implements IOverride {
 	}
 }
 
+function createActiveHost(): never {
+	return {
+		stage: {},
+		addEventListener(): void {},
+		removeEventListener(): void {},
+		once(): void {},
+	} as never;
+}
+
 describe('Skin', () => {
 	describe('hasState', () => {
 		it('returns true only for declared states', () => {
@@ -66,6 +75,7 @@ describe('Skin', () => {
 			const downOverride = new RecordingOverride();
 			const skin = new Skin();
 			skin.states = [new State('up', [upOverride]), new State('down', [downOverride])];
+			skin.hostComponent = createActiveHost();
 
 			// Enter "up": its overrides are applied.
 			skin.currentState = 'up';
@@ -82,6 +92,7 @@ describe('Skin', () => {
 			const override = new RecordingOverride();
 			const skin = new Skin();
 			skin.states = [new State('up', [override])];
+			skin.hostComponent = createActiveHost();
 
 			skin.currentState = 'up';
 			expect(override.applyCalls).toBe(1);
@@ -99,6 +110,23 @@ describe('Skin', () => {
 	});
 
 	describe('hostComponent', () => {
+		it('removes the active state when detached and reapplies it when reused', () => {
+			const stateOverride = new RecordingOverride();
+			const skin = new Skin();
+			skin.states = [new State('up', [stateOverride])];
+			skin.currentState = 'up';
+
+			const firstHost = createActiveHost();
+			skin.hostComponent = firstHost;
+			expect(stateOverride.applyCalls).toBe(1);
+
+			skin.hostComponent = undefined;
+			expect(stateOverride.removeCalls).toBe(1);
+
+			skin.hostComponent = createActiveHost();
+			expect(stateOverride.applyCalls).toBe(2);
+		});
+
 		it('dispatches PropertyEvent when hostComponent changes', () => {
 			const skin = new Skin();
 			// Minimal host stub: the setter touches removeEventListener / stage / once.

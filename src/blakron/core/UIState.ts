@@ -116,7 +116,7 @@ export class UIState {
 		value = !!value;
 		if (this._includeInLayout === value) return;
 		this._includeInLayout = value;
-		this._invalidateParentLayout();
+		this.$invalidateParentLayout();
 	}
 
 	public get left(): number | string {
@@ -127,7 +127,7 @@ export class UIState {
 		const v = typeof value === 'number' || !value ? +value : String(value).trim();
 		if (this._v[K.left] === v) return;
 		this._v[K.left] = v as number;
-		this._invalidateParentLayout();
+		this.$invalidateParentLayout();
 	}
 
 	public get right(): number | string {
@@ -138,7 +138,7 @@ export class UIState {
 		const v = typeof value === 'number' || !value ? +value : String(value).trim();
 		if (this._v[K.right] === v) return;
 		this._v[K.right] = v as number;
-		this._invalidateParentLayout();
+		this.$invalidateParentLayout();
 	}
 
 	public get top(): number | string {
@@ -149,7 +149,7 @@ export class UIState {
 		const v = typeof value === 'number' || !value ? +value : String(value).trim();
 		if (this._v[K.top] === v) return;
 		this._v[K.top] = v as number;
-		this._invalidateParentLayout();
+		this.$invalidateParentLayout();
 	}
 
 	public get bottom(): number | string {
@@ -160,7 +160,7 @@ export class UIState {
 		const v = typeof value === 'number' || !value ? +value : String(value).trim();
 		if (this._v[K.bottom] === v) return;
 		this._v[K.bottom] = v as number;
-		this._invalidateParentLayout();
+		this.$invalidateParentLayout();
 	}
 
 	public get horizontalCenter(): number | string {
@@ -171,7 +171,7 @@ export class UIState {
 		const v = typeof value === 'number' || !value ? +value : String(value).trim();
 		if (this._v[K.horizontalCenter] === v) return;
 		this._v[K.horizontalCenter] = v as number;
-		this._invalidateParentLayout();
+		this.$invalidateParentLayout();
 	}
 
 	public get verticalCenter(): number | string {
@@ -182,7 +182,7 @@ export class UIState {
 		const v = typeof value === 'number' || !value ? +value : String(value).trim();
 		if (this._v[K.verticalCenter] === v) return;
 		this._v[K.verticalCenter] = v as number;
-		this._invalidateParentLayout();
+		this.$invalidateParentLayout();
 	}
 
 	public get percentWidth(): number {
@@ -193,7 +193,7 @@ export class UIState {
 		value = +value;
 		if (this._v[K.percentWidth] === value) return;
 		this._v[K.percentWidth] = value;
-		this._invalidateParentLayout();
+		this.$invalidateParentLayout();
 	}
 
 	public get percentHeight(): number {
@@ -204,7 +204,7 @@ export class UIState {
 		value = +value;
 		if (this._v[K.percentHeight] === value) return;
 		this._v[K.percentHeight] = value;
-		this._invalidateParentLayout();
+		this.$invalidateParentLayout();
 	}
 
 	public get $explicitWidth(): number {
@@ -224,7 +224,7 @@ export class UIState {
 		if (value < 0 || this._v[K.minWidth] === value) return;
 		this._v[K.minWidth] = value;
 		this.invalidateSize();
-		this._invalidateParentLayout();
+		this.$invalidateParentLayout();
 	}
 
 	public get maxWidth(): number {
@@ -236,7 +236,7 @@ export class UIState {
 		if (value < 0 || this._v[K.maxWidth] === value) return;
 		this._v[K.maxWidth] = value;
 		this.invalidateSize();
-		this._invalidateParentLayout();
+		this.$invalidateParentLayout();
 	}
 
 	public get minHeight(): number {
@@ -248,7 +248,7 @@ export class UIState {
 		if (value < 0 || this._v[K.minHeight] === value) return;
 		this._v[K.minHeight] = value;
 		this.invalidateSize();
-		this._invalidateParentLayout();
+		this.$invalidateParentLayout();
 	}
 
 	public get maxHeight(): number {
@@ -260,7 +260,7 @@ export class UIState {
 		if (value < 0 || this._v[K.maxHeight] === value) return;
 		this._v[K.maxHeight] = value;
 		this.invalidateSize();
-		this._invalidateParentLayout();
+		this.$invalidateParentLayout();
 	}
 
 	// ── Public methods ────────────────────────────────────────────────────
@@ -312,7 +312,7 @@ export class UIState {
 		if (isNaN(value)) this.invalidateSize();
 		this.invalidateProperties();
 		this.invalidateDisplayList();
-		this._invalidateParentLayout();
+		this.$invalidateParentLayout();
 	}
 
 	public getHeight(): number {
@@ -328,7 +328,7 @@ export class UIState {
 		if (isNaN(value)) this.invalidateSize();
 		this.invalidateProperties();
 		this.invalidateDisplayList();
-		this._invalidateParentLayout();
+		this.$invalidateParentLayout();
 	}
 
 	public setMeasuredSize(width: number, height: number): void {
@@ -371,7 +371,7 @@ export class UIState {
 		if (v[K.invalidateSizeFlag]) {
 			if (this._measureSizes()) {
 				this.invalidateDisplayList();
-				this._invalidateParentLayout();
+				this.$invalidateParentLayout();
 			}
 			v[K.invalidateSizeFlag] = false;
 		}
@@ -483,7 +483,7 @@ export class UIState {
 		this._applyMatrix(bounds, this._preferredUWidth(), this._preferredUHeight());
 	}
 
-	public _invalidateParentLayout(): void {
+	public $invalidateParentLayout(): void {
 		const parent = this._owner.parent;
 		if (!parent || !this._includeInLayout || !isUIComponent(parent)) return;
 		parent.invalidateSize();

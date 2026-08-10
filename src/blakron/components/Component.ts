@@ -1,4 +1,4 @@
-import { Sprite, Rectangle, Event, type DisplayObject, type DisplayObjectEvents } from '@blakron/core';
+import { Sprite, Rectangle, Event, type DisplayObject, type DisplayObjectEvents, type Matrix } from '@blakron/core';
 import { UIState, isUIComponent } from '../core/UIState.js';
 import type { IUIOwner } from '../core/UIState.js';
 import { BasicLayout } from '../layouts/BasicLayout.js';
@@ -205,39 +205,44 @@ export class Component extends Sprite implements IUIComponent, ILayoutTarget, IU
 		this.ui.percentHeight = v;
 	}
 
-	public override get scaleX(): number { return super.scaleX; }
-	public override set scaleX(v: number) {
-		if (super.scaleX === v) return;
-		super.scaleX = v;
-		this.ui._invalidateParentLayout();
+	public override $updateUseTransform(): void {
+		super.$updateUseTransform();
+		this.ui.$invalidateParentLayout();
 	}
 
-	public override get scaleY(): number { return super.scaleY; }
-	public override set scaleY(v: number) {
-		if (super.scaleY === v) return;
-		super.scaleY = v;
-		this.ui._invalidateParentLayout();
+	public override $setMatrix(matrix: Matrix, needUpdateProperties = true): void {
+		super.$setMatrix(matrix, needUpdateProperties);
+		this.ui.$invalidateParentLayout();
 	}
 
-	public override get rotation(): number { return super.rotation; }
-	public override set rotation(v: number) {
-		if (super.rotation === v) return;
-		super.rotation = v;
-		this.ui._invalidateParentLayout();
+	public override $setAnchorOffsetX(value: number): void {
+		if (this.$anchorOffsetX === value) return;
+		super.$setAnchorOffsetX(value);
+		this.ui.$invalidateParentLayout();
 	}
 
-	public override get skewX(): number { return super.skewX; }
-	public override set skewX(v: number) {
-		if (super.skewX === v) return;
-		super.skewX = v;
-		this.ui._invalidateParentLayout();
+	public override $setAnchorOffsetY(value: number): void {
+		if (this.$anchorOffsetY === value) return;
+		super.$setAnchorOffsetY(value);
+		this.ui.$invalidateParentLayout();
 	}
 
-	public override get skewY(): number { return super.skewY; }
-	public override set skewY(v: number) {
-		if (super.skewY === v) return;
-		super.skewY = v;
-		this.ui._invalidateParentLayout();
+	public override $setX(value: number): boolean {
+		const changed = super.$setX(value);
+		if (changed) {
+			this.ui.$invalidateParentLayout();
+			this.invalidateProperties();
+		}
+		return changed;
+	}
+
+	public override $setY(value: number): boolean {
+		const changed = super.$setY(value);
+		if (changed) {
+			this.ui.$invalidateParentLayout();
+			this.invalidateProperties();
+		}
+		return changed;
 	}
 
 	public override get width(): number {
@@ -618,6 +623,9 @@ export class Component extends Sprite implements IUIComponent, ILayoutTarget, IU
 	private _setSkin(skin: Skin | undefined): void {
 		const oldSkin = this._skin;
 		if (oldSkin) {
+			// Exit the active state while its host and display hierarchy are still
+			// intact, then detach bindings, parts and visual elements.
+			oldSkin.hostComponent = undefined;
 			oldSkin.unwatchAll();
 			for (const partName of oldSkin.skinParts) {
 				if ((this as Record<string, unknown>)[partName]) this.setSkinPart(partName, undefined);
@@ -625,7 +633,6 @@ export class Component extends Sprite implements IUIComponent, ILayoutTarget, IU
 			for (const child of oldSkin.elementsContent) {
 				if (child.parent === this) this.removeChild(child);
 			}
-			oldSkin.hostComponent = undefined;
 		}
 		this._skin = skin;
 		if (skin) {

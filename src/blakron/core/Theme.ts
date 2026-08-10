@@ -1,4 +1,4 @@
-import { EventDispatcher, Event } from '@blakron/core';
+import { EventDispatcher, Event, IOErrorEvent } from '@blakron/core';
 import type { IThemeAdapter } from './IThemeAdapter.js';
 import type { Component } from '../components/Component.js';
 
@@ -19,6 +19,7 @@ interface ThemeConfig {
  * ```
  *
  * @event Event.COMPLETE  Dispatched when the theme config is loaded and all skins are registered.
+ * @event IOErrorEvent.IO_ERROR  Dispatched when the theme config or compiled skins fail to load.
  */
 export class Theme extends EventDispatcher {
 	// ── Instance fields ───────────────────────────────────────────────────
@@ -38,7 +39,6 @@ export class Theme extends EventDispatcher {
 		this._initialized = !configURL;
 		this._adapter = adapter;
 		setTheme(this);
-		console.log(`[Theme] Created, configURL: ${configURL || '(none)'}`);
 		if (configURL) this._load(configURL);
 	}
 
@@ -73,16 +73,13 @@ export class Theme extends EventDispatcher {
 	// ── Private methods ───────────────────────────────────────────────────
 
 	private _load(url: string): void {
-		console.log(`[Theme] Loading: ${url}`);
 		const adapter = this._adapter ?? _defaultThemeAdapter;
 		adapter.getTheme(
 			url,
-			data => {
-				console.log(`[Theme] Fetched OK, data length: ${typeof data === 'string' ? data.length : 'object'}`);
-				this._onConfigLoaded(data);
-			},
+			data => this._onConfigLoaded(data),
 			err => {
 				console.error('[Theme] Failed to load theme:', url, err);
+				this._onLoadFailed();
 			},
 		);
 	}
@@ -94,6 +91,7 @@ export class Theme extends EventDispatcher {
 				data = JSON.parse(raw);
 			} catch {
 				console.error('[Theme] Invalid JSON in theme config');
+				this._onLoadFailed();
 				return;
 			}
 		} else {
@@ -101,8 +99,6 @@ export class Theme extends EventDispatcher {
 		}
 
 		if (data.skins) {
-			const keys = Object.keys(data.skins);
-			console.log(`[Theme] Loaded ${keys.length} skin mapping(s)`);
 			for (const [key, val] of Object.entries(data.skins)) {
 				if (!this._skinMap[key]) this.mapSkin(key, val);
 			}
@@ -113,7 +109,13 @@ export class Theme extends EventDispatcher {
 		// Skins are loaded from a compiled ESM module that self-registers its
 		// factories on globalThis.
 		if (data.skinsJs) {
-			this._loadSkinsModule(data.skinsJs).finally(() => this._onLoaded());
+			this._loadSkinsModule(data.skinsJs).then(
+				() => this._onLoaded(),
+				err => {
+					console.error('[Theme] Failed to load skins module:', data.skinsJs, err);
+					this._onLoadFailed();
+				},
+			);
 		} else {
 			this._onLoaded();
 		}
@@ -121,21 +123,22 @@ export class Theme extends EventDispatcher {
 
 	/** Dynamically imports the compiled skins module (resolves relative to the theme URL). */
 	private async _loadSkinsModule(skinsJs: string): Promise<void> {
-		try {
-			const base = new URL(this._configURL, globalThis.location?.href ?? 'http://localhost/');
-			const moduleUrl = new URL(skinsJs, base).href;
-			await import(/* @vite-ignore */ moduleUrl);
-			console.log(`[Theme] Loaded skins module: ${skinsJs}`);
-		} catch (e) {
-			console.error('[Theme] Failed to load skins module:', skinsJs, e);
-		}
+		const base = new URL(this._configURL, globalThis.location?.href ?? 'http://localhost/');
+		const moduleUrl = new URL(skinsJs, base).href;
+		await import(/* @vite-ignore */ moduleUrl);
 	}
 
 	private _onLoaded(): void {
 		this._initialized = true;
-		console.log(`[Theme] Initialized, ${this._delayList.length} component(s) waiting for skin`);
 		this._handleDelayList();
 		this.dispatchEventWith(Event.COMPLETE);
+	}
+
+	private _onLoadFailed(): void {
+		if (this._initialized) return;
+		this._initialized = true;
+		this._handleDelayList();
+		IOErrorEvent.dispatchIOErrorEvent(this);
 	}
 
 	private _handleDelayList(): void {

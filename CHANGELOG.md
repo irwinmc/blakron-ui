@@ -4,6 +4,26 @@ All notable changes to `@blakron/ui` are documented here.
 
 ---
 
+## [1.1.7] — 2026-08-10
+
+### Added
+
+- **Theme: dispatch `IOErrorEvent.IO_ERROR` on load failure** — when the theme config or compiled skins module fails to load, `Theme` now dispatches `IOErrorEvent.IO_ERROR` so consumers can handle missing or broken themes gracefully.
+
+### Changed
+
+- **Component: replace per-property transform overrides with `$setX`/`$setY`/`$updateUseTransform`/`$setMatrix`/`$setAnchorOffset`** — instead of overriding `scaleX`, `scaleY`, `rotation`, `skewX`, and `skewY` individually, the internal entry points (`$setX`, `$setY`, etc.) are now overridden, catching all transform changes (including programmatic `$setMatrix` calls) through a single path. `$setX`/`$setY` additionally call `invalidateProperties()` to schedule layout revalidation.
+- **UIState: rename `_invalidateParentLayout` → `$invalidateParentLayout`** — the method is now part of the public `$`-prefixed internal API, consistent with the core convention.
+- **`_setSkin`: exit old state before detaching** — `hostComponent = undefined` (which triggers state exit) is now called before `unwatchAll` and skin part removal, ensuring state overrides are removed while the display hierarchy is still intact.
+- **Theme: removed all `console.log` debug output** — 6 debug logs leftover from early development have been removed. `console.error` calls remain for genuine load failures.
+
+### Tests
+
+- `test/TransformLayout.test.ts` — new (constraint transforms via internal entry points).
+- `test/Skin.test.ts` — expanded state lifecycle coverage.
+
+---
+
 ## [1.1.6] — 2026-08-10
 
 ### Fixed

@@ -63,20 +63,22 @@ export class Skin extends EventDispatcher<SkinEvents> {
 	public set hostComponent(value: Component | undefined) {
 		if (this._hostComponent === value) return;
 
-		if (this._hostComponent) {
-			this._hostComponent.removeEventListener(Event.ADDED_TO_STAGE, this._onHostAddedToStage);
+		const oldHost = this._hostComponent;
+		if (oldHost) {
+			oldHost.removeEventListener(Event.ADDED_TO_STAGE, this._onHostAddedToStage);
+			if (this._stateInitialized) {
+				this._removeState(this._currentState, oldHost);
+				this._stateInitialized = false;
+			}
 		}
 
 		this._hostComponent = value;
 
 		if (value) {
-			this._commitCurrentState();
-			if (!this._stateInitialized) {
-				if (value.stage) {
-					this._initializeStates();
-				} else {
-					value.once(Event.ADDED_TO_STAGE, this._onHostAddedToStage);
-				}
+			if (value.stage) {
+				this._initializeStates();
+			} else {
+				value.once(Event.ADDED_TO_STAGE, this._onHostAddedToStage);
 			}
 		}
 
@@ -91,7 +93,9 @@ export class Skin extends EventDispatcher<SkinEvents> {
 		if (this._currentState === value) return;
 		const old = this._currentState;
 		this._currentState = value;
-		this._applyState(old, value);
+		if (this._stateInitialized && this._hostComponent) {
+			this._applyState(old, value);
+		}
 	}
 
 	// ── Public methods ────────────────────────────────────────────────────
@@ -133,11 +137,6 @@ export class Skin extends EventDispatcher<SkinEvents> {
 		this._applyState('', this._currentState);
 	}
 
-	private _commitCurrentState(): void {
-		if (!this._stateInitialized) return;
-		this._applyState('', this._currentState);
-	}
-
 	private _applyState(fromState: string, toState: string): void {
 		if (!this.states || this.states.length === 0) return;
 
@@ -153,6 +152,14 @@ export class Skin extends EventDispatcher<SkinEvents> {
 			for (const override of newState.overrides) {
 				override.apply(this._hostComponent!, this);
 			}
+		}
+	}
+
+	private _removeState(stateName: string, host: Component): void {
+		const state = this.states.find(s => s.name === stateName);
+		if (!state) return;
+		for (const override of state.overrides) {
+			override.remove(host, this);
 		}
 	}
 }

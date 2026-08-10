@@ -65,63 +65,70 @@ export class Validator extends EventDispatcher {
 		const oldLevel = this._targetLevel;
 		if (this._targetLevel === Infinity) this._targetLevel = target.$nestLevel;
 
-		let done = false;
-		while (!done) {
-			done = true;
+		try {
+			let done = false;
+			while (!done) {
+				done = true;
 
-			// 1. properties — shallowest first
-			let obj = this._propsQueue.removeSmallestChild(target);
-			while (obj) {
-				if (obj.stage) obj.validateProperties();
-				obj = this._propsQueue.removeSmallestChild(target);
-			}
-			if (this._propsQueue.isEmpty()) this._propsFlag = false;
-			this._clientPropsFlag = false;
-
-			// 2. size — deepest first
-			obj = this._sizeQueue.removeLargestChild(target);
-			while (obj) {
-				if (obj.stage) obj.validateSize();
-				if (this._clientPropsFlag) {
-					const p = this._propsQueue.removeSmallestChild(target);
-					if (p) {
-						this._propsQueue.insert(p);
-						done = false;
-						break;
-					}
+				// 1. properties — shallowest first
+				let obj = this._propsQueue.removeSmallestChild(target);
+				while (obj) {
+					if (obj.stage) obj.validateProperties();
+					obj = this._propsQueue.removeSmallestChild(target);
 				}
+				if (this._propsQueue.isEmpty()) this._propsFlag = false;
+				this._clientPropsFlag = false;
+
+				// 2. size — deepest first
 				obj = this._sizeQueue.removeLargestChild(target);
+				while (obj) {
+					if (obj.stage) obj.validateSize();
+					if (this._clientPropsFlag) {
+						const p = this._propsQueue.removeSmallestChild(target);
+						if (p) {
+							this._propsQueue.insert(p);
+							done = false;
+							break;
+						}
+					}
+					obj = this._sizeQueue.removeLargestChild(target);
+				}
+				if (this._sizeQueue.isEmpty()) this._sizeFlag = false;
+				this._clientPropsFlag = false;
+				this._clientSizeFlag = false;
+
+				// 3. display list — shallowest first
+				obj = this._displayQueue.removeSmallestChild(target);
+				while (obj) {
+					if (obj.stage) obj.validateDisplayList();
+					if (this._clientPropsFlag) {
+						const p = this._propsQueue.removeSmallestChild(target);
+						if (p) {
+							this._propsQueue.insert(p);
+							done = false;
+							break;
+						}
+					}
+					if (this._clientSizeFlag) {
+						const s = this._sizeQueue.removeLargestChild(target);
+						if (s) {
+							this._sizeQueue.insert(s);
+							done = false;
+							break;
+						}
+					}
+					obj = this._displayQueue.removeSmallestChild(target);
+				}
+				if (this._displayQueue.isEmpty()) this._displayFlag = false;
 			}
+		} finally {
+			this._targetLevel = oldLevel;
+			if (this._propsQueue.isEmpty()) this._propsFlag = false;
 			if (this._sizeQueue.isEmpty()) this._sizeFlag = false;
+			if (this._displayQueue.isEmpty()) this._displayFlag = false;
 			this._clientPropsFlag = false;
 			this._clientSizeFlag = false;
-
-			// 3. display list — shallowest first
-			obj = this._displayQueue.removeSmallestChild(target);
-			while (obj) {
-				if (obj.stage) obj.validateDisplayList();
-				if (this._clientPropsFlag) {
-					const p = this._propsQueue.removeSmallestChild(target);
-					if (p) {
-						this._propsQueue.insert(p);
-						done = false;
-						break;
-					}
-				}
-				if (this._clientSizeFlag) {
-					const s = this._sizeQueue.removeLargestChild(target);
-					if (s) {
-						this._sizeQueue.insert(s);
-						done = false;
-						break;
-					}
-				}
-				obj = this._displayQueue.removeSmallestChild(target);
-			}
-			if (this._displayQueue.isEmpty()) this._displayFlag = false;
 		}
-
-		if (oldLevel === Infinity) this._targetLevel = Infinity;
 	}
 
 	// ── Private methods ───────────────────────────────────────────────────
