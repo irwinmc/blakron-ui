@@ -228,6 +228,41 @@ export class Group extends Sprite implements IUIComponent, IViewport, ILayoutTar
 		this.ui.percentHeight = v;
 	}
 
+	public override get scaleX(): number { return super.scaleX; }
+	public override set scaleX(v: number) {
+		if (super.scaleX === v) return;
+		super.scaleX = v;
+		this.ui._invalidateParentLayout();
+	}
+
+	public override get scaleY(): number { return super.scaleY; }
+	public override set scaleY(v: number) {
+		if (super.scaleY === v) return;
+		super.scaleY = v;
+		this.ui._invalidateParentLayout();
+	}
+
+	public override get rotation(): number { return super.rotation; }
+	public override set rotation(v: number) {
+		if (super.rotation === v) return;
+		super.rotation = v;
+		this.ui._invalidateParentLayout();
+	}
+
+	public override get skewX(): number { return super.skewX; }
+	public override set skewX(v: number) {
+		if (super.skewX === v) return;
+		super.skewX = v;
+		this.ui._invalidateParentLayout();
+	}
+
+	public override get skewY(): number { return super.skewY; }
+	public override set skewY(v: number) {
+		if (super.skewY === v) return;
+		super.skewY = v;
+		this.ui._invalidateParentLayout();
+	}
+
 	public override get width(): number {
 		return this.ui.getWidth();
 	}
