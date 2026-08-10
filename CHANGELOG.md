@@ -4,6 +4,20 @@ All notable changes to `@blakron/ui` are documented here.
 
 ---
 
+## [1.1.6] — 2026-08-10
+
+### Fixed
+
+- **UIState: invalidate cached parent after layout resize** — `setLayoutBoundsSize` now calls `$markDirty()` on the component after a size change, propagating dirtiness to ancestors so any `cacheAsBitmap` parent is re-rasterized after deferred UI measurement completes.
+
+---
+
+## [1.1.5] — 2026-08-07
+
+### Changed
+
+- **`@blakron/core` moved to `peerDependencies`** — projects that depend on both `@blakron/core` and `@blakron/ui` now share a single core instance, preventing duplicate display lists and global state.
+
 ---
 
 ## [1.1.4] — 2026-08-06
