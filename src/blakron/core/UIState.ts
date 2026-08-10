@@ -521,6 +521,10 @@ export class UIState {
 		}
 		if (changed) {
 			this.invalidateDisplayList();
+			// A layout size change affects this component's rendered bounds.
+			// Propagate dirtiness to ancestors so a cacheAsBitmap parent is
+			// rasterized again after deferred UI measurement completes.
+			this._owner.$markDirty();
 			this._owner.dispatchEventWith(Event.RESIZE);
 		}
 	}
